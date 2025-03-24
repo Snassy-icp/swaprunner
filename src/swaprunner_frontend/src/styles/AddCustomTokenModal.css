@@ -1,0 +1,108 @@
+.add-custom-token-modal {
+  background: var(--bg-dark);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.4);
+}
+
+.add-custom-token-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.add-custom-token-modal .modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.add-custom-token-modal .modal-content {
+  padding: 16px;
+}
+
+.add-custom-token-modal .input-group {
+  margin-bottom: 16px;
+}
+
+.add-custom-token-modal .input-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.add-custom-token-modal .input-group input {
+  width: 100%;
+  padding: 12px;
+  background: var(--bg-darker);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-family: var(--font-mono);
+}
+
+.add-custom-token-modal .input-group input:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+}
+
+.add-custom-token-modal .input-group input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.add-custom-token-modal .error-message {
+  color: var(--error-red);
+  font-size: 14px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: rgba(255, 59, 48, 0.1);
+  border-radius: 8px;
+}
+
+.add-custom-token-modal .submit-button {
+  width: 100%;
+  padding: 12px;
+  background: var(--accent-blue);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.add-custom-token-modal .submit-button:hover:not(:disabled) {
+  background: var(--accent-blue-hover);
+}
+
+.add-custom-token-modal .submit-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.add-custom-token-modal .spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+} 

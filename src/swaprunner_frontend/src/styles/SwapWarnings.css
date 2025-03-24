@@ -1,0 +1,39 @@
+.swap-warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 2px;
+  width: 100%;
+}
+
+.warning-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 152, 0, 0.1);
+  border: 1px solid rgba(255, 152, 0, 0.2);
+}
+
+.warning-item.frontrun {
+  background: rgba(255, 152, 0, 0.1);
+  border-color: rgba(255, 152, 0, 0.2);
+}
+
+.warning-item.browserCrash {
+  background: rgba(255, 71, 87, 0.1);
+  border-color: rgba(255, 71, 87, 0.2);
+}
+
+.warning-icon {
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.warning-message {
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 20px;
+  flex: 1;
+} 

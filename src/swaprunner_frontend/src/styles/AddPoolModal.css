@@ -1,0 +1,137 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+.add-pool-modal {
+  background: var(--bg-dark);
+  width: var(--modal-width);
+  max-width: var(--modal-width);
+  max-height: 85vh;
+  border-radius: 24px;
+  padding: var(--modal-padding);
+  margin: 20px 0;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  box-sizing: border-box;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+  width: 100%;
+}
+
+.modal-header h2 {
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0;
+  padding: 0;
+  color: var(--text-primary);
+}
+
+.modal-close-button {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--input-bg);
+  border: none;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 8px;
+}
+
+.modal-close-button:hover {
+  background: var(--bg-light);
+  color: var(--text-primary);
+}
+
+.modal-close-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.modal-content {
+  width: 100%;
+  max-width: var(--modal-content-width);
+  box-sizing: border-box;
+}
+
+.token-selects {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.token-select-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.token-select-container label {
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 14px;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+.primary-button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--accent-blue);
+  color: var(--text-primary);
+}
+
+.primary-button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.primary-button:disabled {
+  background: linear-gradient(to right, #94a3b8, #64748b);
+  cursor: not-allowed;
+  opacity: 0.7;
+} 

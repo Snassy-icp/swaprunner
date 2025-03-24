@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer circle with subtle gradient -->
+  <circle cx="16" cy="16" r="15" stroke="url(#gradient)" stroke-width="2" fill="none"/>
+  <!-- Inner token symbol -->
+  <circle cx="16" cy="16" r="6" fill="#4B5563"/>
+  <!-- Decorative dots -->
+  <circle cx="16" cy="5" r="2" fill="#6B7280"/>
+  <circle cx="16" cy="27" r="2" fill="#6B7280"/>
+  <circle cx="5" cy="16" r="2" fill="#6B7280"/>
+  <circle cx="27" cy="16" r="2" fill="#6B7280"/>
+  <!-- Define gradient -->
+  <defs>
+    <linearGradient id="gradient" x1="16" y1="0" x2="16" y2="32">
+      <stop offset="0%" stop-color="#4B5563"/>
+      <stop offset="100%" stop-color="#6B7280"/>
+    </linearGradient>
+  </defs>
+</svg> 

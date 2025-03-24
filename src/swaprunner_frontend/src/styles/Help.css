@@ -1,0 +1,134 @@
+.help-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  color: var(--text-primary);
+}
+
+.help-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.help-header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  background: var(--panel-bg);
+  border-color: var(--text-secondary);
+}
+
+.help-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.help-content section {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.help-content h2 {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.help-content h3 {
+  margin: 20px 0 12px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.help-content p {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.help-content ul, 
+.help-content ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.help-content li {
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.help-content a {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.help-content a:hover {
+  color: var(--primary-color-light, #6c8ff8);
+  text-decoration: none;
+}
+
+.help-content a::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  bottom: -2px;
+  left: 0;
+  background-color: var(--primary-color-light, #6c8ff8);
+  transform: scaleX(0);
+  transform-origin: bottom right;
+  transition: transform 0.3s ease;
+}
+
+.help-content a:hover::after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
+}
+
+@media (max-width: 480px) {
+  .help-page {
+    padding: 16px;
+  }
+  
+  .help-header {
+    margin-bottom: 24px;
+  }
+  
+  .help-header h1 {
+    font-size: 20px;
+  }
+  
+  .help-content section {
+    padding: 16px;
+  }
+} 

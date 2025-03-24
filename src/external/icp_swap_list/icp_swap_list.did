@@ -1,0 +1,68 @@
+type TokenMetadata = 
+ record {
+   canisterId: text;
+   configs: vec Config;
+   decimals: nat;
+   fee: nat;
+   introduction: text;
+   mediaLinks: vec Media;
+   name: text;
+   rank: nat32;
+   standard: text;
+   symbol: text;
+   totalSupply: nat;
+ };
+type Result_3 = 
+ variant {
+   err: text;
+   ok: opt TokenMetadata;
+ };
+type Result_2 = 
+ variant {
+   err: text;
+   ok: vec text;
+ };
+type Result_1 = 
+ variant {
+   err: text;
+   ok: vec TokenMetadata;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok: text;
+ };
+type NatResult = 
+ variant {
+   err: text;
+   ok: nat;
+ };
+type Media = 
+ record {
+   link: text;
+   mediaType: text;
+ };
+type Config = 
+ record {
+   name: text;
+   value: text;
+ };
+type BoolResult = 
+ variant {
+   err: text;
+   ok: bool;
+ };
+service : {
+  add: (TokenMetadata) -> (BoolResult);
+  addAdmin: (text) -> (BoolResult);
+  cycleAvailable: () -> (NatResult);
+  cycleBalance: () -> (NatResult) query;
+  edit: (text, TokenMetadata) -> (BoolResult);
+  get: (text) -> (Result_3) query;
+  getAdminList: () -> (Result_2) query;
+  getList: () -> (Result_1) query;
+  getLogo: (text) -> (Result) query;
+  remove: (text) -> (BoolResult);
+  removeAdmin: (text) -> (BoolResult);
+  updateLogo: (text, text) -> (BoolResult);
+}

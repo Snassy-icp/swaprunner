@@ -1,0 +1,216 @@
+.time-split-progress {
+  background: var(--bg-darker);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.time-split-progress.error {
+  border-color: var(--error-red);
+  background: var(--error-light);
+  text-align: center;
+}
+
+.time-split-progress.error .error-message {
+  color: var(--error-red);
+  margin-bottom: 8px;
+}
+
+.time-split-progress.loading {
+  text-align: center;
+  padding: 32px;
+  color: var(--text-secondary);
+}
+
+.time-split-progress.loading .loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--text-secondary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  margin: 0 auto 8px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.progress-section {
+  margin-bottom: 16px;
+}
+
+.progress-section:last-child {
+  margin-bottom: 0;
+}
+
+.progress-section h4 {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0 0 8px 0;
+  font-weight: 500;
+}
+
+.progress-bar {
+  height: 8px;
+  background: var(--bg-lighter);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.progress-bar .progress-fill {
+  height: 100%;
+  background: var(--primary-color);
+  transition: width 0.3s ease;
+}
+
+.progress-details {
+  display: flex;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  align-items: center;
+}
+
+.progress-details .percentage {
+  margin-left: auto;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.trade-info, .time-info, .next-trade-info, .price-info {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.trade-info span, .time-info span, .next-trade-info span, .price-info span {
+  margin-right: 4px;
+}
+
+.time-info > div, .next-trade-info > div, .price-info > div {
+  margin-bottom: 4px;
+}
+
+.time-info > div:last-child, .next-trade-info > div:last-child, .price-info > div:last-child {
+  margin-bottom: 0;
+}
+
+.price-status {
+  margin-top: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.price-status.in-range {
+  background: var(--success-light);
+  color: var(--success-green);
+}
+
+.price-status.out-of-range {
+  background: var(--error-light);
+  color: var(--error-red);
+}
+
+.time-split-progress .progress-controls {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  justify-content: center;
+}
+
+.time-split-progress .progress-controls button {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.time-split-progress .progress-controls .stop-button {
+  background-color: #dc3545;
+  color: white;
+  font-weight: 600;
+}
+
+.time-split-progress .progress-controls .stop-button:hover {
+  background-color: #c82333;
+}
+
+.time-split-progress .progress-controls .pause-button {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.time-split-progress .progress-controls .pause-button:hover {
+  background-color: #e0a800;
+}
+
+.time-split-progress .progress-controls .resume-button {
+  background-color: #28a745;
+  color: white;
+}
+
+.time-split-progress .progress-controls .resume-button:hover {
+  background-color: #218838;
+}
+
+/* Trade History */
+.trade-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.trade-card {
+  background: var(--bg-lighter);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 8px;
+  min-width: 120px;
+  max-width: 180px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trade-card.success {
+  border-color: var(--success-green);
+  background: rgba(40, 167, 69, 0.1);
+}
+
+.trade-card.failed {
+  border-color: var(--error-red);
+  background: rgba(220, 53, 69, 0.1);
+}
+
+.trade-card .trade-amount {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-family: 'Roboto Mono', monospace;
+}
+
+.trade-card .trade-details {
+  display: flex;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.trade-card .dex-amount {
+  font-family: 'Roboto Mono', monospace;
+}
+
+.trade-card .trade-time {
+  font-size: 10px;
+  color: var(--text-secondary);
+  opacity: 0.8;
+  margin-top: 2px;
+} 

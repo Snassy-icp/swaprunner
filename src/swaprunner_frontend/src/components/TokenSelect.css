@@ -1,0 +1,18 @@
+.logo-loading-progress {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.logo-loading-progress .progress-text {
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.logo-loading-progress .progress-details {
+  color: var(--text-secondary);
+  font-size: 12px;
+} 

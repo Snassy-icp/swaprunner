@@ -1,0 +1,185 @@
+.admin-prices-page {
+  padding: 24px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.admin-prices-page h1 {
+  margin-bottom: 24px;
+  color: var(--text-primary);
+}
+
+.actions-section {
+  margin-bottom: 24px;
+}
+
+.clear-cache-button {
+  padding: 8px 16px;
+  background: var(--error-red);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.clear-cache-button:hover {
+  opacity: 0.9;
+}
+
+.test-section {
+  background: var(--bg-darker);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.test-section h2 {
+  margin-bottom: 16px;
+  color: var(--text-primary);
+  font-size: 18px;
+}
+
+.test-section h3 {
+  margin: 20px 0 12px;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.price-display {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.pool-test-form {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.token-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-family: 'Roboto Mono', monospace;
+}
+
+.token-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.test-button {
+  padding: 8px 16px;
+  background: var(--primary-color);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.test-button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.test-button:disabled {
+  background: var(--disabled-bg);
+  cursor: not-allowed;
+}
+
+.error-message {
+  background: var(--error-light);
+  color: var(--error-red);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.loading {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 24px;
+}
+
+.no-results {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 24px;
+  font-style: italic;
+}
+
+.results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result-item {
+  background: var(--bg-lighter);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.token-id {
+  font-family: 'Roboto Mono', monospace;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.timestamp {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.pool-info, .price-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.price-info {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.prices {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cache-status {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.cache-status.cached {
+  background: var(--success-light);
+  color: var(--success-green);
+}
+
+.cache-status.fresh {
+  background: var(--warning-light);
+  color: var(--warning-orange);
+} 

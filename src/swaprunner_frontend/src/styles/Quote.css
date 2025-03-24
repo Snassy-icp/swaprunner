@@ -1,0 +1,70 @@
+.swap-interface .quote-amounts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.swap-interface .quote-amount {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 32px 12px 16px;
+  margin-right: 4px;
+  border-radius: 12px;
+  transition: background-color 0.2s;
+  font-size: 20px;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid transparent;
+  min-width: 0;
+}
+
+.swap-interface .quote-amount > span,
+.swap-interface .quote-amount input {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: inherit;
+  font-weight: inherit;
+  width: 100%;
+  outline: none;
+}
+
+.swap-interface .quote-amount:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.swap-interface .quote-amount.best-quote {
+  border: 1px solid var(--accent-blue);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.swap-interface .quote-amount.selected {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.swap-interface .quote-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  margin-top: 4px;
+}
+
+.swap-interface .quote-details .dex-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.swap-interface .quote-details .usd-value {
+  font-size: 12px;
+  color: var(--text-secondary);
+} 

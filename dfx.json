@@ -1,0 +1,37 @@
+{
+  "canisters": {
+    "internet_identity": {
+      "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
+      "frontend": {},
+      "remote": {
+        "id": {
+          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
+    },
+    "swaprunner_backend": {
+      "main": "src/swaprunner_backend/main.mo",
+      "type": "motoko"
+    },
+    "swaprunner_frontend": {
+      "dependencies": [
+        "swaprunner_backend"
+      ],
+      "source": [
+        "src/swaprunner_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "swaprunner_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}

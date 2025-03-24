@@ -1,0 +1,359 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.send-modal {
+  background: #1A1D26;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 420px !important;
+  max-height: 90vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+}
+
+.send-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.send-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.send-modal-title h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #fff;
+}
+
+.send-modal-title-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Add specific styling for the generic token logo */
+.send-modal-title-logo[src="/generic_token.svg"] {
+  background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%);
+  padding: 2px;
+  border: 2px solid #60A5FA;
+}
+
+.send-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.send-modal-recipient {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.send-modal-recipient label {
+  color: #8F96A1;
+  font-size: 14px;
+}
+
+.send-modal-principal-input {
+  width: 100%;
+  padding: 12px;
+  background: #2A2E3A;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-family: 'Roboto Mono', monospace;
+  box-sizing: border-box;
+}
+
+.send-modal-principal-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.send-modal-amount {
+  background: #2A2E3A;
+  border-radius: 12px;
+  padding: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.send-modal-amount-row {
+  margin-bottom: 16px;
+}
+
+.send-modal-amount-input {
+  width: 100%;
+  padding: 8px 0;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 32px;
+  font-weight: 500;
+  text-align: right;
+}
+
+.send-modal-amount-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.send-modal-amount-input:focus {
+  outline: none;
+}
+
+.send-modal-amount-details {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 16px;
+}
+
+.send-modal-balance {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #8F96A1;
+  font-size: 14px;
+}
+
+.send-modal-max {
+  background: transparent;
+  border: 1px solid #3b82f6;
+  color: #3b82f6;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.send-modal-max:hover:not(:disabled) {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.send-modal-max:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.send-modal-error {
+  color: #ef4444;
+  font-size: 14px;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 8px;
+}
+
+.send-modal-proceed,
+.send-modal-confirm,
+.send-modal-close-success {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #3b82f6;
+  color: #fff;
+}
+
+.send-modal-proceed:hover:not(:disabled),
+.send-modal-confirm:hover:not(:disabled),
+.send-modal-close-success:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.send-modal-proceed:disabled,
+.send-modal-confirm:disabled,
+.send-modal-close-success:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Confirmation State */
+.send-modal-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #1A1D26;
+  border-radius: 12px;
+}
+
+.send-modal-confirm-details {
+  background: #2A2E3A;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.send-modal-confirm-details h3 {
+  margin: 0 0 16px 0;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.send-modal-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  color: #8F96A1;
+  font-size: 14px;
+}
+
+.send-modal-detail-row.total {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-weight: 500;
+}
+
+.send-modal-principal {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  word-break: break-all;
+  text-align: right;
+  max-width: 200px;
+  color: #8F96A1;
+}
+
+.send-modal-confirm-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.send-modal-back,
+.send-modal-confirm {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.send-modal-back {
+  background: #2A2E3A;
+  color: #fff;
+}
+
+.send-modal-back:hover:not(:disabled) {
+  background: #363B47;
+}
+
+.send-modal-confirm {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.send-modal-confirm:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.send-modal-back:disabled,
+.send-modal-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Success State */
+.send-modal-success {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.send-modal-success-message {
+  color: #22c55e;
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
+.send-modal-tx-details {
+  background: #2A2E3A;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.send-modal-tx-details p {
+  color: #8F96A1;
+  margin: 0 0 8px 0;
+}
+
+.send-modal-tx-details code {
+  color: #fff;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.send-modal-close-success {
+  background: #22c55e;
+  color: #fff;
+}
+
+.send-modal-close-success:hover {
+  opacity: 0.9;
+}
+
+/* Loading states */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1) 25%,
+    rgba(255, 255, 255, 0.15) 37%,
+    rgba(255, 255, 255, 0.1) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-loading 1.4s ease infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* Remove unused token-related styles */
+.send-modal-token,
+.send-modal-token-logo,
+.send-modal-token-symbol,
+.send-modal-token-name,
+.send-modal-token-id,
+.send-modal-token-fee,
+.send-modal-token.loading,
+.send-modal-token-logo.skeleton,
+.send-modal-token-symbol.skeleton,
+.send-modal-token-name.skeleton {
+  display: none;
+} 
