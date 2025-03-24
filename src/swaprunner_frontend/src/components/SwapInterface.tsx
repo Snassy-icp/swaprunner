@@ -1040,6 +1040,7 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
       setSteps(newSteps);
 
       let amount_e8s = BigInt(swapDetails.fromToken.amount_e8s);
+      let swapped_amount = BigInt(0);
       
       // Create execution parameters from the swap details
       const executionParams: ICPSwapExecutionParams = {
@@ -1063,6 +1064,8 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
         const status = result.status;
         if (!step || !status) return;
         
+        swapped_amount = result.outputAmount || swapped_amount;
+
         // Map backend steps to UI steps more reliably using step names
         let stepIndex = -1;
         if (step === 'approve' || step === 'transfer') {
@@ -1123,7 +1126,7 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
             executionParams.fromToken.canisterId,
             executionParams.fromToken.amount_e8s,
             executionParams.toToken.canisterId,
-            results[2].outputAmount?.toString() || '0',
+            swapped_amount.toString() || '0',
             typeof poolId === 'string' ? Principal.fromText(poolId) : poolId,
           );
         }
@@ -2696,6 +2699,9 @@ const createSplitSwapDetails = async() => {
       const isICRC1 = swapDetails.fromToken.metadata?.standard === "ICRC1";
       const fee = swapDetails.fromToken.metadata?.fee || BigInt(0);
 
+      let icpswap_swapped_amount = BigInt(0);      
+      let kong_swapped_amount = BigInt(0);      
+
       // If we need to deposit anything, do it once upfront
       let depositPromise: Promise<ExecutionResult> | undefined;
       if (totalUndepositedNeeded > 0n || (isICRC1 && icpswapNeeds.fromWallet > BigInt(0))) {
@@ -2823,6 +2829,7 @@ const createSplitSwapDetails = async() => {
                 };
               }
 
+              icpswap_swapped_amount = result.outputAmount || icpswap_swapped_amount;
               updateIcpswapStep(stepIndex, status, result.details, result.error, result.optimizationMessage);
               
               // Handle step completion and skipping
@@ -2950,9 +2957,10 @@ const createSplitSwapDetails = async() => {
 
           const swapResult = await kongSwapService.executeKongSwap(kongParams);
           if (swapResult.success) {
+            kong_swapped_amount = BigInt(swapResult.amountOut || '0');
             updateKongStep(hasWithdrawalNeeds ? 2 : 1, 'complete', {
               amount: formatTokenAmount(kongWithdrawalNeeds?.adjustedInput || kong_amount_e8s, swapDetails.fromToken.canisterId),
-              amountOut: formatTokenAmount(BigInt(swapDetails.kong.amountOut_e8s), swapDetails.toToken.canisterId),
+              amountOut: formatTokenAmount(BigInt(swapResult.amountOut || '0'), swapDetails.toToken.canisterId),
               tokenSymbol: getTokenSymbol(swapDetails.fromToken.canisterId),
               tokenOutSymbol: getTokenSymbol(swapDetails.toToken.canisterId),
               canisterId: swapDetails.toToken.canisterId,
@@ -2993,8 +3001,8 @@ const createSplitSwapDetails = async() => {
             icpswap_amount_e8s.toString(),
             kong_amount_e8s.toString(),
             swapDetails.toToken.canisterId,
-            swapDetails.icpswap.amountOut_e8s,
-            swapDetails.kong.amountOut_e8s,
+            icpswap_swapped_amount.toString(),
+            kong_swapped_amount.toString(),
             typeof poolId === 'string' ? Principal.fromText(poolId) : poolId,
           );
         } catch (error) {

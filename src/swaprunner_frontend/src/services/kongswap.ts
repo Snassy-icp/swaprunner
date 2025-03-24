@@ -102,6 +102,7 @@ export interface ExecutionResult {
   success: boolean;
   error?: string;
   txId?: string;
+  amountOut?: bigint;
 }
 
 export class KongSwapService {
@@ -449,19 +450,22 @@ export class KongSwapService {
           console.log('Kong swap succeeded with tx_id:', result.Ok.tx_id.toString());
           return { 
             success: true, 
-            txId: result.Ok.tx_id.toString() 
+            txId: result.Ok.tx_id.toString(), 
+            amountOut: result.Ok.receive_amount.toString()
           };
         } else if ('Err' in result) {
           console.error('Kong swap failed with error:', result.Err);
           return { 
             success: false, 
-            error: result.Err || 'Unknown error during swap' 
+            error: result.Err || 'Unknown error during swap',
+            amountOut: BigInt(0)
           };
         } else {
           console.error('Unexpected Kong swap result format:', JSON.stringify(result));
           return { 
             success: false, 
-            error: 'Unexpected response format from Kong' 
+            error: 'Unexpected response format from Kong',
+            amountOut: BigInt(0)
           };
         }
       } catch (swapError: any) {
@@ -472,7 +476,8 @@ export class KongSwapService {
       console.error('Kong swap error:', error);
       return { 
         success: false, 
-        error: error?.message || 'Unknown error during Kong swap' 
+        error: error?.message || 'Unknown error during Kong swap',
+        amountOut: BigInt(0)
       };
     }
   }
