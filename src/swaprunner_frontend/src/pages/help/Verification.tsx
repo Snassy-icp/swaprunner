@@ -108,6 +108,28 @@ export const Verification: React.FC = () => {
           </ul>
         </section>
 
+        <section>
+          <h2>Canister Hashes</h2>
+          <p>Our current canister module hashes:</p>
+          <div className="code-block">
+            {isLoading ? (
+              <p>Fetching current canister hashes...</p>
+            ) : error ? (
+              <p className="error">{error}</p>
+            ) : (
+              <>
+                <p>Current frontend hash:</p>
+                <pre>
+                  <code>{frontendHash}</code>
+                </pre>
+                <p>Current backend hash:</p>
+                <pre>
+                  <code>{backendHash}</code>
+                </pre>
+              </>
+            )}
+          </div>
+        </section>
 
         <section>
           <h2>How to Verify the Code</h2>
@@ -163,25 +185,6 @@ export const Verification: React.FC = () => {
             The following hashes are the current hashes of the canisters.
           </p>
 
-          <h3>Live Canister Verification</h3>
-          <div className="code-block">
-            {isLoading ? (
-              <p>Fetching current canister hashes...</p>
-            ) : error ? (
-              <p className="error">{error}</p>
-            ) : (
-              <>
-                <p>Current frontend hash:</p>
-                <pre>
-                  <code>{frontendHash}</code>
-                </pre>
-                <p>Current backend hash:</p>
-                <pre>
-                  <code>{backendHash}</code>
-                </pre>
-              </>
-            )}
-          </div>
 
           <h3>Method 1: Using IC Dashboard</h3>
           <p>
