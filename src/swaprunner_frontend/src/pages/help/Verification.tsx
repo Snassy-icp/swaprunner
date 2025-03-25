@@ -96,7 +96,7 @@ export const Verification: React.FC = () => {
 
         <section>
           <h2>Source Code</h2>
-          <p>Our source code can be found and verified on <a href="https://github.com/swaprunner/swaprunner" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
+          <p>Our source code can be found and verified on <a href="https://github.com/Snassy-Icp/swaprunner" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
         </section>
 
         <section>
@@ -182,8 +182,28 @@ export const Verification: React.FC = () => {
               </>
             )}
           </div>
-          
-          <h3>Method 1: Using DFX Command Line</h3>
+
+          <h3>Method 1: Using IC Dashboard</h3>
+          <p>
+            You can use the IC Dashboard website:
+          </p>
+          <ol>
+            <li>Visit the frontend canister at:<br/>
+              <a href={`https://dashboard.internetcomputer.org/canister/${process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}`}
+                 target="_blank" rel="noopener noreferrer">
+                dashboard.internetcomputer.org/canister/{process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}
+              </a>
+            </li>
+            <li>Visit the backend canister at:<br/>
+              <a href={`https://dashboard.internetcomputer.org/canister/${process.env.CANISTER_ID_SWAPRUNNER_BACKEND}`}
+                 target="_blank" rel="noopener noreferrer">
+                dashboard.internetcomputer.org/canister/{process.env.CANISTER_ID_SWAPRUNNER_BACKEND}
+              </a>
+            </li>
+            <li>Look for the "Module hash" field on each page</li>
+          </ol>
+
+          <h3>Method 2: Using DFX Command Line</h3>
           <p>
             If you have the IC SDK installed, you can use the dfx command line tool. Run these commands:
           </p>
@@ -211,30 +231,50 @@ Module hash: ${backendHash}`}
             </pre>
           </div>
 
-          <h3>Method 2: Using IC Dashboard</h3>
-          <p>
-            For a more user-friendly approach, you can use the IC Dashboard website:
-          </p>
-          <ol>
-            <li>Visit the frontend canister at:<br/>
-              <a href={`https://dashboard.internetcomputer.org/canister/${process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}`}
-                 target="_blank" rel="noopener noreferrer">
-                dashboard.internetcomputer.org/canister/{process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}
-              </a>
-            </li>
-            <li>Visit the backend canister at:<br/>
-              <a href={`https://dashboard.internetcomputer.org/canister/${process.env.CANISTER_ID_SWAPRUNNER_BACKEND}`}
-                 target="_blank" rel="noopener noreferrer">
-                dashboard.internetcomputer.org/canister/{process.env.CANISTER_ID_SWAPRUNNER_BACKEND}
-              </a>
-            </li>
-            <li>Look for the "Module hash" field on each page</li>
-          </ol>
         </section>
 
         <section>
           <h2>Step 2: Matching Source Code</h2>
-          <p>Coming soon...</p>
+          <p>
+            To verify that the deployed code matches our source code, you'll need to:
+            1. Get the source code
+            2. Build it
+            3. Calculate the hash
+          </p>
+
+          <h3>Getting and Building the Source</h3>
+          <pre>
+            <code>
+{`# Clone the repository
+git clone https://github.com/Snassy-Icp/swaprunner.git
+cd swaprunner
+
+# Install dependencies
+npm install
+
+# Build the canisters
+dfx build --network ic`}
+            </code>
+          </pre>
+
+          <h3>Calculating the Hash</h3>
+          <p>Install the IC WebAssembly tool:</p>
+          <pre>
+            <code>cargo install ic-wasm</code>
+          </pre>
+
+          <p>Calculate hashes:</p>
+          <pre>
+            <code>
+{`# Frontend hash
+ic-wasm .dfx/ic/canisters/swaprunner_frontend/swaprunner_frontend.wasm metadata hash
+
+# Backend hash
+ic-wasm .dfx/ic/canisters/swaprunner_backend/swaprunner_backend.wasm metadata hash`}
+            </code>
+          </pre>
+
+          <p>These hashes should match the live canister hashes shown above.</p>
         </section>
 
         <section>
