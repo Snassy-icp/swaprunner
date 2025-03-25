@@ -230,6 +230,7 @@ Module hash: ${backendHash}`}
             </li>
             <li>Look for the "Module hash" field on each page</li>
           </ol>
+        </section>
 
         <section>
           <h2>Step 2: Matching Source Code</h2>
