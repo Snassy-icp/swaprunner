@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FiUser, FiLogIn, FiChevronDown, FiChevronUp, FiSettings, FiBarChart2 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
+import { usePool } from '../contexts/PoolContext';
 import '../styles/Me.css';
 
 interface CollapsibleSectionProps {
@@ -41,6 +42,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 
 export const Me: React.FC = () => {
   const { isAuthenticated, principal, login } = useAuth();
+  const { keepTokensInPool, setKeepTokensInPool } = usePool();
 
   if (!isAuthenticated || !principal) {
     return (
@@ -72,7 +74,23 @@ export const Me: React.FC = () => {
 
         <CollapsibleSection title="Settings" icon={<FiSettings />} defaultExpanded={false}>
           <div className="settings-display">
-            <p className="placeholder-text">Settings coming soon...</p>
+            <div className="setting-item">
+              <div className="setting-info">
+                <label htmlFor="keepTokensInPool">Keep tokens in ICPSwap Pool</label>
+                <p className="setting-description">
+                  When enabled, swapped tokens will remain in the ICPSwap pool for faster future swaps.
+                  You can view and withdraw these balances in the Pools tab.
+                </p>
+              </div>
+              <div className="setting-control">
+                <input
+                  type="checkbox"
+                  id="keepTokensInPool"
+                  checked={keepTokensInPool}
+                  onChange={(e) => setKeepTokensInPool(e.target.checked)}
+                />
+              </div>
+            </div>
           </div>
         </CollapsibleSection>
 
