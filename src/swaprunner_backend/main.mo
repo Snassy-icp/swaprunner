@@ -48,17 +48,17 @@ actor {
         swaps_as_input_icpswap: Nat;
         swaps_as_input_kong: Nat;
         swaps_as_input_split: Nat;
-        volume_out_e8s_icpswap: Nat;
-        volume_out_e8s_kong: Nat;
-        volume_out_e8s_split: Nat;
+        input_volume_e8s_icpswap: Nat;  // Volume sent when used as input
+        input_volume_e8s_kong: Nat;
+        input_volume_e8s_split: Nat;
 
         // Output stats by swap type
         swaps_as_output_icpswap: Nat;
         swaps_as_output_kong: Nat;
         swaps_as_output_split: Nat;
-        volume_in_e8s_icpswap: Nat;
-        volume_in_e8s_kong: Nat;
-        volume_in_e8s_split: Nat;
+        output_volume_e8s_icpswap: Nat;  // Volume received when used as output
+        output_volume_e8s_kong: Nat;
+        output_volume_e8s_split: Nat;
 
         // Other operations (unchanged)
         total_sends: Nat;
@@ -836,15 +836,15 @@ actor {
                     swaps_as_input_icpswap = 0;
                     swaps_as_input_kong = 0;
                     swaps_as_input_split = 0;
-                    volume_out_e8s_icpswap = 0;
-                    volume_out_e8s_kong = 0;
-                    volume_out_e8s_split = 0;
+                    input_volume_e8s_icpswap = 0;
+                    input_volume_e8s_kong = 0;
+                    input_volume_e8s_split = 0;
                     swaps_as_output_icpswap = 0;
                     swaps_as_output_kong = 0;
                     swaps_as_output_split = 0;
-                    volume_in_e8s_icpswap = 0;
-                    volume_in_e8s_kong = 0;
-                    volume_in_e8s_split = 0;
+                    output_volume_e8s_icpswap = 0;
+                    output_volume_e8s_kong = 0;
+                    output_volume_e8s_split = 0;
                     total_sends = 0;
                     total_deposits = 0;
                     total_withdrawals = 0;
@@ -923,15 +923,15 @@ actor {
             swaps_as_input_icpswap = user_token_in_stats.swaps_as_input_icpswap + 1;
             swaps_as_input_kong = user_token_in_stats.swaps_as_input_kong;
             swaps_as_input_split = user_token_in_stats.swaps_as_input_split;
-            volume_out_e8s_icpswap = user_token_in_stats.volume_out_e8s_icpswap;
-            volume_out_e8s_kong = user_token_in_stats.volume_out_e8s_kong;
-            volume_out_e8s_split = user_token_in_stats.volume_out_e8s_split;
+            input_volume_e8s_icpswap = user_token_in_stats.input_volume_e8s_icpswap + amount_in_e8s;
+            input_volume_e8s_kong = user_token_in_stats.input_volume_e8s_kong;
+            input_volume_e8s_split = user_token_in_stats.input_volume_e8s_split;
             swaps_as_output_icpswap = user_token_in_stats.swaps_as_output_icpswap;
             swaps_as_output_kong = user_token_in_stats.swaps_as_output_kong;
             swaps_as_output_split = user_token_in_stats.swaps_as_output_split;
-            volume_in_e8s_icpswap = user_token_in_stats.volume_in_e8s_icpswap + amount_in_e8s;
-            volume_in_e8s_kong = user_token_in_stats.volume_in_e8s_kong;
-            volume_in_e8s_split = user_token_in_stats.volume_in_e8s_split;
+            output_volume_e8s_icpswap = user_token_in_stats.output_volume_e8s_icpswap;
+            output_volume_e8s_kong = user_token_in_stats.output_volume_e8s_kong;
+            output_volume_e8s_split = user_token_in_stats.output_volume_e8s_split;
             total_sends = user_token_in_stats.total_sends;
             total_deposits = user_token_in_stats.total_deposits;
             total_withdrawals = user_token_in_stats.total_withdrawals;
@@ -943,15 +943,15 @@ actor {
             swaps_as_input_icpswap = user_token_out_stats.swaps_as_input_icpswap;
             swaps_as_input_kong = user_token_out_stats.swaps_as_input_kong;
             swaps_as_input_split = user_token_out_stats.swaps_as_input_split;
-            volume_out_e8s_icpswap = user_token_out_stats.volume_out_e8s_icpswap;
-            volume_out_e8s_kong = user_token_out_stats.volume_out_e8s_kong;
-            volume_out_e8s_split = user_token_out_stats.volume_out_e8s_split;
+            input_volume_e8s_icpswap = user_token_out_stats.input_volume_e8s_icpswap;
+            input_volume_e8s_kong = user_token_out_stats.input_volume_e8s_kong;
+            input_volume_e8s_split = user_token_out_stats.input_volume_e8s_split;
             swaps_as_output_icpswap = user_token_out_stats.swaps_as_output_icpswap + 1;
             swaps_as_output_kong = user_token_out_stats.swaps_as_output_kong;
             swaps_as_output_split = user_token_out_stats.swaps_as_output_split;
-            volume_in_e8s_icpswap = user_token_out_stats.volume_in_e8s_icpswap + amount_out_e8s;
-            volume_in_e8s_kong = user_token_out_stats.volume_in_e8s_kong;
-            volume_in_e8s_split = user_token_out_stats.volume_in_e8s_split;
+            output_volume_e8s_icpswap = user_token_out_stats.output_volume_e8s_icpswap + amount_out_e8s;
+            output_volume_e8s_kong = user_token_out_stats.output_volume_e8s_kong;
+            output_volume_e8s_split = user_token_out_stats.output_volume_e8s_split;
             total_sends = user_token_out_stats.total_sends;
             total_deposits = user_token_out_stats.total_deposits;
             total_withdrawals = user_token_out_stats.total_withdrawals;
@@ -1051,7 +1051,7 @@ actor {
             total_deposits = user_stats.total_deposits;
             total_withdrawals = user_stats.total_withdrawals;
         });
-
+        
         // Add tokens to user's wallet
         if (token_in != Principal.toText(ICP_PRINCIPAL)) {
             var userTokens = switch (userWalletTokens.get(user)) {
