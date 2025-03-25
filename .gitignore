@@ -21,7 +21,6 @@ node_modules/
 dist/
 .svelte-kit/
 canister_ids.json
-canister_ids.prod.json
 package-lock.json
 pm/
 spec/ref/
