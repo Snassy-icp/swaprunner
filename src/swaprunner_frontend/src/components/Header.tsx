@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiPercent, FiRepeat, FiCreditCard, FiDroplet, FiList, FiBarChart2 } from 'react-icons/fi';
+import { FiPercent, FiRepeat, FiCreditCard, FiDroplet, FiList, FiBarChart2, FiUser } from 'react-icons/fi';
 import { isFeatureEnabled } from '../config/featureFlags';
 import { SlippageSettings } from './SlippageSettings';
 import { useSlippage } from '../contexts/SlippageContext';
@@ -47,6 +47,14 @@ export const Header: React.FC = () => {
         >
           <FiList />
           {location.pathname === '/transactions' && <span>Transactions</span>}
+        </button>
+        <button 
+          className={`tab ${location.pathname === '/me' ? 'active' : ''}`}
+          onClick={() => navigate('/me')}
+          title="View your profile"
+        >
+          <FiUser />
+          {location.pathname === '/me' && <span>Me</span>}
         </button>
         <button 
           className={`tab ${location.pathname === '/statistics' ? 'active' : ''}`}

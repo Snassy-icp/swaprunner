@@ -1,0 +1,45 @@
+.me-page {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0 0 20px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.me-content {
+  padding: 20px;
+}
+
+.me-content h2 {
+  margin: 0 0 20px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.principal-display {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.principal-display label {
+  display: block;
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.principal-value {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 14px;
+  color: var(--text-primary);
+  word-break: break-all;
+  background: var(--input-bg);
+  padding: 12px;
+  border-radius: 8px;
+} 

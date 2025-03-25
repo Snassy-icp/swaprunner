@@ -142,6 +142,18 @@ const FixedHeader: React.FC = () => {
               Transactions
             </a>
             <a 
+              href="/me"
+              className={`hamburger-item ${location.pathname === '/me' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/me');
+                setShowHamburgerMenu(false);
+              }}
+            >
+              <FiUser />
+              Me
+            </a>
+            <a 
               href="/statistics"
               className={`hamburger-item ${location.pathname === '/statistics' ? 'active' : ''}`}
               onClick={(e) => {

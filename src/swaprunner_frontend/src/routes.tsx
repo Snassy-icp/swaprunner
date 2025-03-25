@@ -12,6 +12,7 @@ import { useSlippage } from './contexts/SlippageContext';
 import { PoolsPage } from './pages/Pools';
 import { Statistics } from './pages/Statistics';
 import { Verification } from './pages/help/Verification';
+import { Me } from './pages/Me';
 
 // Wrapper component to handle URL parameters
 const SwapInterfaceWithParams: React.FC = () => {
@@ -48,6 +49,7 @@ export const AppRoutes: React.FC = () => {
       <Route path="/wallet" element={<WalletPage />} />
       <Route path="/pools" element={<PoolsPage />} />
       <Route path="/transactions" element={<Transactions />} />
+      <Route path="/me" element={<Me />} />
       <Route path="/statistics" element={<Statistics />} />
       <Route path="/admin" element={<AdminPage />} />
       <Route path="/admin/tokens" element={<AdminTokensPage />} />
