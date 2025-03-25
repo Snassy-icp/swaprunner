@@ -40,6 +40,29 @@ actor {
     // Wallet feature: Stable storage for user wallet tokens
     private stable var userWalletTokenEntries : [(Principal, [Nat16])] = [];
 
+    // Add after other type definitions but before stable storage declarations
+
+    // User-Token statistics type
+    type UserTokenStats = {
+        swaps_as_input: Nat;          // Times used as input token
+        swaps_as_output: Nat;         // Times used as output token
+        volume_in_e8s: Nat;           // Volume received
+        volume_out_e8s: Nat;          // Volume sent
+        total_sends: Nat;             // Direct sends
+        total_deposits: Nat;          // DEX deposits
+        total_withdrawals: Nat;       // DEX withdrawals
+    };
+
+    // Add with other stable storage declarations
+    private stable var userTokenStatsEntries : [(Text, UserTokenStats)] = [];
+
+    // Add with other runtime maps
+    private var userTokenStats = HashMap.fromIter<Text, UserTokenStats>(
+        userTokenStatsEntries.vals(),
+        0,
+        Text.equal,
+        Text.hash
+    );
 
     // Stable storage for statistics
     private stable var globalStats : GlobalStats = {
@@ -413,6 +436,7 @@ actor {
         poolMetadataEntries := Iter.toArray(poolMetadata.entries());
         userPoolEntries := Iter.toArray(userPools.entries());
         userIndexEntries := Iter.toArray(principalToIndex.entries());
+        userTokenStatsEntries := Iter.toArray(userTokenStats.entries());
     };
 
     system func postupgrade() {
@@ -427,6 +451,7 @@ actor {
         userWalletTokenEntries := [];        
         poolMetadataEntries :=[];
         userPoolEntries := [];
+        userTokenStatsEntries := [];
 
         principalToIndex := HashMap.fromIter<Principal, Nat16>(userIndexEntries.vals(), 0, Principal.equal, Principal.hash);
         indexToPrincipal := HashMap.HashMap<Nat16, Principal>(0, Nat16.equal, func(x : Nat16) : Hash.Hash { Hash.hash(Nat16.toNat(x)) });
