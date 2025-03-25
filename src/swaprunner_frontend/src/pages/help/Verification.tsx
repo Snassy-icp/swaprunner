@@ -27,12 +27,60 @@ export const Verification: React.FC = () => {
 
         <section>
           <h2>How to Verify the Code</h2>
-          <p>You can verify SwapRunner's code in several ways:</p>
+          <p>
+            Verifying a dApp on the Internet Computer involves three main steps to ensure 
+            what you're interacting with is exactly what's in the public source code:
+          </p>
+
+          <h3>Overview of Verification Steps</h3>
+          <ol>
+            <li>
+              <strong>Verify Canister Code</strong>: First, we'll get the cryptographic hashes of the 
+              currently running frontend and backend canisters. These hashes uniquely identify the exact 
+              code that's running on the Internet Computer.
+            </li>
+            <li>
+              <strong>Match with Source Code</strong>: Next, we'll verify these hashes match the code 
+              in our public GitHub repository. This ensures the deployed code matches our open source code.
+            </li>
+            <li>
+              <strong>Verify Domain Connection</strong>: Finally, we'll verify that swaprunner.com is 
+              actually served by our verified frontend canister, ensuring you're interacting with the 
+              legitimate application.
+            </li>
+          </ol>
+
+          <h3>Why These Steps Matter</h3>
+          <p>
+            This verification process ensures:
+          </p>
           <ul>
-            <li>Visit our GitHub repository to review the source code directly</li>
-            <li>Check the canister ID on the IC Dashboard to verify the deployed code</li>
-            <li>Use the IC Scanner to inspect our canisters and verify they match the public source code</li>
+            <li>The code running on the IC matches our public source code</li>
+            <li>No unauthorized changes have been made to the deployed canisters</li>
+            <li>You're connecting to the legitimate SwapRunner application</li>
+            <li>The website domain hasn't been compromised or redirected</li>
           </ul>
+
+          <p>
+            In the following sections, we'll walk through each step in detail, providing commands, 
+            expected outputs, and alternative methods for verification. Whether you're using the IC's 
+            command-line tools or web interfaces, we'll guide you through the entire process.
+          </p>
+        </section>
+
+        <section>
+          <h2>Step 1: Verifying Canister Code</h2>
+          <p>Coming soon...</p>
+        </section>
+
+        <section>
+          <h2>Step 2: Matching Source Code</h2>
+          <p>Coming soon...</p>
+        </section>
+
+        <section>
+          <h2>Step 3: Domain Verification</h2>
+          <p>Coming soon...</p>
         </section>
 
         <section>
