@@ -1304,6 +1304,26 @@ actor {
             total_deposits = user_stats.total_deposits;
             total_withdrawals = user_stats.total_withdrawals;
         });
+
+        // Update user-token stats for the sent token
+        let user_token_stats = getOrCreateUserTokenStats(user, token);
+        userTokenStats.put(getUserTokenStatsKey(user, token), {
+            swaps_as_input_icpswap = user_token_stats.swaps_as_input_icpswap;
+            swaps_as_input_kong = user_token_stats.swaps_as_input_kong;
+            swaps_as_input_split = user_token_stats.swaps_as_input_split;
+            input_volume_e8s_icpswap = user_token_stats.input_volume_e8s_icpswap;
+            input_volume_e8s_kong = user_token_stats.input_volume_e8s_kong;
+            input_volume_e8s_split = user_token_stats.input_volume_e8s_split;
+            swaps_as_output_icpswap = user_token_stats.swaps_as_output_icpswap;
+            swaps_as_output_kong = user_token_stats.swaps_as_output_kong;
+            swaps_as_output_split = user_token_stats.swaps_as_output_split;
+            output_volume_e8s_icpswap = user_token_stats.output_volume_e8s_icpswap;
+            output_volume_e8s_kong = user_token_stats.output_volume_e8s_kong;
+            output_volume_e8s_split = user_token_stats.output_volume_e8s_split;
+            total_sends = user_token_stats.total_sends + 1;
+            total_deposits = user_token_stats.total_deposits;
+            total_withdrawals = user_token_stats.total_withdrawals;
+        });
     };
 
     // Record completed deposit
@@ -1350,6 +1370,26 @@ actor {
             total_sends = user_stats.total_sends;
             total_deposits = user_stats.total_deposits + 1;
             total_withdrawals = user_stats.total_withdrawals;
+        });
+
+        // Update user-token stats for the sent token
+        let user_token_stats = getOrCreateUserTokenStats(user, token);
+        userTokenStats.put(getUserTokenStatsKey(user, token), {
+            swaps_as_input_icpswap = user_token_stats.swaps_as_input_icpswap;
+            swaps_as_input_kong = user_token_stats.swaps_as_input_kong;
+            swaps_as_input_split = user_token_stats.swaps_as_input_split;
+            input_volume_e8s_icpswap = user_token_stats.input_volume_e8s_icpswap;
+            input_volume_e8s_kong = user_token_stats.input_volume_e8s_kong;
+            input_volume_e8s_split = user_token_stats.input_volume_e8s_split;
+            swaps_as_output_icpswap = user_token_stats.swaps_as_output_icpswap;
+            swaps_as_output_kong = user_token_stats.swaps_as_output_kong;
+            swaps_as_output_split = user_token_stats.swaps_as_output_split;
+            output_volume_e8s_icpswap = user_token_stats.output_volume_e8s_icpswap;
+            output_volume_e8s_kong = user_token_stats.output_volume_e8s_kong;
+            output_volume_e8s_split = user_token_stats.output_volume_e8s_split;
+            total_sends = user_token_stats.total_sends;
+            total_deposits = user_token_stats.total_deposits + 1;
+            total_withdrawals = user_token_stats.total_withdrawals;
         });
 
         // Add pools to user's tracked pools
@@ -1402,6 +1442,25 @@ actor {
             total_withdrawals = user_stats.total_withdrawals + 1;
         });
 
+        // Update user-token stats for the sent token
+        let user_token_stats = getOrCreateUserTokenStats(user, token);
+        userTokenStats.put(getUserTokenStatsKey(user, token), {
+            swaps_as_input_icpswap = user_token_stats.swaps_as_input_icpswap;
+            swaps_as_input_kong = user_token_stats.swaps_as_input_kong;
+            swaps_as_input_split = user_token_stats.swaps_as_input_split;
+            input_volume_e8s_icpswap = user_token_stats.input_volume_e8s_icpswap;
+            input_volume_e8s_kong = user_token_stats.input_volume_e8s_kong;
+            input_volume_e8s_split = user_token_stats.input_volume_e8s_split;
+            swaps_as_output_icpswap = user_token_stats.swaps_as_output_icpswap;
+            swaps_as_output_kong = user_token_stats.swaps_as_output_kong;
+            swaps_as_output_split = user_token_stats.swaps_as_output_split;
+            output_volume_e8s_icpswap = user_token_stats.output_volume_e8s_icpswap;
+            output_volume_e8s_kong = user_token_stats.output_volume_e8s_kong;
+            output_volume_e8s_split = user_token_stats.output_volume_e8s_split;
+            total_sends = user_token_stats.total_sends;
+            total_deposits = user_token_stats.total_deposits;
+            total_withdrawals = user_token_stats.total_withdrawals + 1;
+        });
         // Add pools to user's tracked pools
         ignore await add_pool_impl(user, pool_id);
     };
