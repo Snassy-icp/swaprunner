@@ -49,8 +49,8 @@
   color: var(--text-secondary);
 }
 
-.section-content {
-  padding: 0 20px 20px 20px;
+.me-page .section-content {
+  padding: 0 0 20px;
 }
 
 .principal-display {

@@ -304,7 +304,6 @@ export const Me: React.FC = () => {
             ) : userTokenStats.length > 0 ? (
               <>
                 <div className="trading-activity">
-                  <h3>Trading Activity</h3>
                   <div className="activity-grid">
                     <div className="activity-card">
                       <h4>Total Swaps</h4>
