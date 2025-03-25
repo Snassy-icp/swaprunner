@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiUser, FiLogIn, FiChevronDown, FiChevronUp, FiSettings, FiBarChart2, FiLoader } from 'react-icons/fi';
+import { FiUser, FiLogIn, FiChevronDown, FiChevronUp, FiSettings, FiBarChart2, FiLoader, FiArrowUp, FiArrowDown } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { usePool } from '../contexts/PoolContext';
 import { statsService, UserTokenStats } from '../services/stats';
@@ -8,6 +8,14 @@ import { TokenMetadata } from '../types/token';
 import { formatTokenAmount } from '../utils/format';
 import { priceService } from '../services/price';
 import '../styles/Me.css';
+
+type SortField = 'token' | 'swaps' | 'volume';
+type SortDirection = 'asc' | 'desc';
+
+interface SortConfig {
+  field: SortField;
+  direction: SortDirection;
+}
 
 interface CollapsibleSectionProps {
   title: string;
@@ -53,6 +61,7 @@ export const Me: React.FC = () => {
   const [tokenUSDPrices, setTokenUSDPrices] = useState<Record<string, number>>({});
   const [loadingUSDPrices, setLoadingUSDPrices] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'volume', direction: 'desc' });
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -130,6 +139,65 @@ export const Me: React.FC = () => {
     return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
+  const handleSort = (field: SortField) => {
+    setSortConfig(prevConfig => ({
+      field,
+      direction: prevConfig.field === field && prevConfig.direction === 'desc' ? 'asc' : 'desc'
+    }));
+  };
+
+  const getSortedStats = () => {
+    return [...userTokenStats].sort((a, b) => {
+      const [tokenIdA, statsA] = a;
+      const [tokenIdB, statsB] = b;
+
+      const metadataA = tokenMetadata[tokenIdA];
+      const metadataB = tokenMetadata[tokenIdB];
+
+      const multiplier = sortConfig.direction === 'desc' ? -1 : 1;
+
+      switch (sortConfig.field) {
+        case 'token':
+          const symbolA = metadataA?.symbol || tokenIdA;
+          const symbolB = metadataB?.symbol || tokenIdB;
+          return multiplier * symbolA.localeCompare(symbolB);
+
+        case 'swaps':
+          const swapsA = Number(statsA.swaps_as_input_icpswap) + 
+                        Number(statsA.swaps_as_input_kong) + 
+                        Number(statsA.swaps_as_input_split) +
+                        Number(statsA.swaps_as_output_icpswap) + 
+                        Number(statsA.swaps_as_output_kong) + 
+                        Number(statsA.swaps_as_output_split);
+          const swapsB = Number(statsB.swaps_as_input_icpswap) + 
+                        Number(statsB.swaps_as_input_kong) + 
+                        Number(statsB.swaps_as_input_split) +
+                        Number(statsB.swaps_as_output_icpswap) + 
+                        Number(statsB.swaps_as_output_kong) + 
+                        Number(statsB.swaps_as_output_split);
+          return multiplier * (swapsA - swapsB);
+
+        case 'volume':
+          const volumeA = BigInt(statsA.input_volume_e8s_icpswap) + 
+                         BigInt(statsA.input_volume_e8s_kong) + 
+                         BigInt(statsA.input_volume_e8s_split) +
+                         BigInt(statsA.output_volume_e8s_icpswap) + 
+                         BigInt(statsA.output_volume_e8s_kong) + 
+                         BigInt(statsA.output_volume_e8s_split);
+          const volumeB = BigInt(statsB.input_volume_e8s_icpswap) + 
+                         BigInt(statsB.input_volume_e8s_kong) + 
+                         BigInt(statsB.input_volume_e8s_split) +
+                         BigInt(statsB.output_volume_e8s_icpswap) + 
+                         BigInt(statsB.output_volume_e8s_kong) + 
+                         BigInt(statsB.output_volume_e8s_split);
+          return multiplier * (volumeA > volumeB ? 1 : volumeA < volumeB ? -1 : 0);
+
+        default:
+          return 0;
+      }
+    });
+  };
+
   if (!isAuthenticated || !principal) {
     return (
       <div className="me-page">
@@ -153,6 +221,13 @@ export const Me: React.FC = () => {
       <FiLoader />
     </div>
   );
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortConfig.field !== field) {
+      return null;
+    }
+    return sortConfig.direction === 'desc' ? <FiArrowDown className="sort-icon" /> : <FiArrowUp className="sort-icon" />;
+  };
 
   return (
     <div className="me-page">
@@ -195,13 +270,19 @@ export const Me: React.FC = () => {
                 <table>
                   <thead>
                     <tr>
-                      <th>Token</th>
-                      <th>Total Swaps</th>
-                      <th>Total Volume</th>
+                      <th onClick={() => handleSort('token')} className="sortable">
+                        Token <SortIcon field="token" />
+                      </th>
+                      <th onClick={() => handleSort('swaps')} className="sortable">
+                        Total Swaps <SortIcon field="swaps" />
+                      </th>
+                      <th onClick={() => handleSort('volume')} className="sortable">
+                        Total Volume <SortIcon field="volume" />
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {userTokenStats.map(([tokenId, stats]) => {
+                    {getSortedStats().map(([tokenId, stats]) => {
                       const metadata = tokenMetadata[tokenId];
                       const totalSwaps = Number(stats.swaps_as_input_icpswap) + 
                                        Number(stats.swaps_as_input_kong) + 
