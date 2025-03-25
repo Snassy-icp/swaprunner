@@ -13,7 +13,7 @@ export const Verification: React.FC = () => {
   const fetchModuleHash = async (canisterId: string) => {
     try {
       const response = await fetch(
-        `https://dashboard.internetcomputer.org/api/v3/canisters/${canisterId}`
+        `https://dashboard.internetcomputer.org/canister/${canisterId}`
       );
       
       if (!response.ok) {
