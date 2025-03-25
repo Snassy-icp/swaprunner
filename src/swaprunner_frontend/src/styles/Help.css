@@ -82,6 +82,7 @@
   font-size: 14px;
   line-height: 1.6;
   color: var(--text-secondary);
+  word-break: break-all;
 }
 
 .help-content a {
@@ -148,6 +149,7 @@
   overflow-x: auto;
   background: #13141b;
   border-radius: 4px;
+  position: relative;
 }
 
 .code-block code {
@@ -186,4 +188,33 @@
 .code-block .error {
   color: #ff6b6b;
   font-weight: 500;
+}
+
+.copy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 4px;
+  margin: 0 0 8px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.copy-button:hover {
+  background: var(--panel-bg);
+  border-color: var(--text-secondary);
+}
+
+/* Style for hash values */
+.help-content li:has(.copy-button) {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.help-content li .copy-button {
+  flex-shrink: 0;
 } 

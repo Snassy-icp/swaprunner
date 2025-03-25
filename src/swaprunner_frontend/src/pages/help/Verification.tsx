@@ -5,6 +5,7 @@ import '../../styles/Help.css';
 import { CanisterStatus, HttpAgent } from '@dfinity/agent';
 import { Principal } from '@dfinity/principal';
 import { Path, SubnetStatus } from '@dfinity/agent/lib/cjs/canisterStatus';
+import { CopyButton } from '../../components/CopyButton';
 
 export const Verification: React.FC = () => {
   const navigate = useNavigate();
@@ -101,34 +102,38 @@ export const Verification: React.FC = () => {
 
         <section>
           <h2>Canister IDs</h2>
-          <p>Our main canisters can be verified at these addresses:</p>
+          <p>Our canisters have the following principal IDs:</p>
           <ul>
-            <li>Frontend Canister: {process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}</li>
-            <li>Backend Canister: {process.env.CANISTER_ID_SWAPRUNNER_BACKEND}</li>
+            <li>
+              Frontend Canister: {process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}
+              <CopyButton text={process.env.CANISTER_ID_SWAPRUNNER_FRONTEND!} />
+            </li>
+            <li>
+              Backend Canister: {process.env.CANISTER_ID_SWAPRUNNER_BACKEND}
+              <CopyButton text={process.env.CANISTER_ID_SWAPRUNNER_BACKEND!} />
+            </li>
           </ul>
         </section>
 
         <section>
           <h2>Canister Hashes</h2>
-          <p>Our current canister module hashes:</p>
-          <div className="code-block">
-            {isLoading ? (
-              <p>Fetching current canister hashes...</p>
-            ) : error ? (
-              <p className="error">{error}</p>
-            ) : (
-              <>
-                <p>Current frontend hash:</p>
-                <pre>
-                  <code>{frontendHash}</code>
-                </pre>
-                <p>Current backend hash:</p>
-                <pre>
-                  <code>{backendHash}</code>
-                </pre>
-              </>
-            )}
-          </div>
+          <p>Our canisters currently have the following module hashes:</p>
+          {isLoading ? (
+            <p>Fetching current canister hashes...</p>
+          ) : error ? (
+            <p className="error">{error}</p>
+          ) : (
+            <ul>
+              <li>
+                Frontend Hash: {frontendHash}
+                <CopyButton text={frontendHash!} />
+              </li>
+              <li>
+                Backend Hash: {backendHash}
+                <CopyButton text={backendHash!} />
+              </li>
+            </ul>
+          )}
         </section>
 
         <section>
