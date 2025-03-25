@@ -153,6 +153,18 @@ const FixedHeader: React.FC = () => {
               <FiBarChart2 />
               Statistics
             </a>
+            <a 
+              href="/help"
+              className={`hamburger-item ${location.pathname === '/help' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/help');
+                setShowHamburgerMenu(false);
+              }}
+            >
+              <FiHelpCircle />
+              Help
+            </a>
             <button 
               className="hamburger-item"
               onClick={() => {
