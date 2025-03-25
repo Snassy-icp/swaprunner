@@ -281,7 +281,49 @@ dfx canister status swaprunner_backend`}
 
         <section>
           <h2>Step 3: Domain Verification</h2>
-          <p>Coming soon...</p>
+          <p>
+            To verify that swaprunner.com is actually served by our verified frontend canister, 
+            we can check the DNS records. This ensures you're connecting to the legitimate canister 
+            and not a malicious redirect.
+          </p>
+          
+          <h3>Verifying the CNAME Record</h3>
+          <p>First, verify that swaprunner.com points to the IC's infrastructure:</p>
+          <div className="code-block">
+            <pre>
+              <code>
+{`$ dig CNAME swaprunner.com
+
+;; ANSWER SECTION:
+swaprunner.com.         6031    IN      CNAME   swaprunner.com.icp1.io.`}
+              </code>
+            </pre>
+          </div>
+          <p>
+            The CNAME record should point to <code>icp1.io</code>, which is the Internet Computer's 
+            official domain.
+          </p>
+          
+          <h3>Verifying the Canister Binding</h3>
+          <p>
+            Next, verify that the domain is bound to our frontend canister by checking 
+            the TXT record for our canister ID:
+          </p>
+          <div className="code-block">
+            <pre>
+              <code>
+{`$ dig TXT _${process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}.swaprunner.com
+
+;; QUESTION SECTION:
+;_${process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}.swaprunner.com. IN TXT`}
+              </code>
+            </pre>
+          </div>
+          <p>
+            This verifies that swaprunner.com is properly bound to our verified frontend canister 
+            ({process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}), ensuring you're interacting with the 
+            legitimate application.
+          </p>
         </section>
 
         <section>
