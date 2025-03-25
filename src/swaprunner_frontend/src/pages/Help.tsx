@@ -158,6 +158,13 @@ export const Help: React.FC = () => {
           </ul>
         </section>
         
+        <section>
+          <h2>Verification</h2>
+          <p>
+            SwapRunner is a 100% on-chain dApp that can be verified for security and transparency.{' '}
+            <a href="/help/verification">Learn more about verification</a>
+          </p>
+        </section>
       </div>
     </div>
   );

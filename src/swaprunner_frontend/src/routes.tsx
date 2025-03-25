@@ -11,6 +11,7 @@ import { Transactions } from './pages/Transactions';
 import { useSlippage } from './contexts/SlippageContext';
 import { PoolsPage } from './pages/Pools';
 import { Statistics } from './pages/Statistics';
+import { Verification } from './pages/help/Verification';
 
 // Wrapper component to handle URL parameters
 const SwapInterfaceWithParams: React.FC = () => {
@@ -52,6 +53,7 @@ export const AppRoutes: React.FC = () => {
       <Route path="/admin/tokens" element={<AdminTokensPage />} />
       <Route path="/admin/prices" element={<AdminPricesPage />} />
       <Route path="/admin/stats" element={<Stats />} />
+      <Route path="/help/verification" element={<Verification />} />
     </Routes>
   );
 }; 
