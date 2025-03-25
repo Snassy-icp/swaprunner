@@ -152,22 +152,22 @@ export const Verification: React.FC = () => {
             <p>For the frontend canister:</p>
             <pre>
               <code>
-{`$ dfx canister --network ic info tu64e-uiaaa-aaaaj-az4vq-cai
+{`$ dfx canister --network ic info ${process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}
 Please enter the passphrase for your identity: [hidden]
 Decryption complete.
 Controllers: d7zib-qo5mr-qzmpb-dtyof-l7yiu-pu52k-wk7ng-cbm3n-ffmys-crbkz-nae
-Module hash: 0x865eb25df5a6d857147e078bb33c727797957247f7af2635846d65c5397b36a6`}
+Module hash: ${frontendHash}`}
               </code>
             </pre>
 
             <p>For the backend canister:</p>
             <pre>
               <code>
-{`$ dfx canister --network ic info tt72q-zqaaa-aaaaj-az4va-cai
+{`$ dfx canister --network ic info ${process.env.CANISTER_ID_SWAPRUNNER_BACKEND}
 Please enter the passphrase for your identity: [hidden]
 Decryption complete.
 Controllers: d7zib-qo5mr-qzmpb-dtyof-l7yiu-pu52k-wk7ng-cbm3n-ffmys-crbkz-nae
-Module hash: 0x1af31e2ccc2a7efd03b8c06bd0d23421fff7e87bad090bde4a7157f316cd8e18`}
+Module hash: ${backendHash}`}
               </code>
             </pre>
           </div>
@@ -178,15 +178,15 @@ Module hash: 0x1af31e2ccc2a7efd03b8c06bd0d23421fff7e87bad090bde4a7157f316cd8e18`
           </p>
           <ol>
             <li>Visit the frontend canister at:<br/>
-              <a href="https://dashboard.internetcomputer.org/canister/tu64e-uiaaa-aaaaj-az4vq-cai" 
+              <a href={`https://dashboard.internetcomputer.org/canister/${process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}`}
                  target="_blank" rel="noopener noreferrer">
-                dashboard.internetcomputer.org/canister/tu64e-uiaaa-aaaaj-az4vq-cai
+                dashboard.internetcomputer.org/canister/{process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}
               </a>
             </li>
             <li>Visit the backend canister at:<br/>
-              <a href="https://dashboard.internetcomputer.org/canister/tt72q-zqaaa-aaaaj-az4va-cai" 
+              <a href={`https://dashboard.internetcomputer.org/canister/${process.env.CANISTER_ID_SWAPRUNNER_BACKEND}`}
                  target="_blank" rel="noopener noreferrer">
-                dashboard.internetcomputer.org/canister/tt72q-zqaaa-aaaaj-az4va-cai
+                dashboard.internetcomputer.org/canister/{process.env.CANISTER_ID_SWAPRUNNER_BACKEND}
               </a>
             </li>
             <li>Look for the "Module hash" field on each page</li>
@@ -199,15 +199,15 @@ Module hash: 0x1af31e2ccc2a7efd03b8c06bd0d23421fff7e87bad090bde4a7157f316cd8e18`
           </p>
           <ol>
             <li>Visit the frontend canister at:<br/>
-              <a href="https://ic.rocks/principal/tu64e-uiaaa-aaaaj-az4vq-cai" 
+              <a href={`https://ic.rocks/principal/${process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}`}
                  target="_blank" rel="noopener noreferrer">
-                ic.rocks/principal/tu64e-uiaaa-aaaaj-az4vq-cai
+                ic.rocks/principal/{process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}
               </a>
             </li>
             <li>Visit the backend canister at:<br/>
-              <a href="https://ic.rocks/principal/tt72q-zqaaa-aaaaj-az4va-cai" 
+              <a href={`https://ic.rocks/principal/${process.env.CANISTER_ID_SWAPRUNNER_BACKEND}`}
                  target="_blank" rel="noopener noreferrer">
-                ic.rocks/principal/tt72q-zqaaa-aaaaj-az4va-cai
+                ic.rocks/principal/{process.env.CANISTER_ID_SWAPRUNNER_BACKEND}
               </a>
             </li>
             <li>Look under the "Canister" tab for the module hash</li>
