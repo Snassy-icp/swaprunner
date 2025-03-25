@@ -220,8 +220,6 @@ export const Verification: React.FC = () => {
             <pre>
               <code>
 {`$ dfx canister --network ic info ${process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}
-Please enter the passphrase for your identity: [hidden]
-Decryption complete.
 Controllers: d7zib-qo5mr-qzmpb-dtyof-l7yiu-pu52k-wk7ng-cbm3n-ffmys-crbkz-nae
 Module hash: ${frontendHash}`}
               </code>
@@ -231,8 +229,6 @@ Module hash: ${frontendHash}`}
             <pre>
               <code>
 {`$ dfx canister --network ic info ${process.env.CANISTER_ID_SWAPRUNNER_BACKEND}
-Please enter the passphrase for your identity: [hidden]
-Decryption complete.
 Controllers: d7zib-qo5mr-qzmpb-dtyof-l7yiu-pu52k-wk7ng-cbm3n-ffmys-crbkz-nae
 Module hash: ${backendHash}`}
               </code>
@@ -276,12 +272,26 @@ dfx deploy`}
           <h3>Checking the Hashes</h3>
           <p>Check the canister hashes:</p>
           <div className="code-block">
-          <pre>
-            <code>
-{`dfx canister status swaprunner_frontend
-dfx canister status swaprunner_backend`}
-            </code>
-          </pre>
+            <p>For the frontend canister:</p>
+            <pre>
+              <code>
+{`$ dfx canister status swaprunner_frontend
+Canister status call result for swaprunner_frontend.
+Status: Running
+...
+Module hash: ${frontendHash}`}
+              </code>
+            </pre>
+            <p>For the backend canister:</p>
+            <pre>
+              <code>
+{`$ dfx canister status swaprunner_backend
+Please enter the passphrase for your identity: [hidden]
+Status: Running
+...
+Module hash: ${backendHash}`}
+              </code>
+            </pre>
           </div>
 
           <p>These hashes should match the live canister hashes shown above.</p>
