@@ -181,4 +181,9 @@
 
 .code-block pre::-webkit-scrollbar-thumb:hover {
   background: #3f4152;
+}
+
+.code-block .error {
+  color: #ff6b6b;
+  font-weight: 500;
 } 

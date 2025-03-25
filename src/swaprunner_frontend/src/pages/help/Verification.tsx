@@ -2,7 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
 import '../../styles/Help.css';
-import { Actor, HttpAgent, AnonymousIdentity } from '@dfinity/agent';
 
 export const Verification: React.FC = () => {
   const navigate = useNavigate();
@@ -13,29 +12,17 @@ export const Verification: React.FC = () => {
 
   const fetchModuleHash = async (canisterId: string) => {
     try {
-      const agent = new HttpAgent({
-        host: 'https://ic0.app',
-        identity: new AnonymousIdentity()
-      });
-
-      const paths = [
-        new TextEncoder().encode('canister'),
-        new TextEncoder().encode(canisterId),
-        new TextEncoder().encode('module_hash')
-      ].map(arr => new Uint8Array(arr).buffer as ArrayBuffer);
-
-      const response: any = await agent.readState(canisterId, {
-        paths: [paths]
-      });
-
-      if (!response || !response.certificate) {
-        throw new Error('Invalid response');
+      const response = await fetch(
+        `https://dashboard.internetcomputer.org/api/v3/canisters/${canisterId}`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch canister data');
       }
 
-      const hashArray = new Uint8Array(response.certificate);
-      return Array.from(hashArray)
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
+      const data = await response.json();
+      return data.moduleHash;
+
     } catch (err) {
       console.error('Error fetching hash:', err);
       throw err;
