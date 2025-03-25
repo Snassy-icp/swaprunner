@@ -42,6 +42,24 @@ export interface UserStatsWithId extends UserStats {
   principal: string;
 }
 
+export interface UserTokenStats {
+  swaps_as_input_icpswap: bigint;
+  swaps_as_input_kong: bigint;
+  swaps_as_input_split: bigint;
+  input_volume_e8s_icpswap: bigint;
+  input_volume_e8s_kong: bigint;
+  input_volume_e8s_split: bigint;
+  swaps_as_output_icpswap: bigint;
+  swaps_as_output_kong: bigint;
+  swaps_as_output_split: bigint;
+  output_volume_e8s_icpswap: bigint;
+  output_volume_e8s_kong: bigint;
+  output_volume_e8s_split: bigint;
+  total_sends: bigint;
+  total_deposits: bigint;
+  total_withdrawals: bigint;
+}
+
 export class StatsService {
   private queryActor: any = null;
 
@@ -336,6 +354,14 @@ export class StatsService {
     const actor = await backendService.getActor();
     const stats = await actor.get_all_token_stats();
     console.log('All token stats:', stats);
+    return stats;
+  }
+
+  async getMyTokenStats(): Promise<[string, UserTokenStats][]> {
+    console.log('Getting user-token stats...');
+    const actor = await backendService.getActor();
+    const stats = await actor.get_my_token_stats();
+    console.log('User-token stats:', stats);
     return stats;
   }
 
