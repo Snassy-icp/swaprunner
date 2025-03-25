@@ -809,6 +809,29 @@ actor {
         }
     };
 
+    // Add after other helper functions but before record methods
+    private func getUserTokenStatsKey(user: Principal, token: Text) : Text {
+        Principal.toText(user) # "_" # token
+    };
+
+    private func getOrCreateUserTokenStats(user: Principal, token: Text) : UserTokenStats {
+        let key = getUserTokenStatsKey(user, token);
+        switch (userTokenStats.get(key)) {
+            case (?stats) stats;
+            case null {
+                {
+                    swaps_as_input = 0;
+                    swaps_as_output = 0;
+                    volume_in_e8s = 0;
+                    volume_out_e8s = 0;
+                    total_sends = 0;
+                    total_deposits = 0;
+                    total_withdrawals = 0;
+                }
+            };
+        }
+    };
+
     // Record completed ICPSwap swap
     public shared func record_icpswap_swap(
         user: Principal,
@@ -816,9 +839,9 @@ actor {
         amount_in_e8s: Nat,
         token_out: Text,  // Canister ID
         amount_out_e8s: Nat,
-        pool_id: Principal,  // Add pool_id parameter
+        pool_id: Principal,  // Pool ID
     ) : async () {
-        // Update global stats
+        // Existing global stats update
         globalStats := {
             total_swaps = globalStats.total_swaps + 1;
             icpswap_swaps = globalStats.icpswap_swaps + 1;
@@ -829,7 +852,7 @@ actor {
             total_withdrawals = globalStats.total_withdrawals;
         };
 
-        // Update token stats
+        // Update token stats for input token
         let token_in_stats = getOrCreateTokenStats(token_in);
         tokenStats.put(token_in, {
             total_swaps = token_in_stats.total_swaps + 1;
@@ -845,6 +868,7 @@ actor {
             withdrawals_volume_e8s = token_in_stats.withdrawals_volume_e8s;
         });
 
+        // Update token stats for output token
         let token_out_stats = getOrCreateTokenStats(token_out);
         tokenStats.put(token_out, {
             total_swaps = token_out_stats.total_swaps + 1;
@@ -870,6 +894,30 @@ actor {
             total_sends = user_stats.total_sends;
             total_deposits = user_stats.total_deposits;
             total_withdrawals = user_stats.total_withdrawals;
+        });
+
+        // NEW: Update user-token stats for input token
+        let user_token_in_stats = getOrCreateUserTokenStats(user, token_in);
+        userTokenStats.put(getUserTokenStatsKey(user, token_in), {
+            swaps_as_input = user_token_in_stats.swaps_as_input + 1;
+            swaps_as_output = user_token_in_stats.swaps_as_output;
+            volume_in_e8s = user_token_in_stats.volume_in_e8s;
+            volume_out_e8s = user_token_in_stats.volume_out_e8s + amount_in_e8s;
+            total_sends = user_token_in_stats.total_sends;
+            total_deposits = user_token_in_stats.total_deposits;
+            total_withdrawals = user_token_in_stats.total_withdrawals;
+        });
+
+        // NEW: Update user-token stats for output token
+        let user_token_out_stats = getOrCreateUserTokenStats(user, token_out);
+        userTokenStats.put(getUserTokenStatsKey(user, token_out), {
+            swaps_as_input = user_token_out_stats.swaps_as_input;
+            swaps_as_output = user_token_out_stats.swaps_as_output + 1;
+            volume_in_e8s = user_token_out_stats.volume_in_e8s + amount_out_e8s;
+            volume_out_e8s = user_token_out_stats.volume_out_e8s;
+            total_sends = user_token_out_stats.total_sends;
+            total_deposits = user_token_out_stats.total_deposits;
+            total_withdrawals = user_token_out_stats.total_withdrawals;
         });
 
         // Add tokens to user's wallet
