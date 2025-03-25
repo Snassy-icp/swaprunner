@@ -2,9 +2,65 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
 import '../../styles/Help.css';
+import { Actor, HttpAgent, AnonymousIdentity } from '@dfinity/agent';
 
 export const Verification: React.FC = () => {
   const navigate = useNavigate();
+  const [frontendHash, setFrontendHash] = React.useState<string | null>(null);
+  const [backendHash, setBackendHash] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const fetchModuleHash = async (canisterId: string) => {
+    try {
+      const agent = new HttpAgent({
+        host: 'https://ic0.app',
+        identity: new AnonymousIdentity()
+      });
+
+      const paths = [
+        new TextEncoder().encode('canister'),
+        new TextEncoder().encode(canisterId),
+        new TextEncoder().encode('module_hash')
+      ].map(arr => new Uint8Array(arr).buffer as ArrayBuffer);
+
+      const response: any = await agent.readState(canisterId, {
+        paths: [paths]
+      });
+
+      if (!response || !response.certificate) {
+        throw new Error('Invalid response');
+      }
+
+      const hashArray = new Uint8Array(response.certificate);
+      return Array.from(hashArray)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    } catch (err) {
+      console.error('Error fetching hash:', err);
+      throw err;
+    }
+  };
+
+  React.useEffect(() => {
+    const fetchHashes = async () => {
+      try {
+        setIsLoading(true);
+        const [frontend, backend] = await Promise.all([
+          fetchModuleHash(process.env.CANISTER_ID_SWAPRUNNER_FRONTEND!),
+          fetchModuleHash(process.env.CANISTER_ID_SWAPRUNNER_BACKEND!)
+        ]);
+        setFrontendHash(frontend);
+        setBackendHash(backend);
+      } catch (err) {
+        setError('Failed to fetch current hashes');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHashes();
+  }, []);
 
   return (
     <div className="help-page">
@@ -160,14 +216,25 @@ Module hash: 0x1af31e2ccc2a7efd03b8c06bd0d23421fff7e87bad090bde4a7157f316cd8e18`
           </div>
           <p>Expected output: Coming soon... (we'll add exact output)</p>
 
-          <h3>Verifying the Hashes</h3>
-          <p>
-            Regardless of which method you use, you should see these module hashes:
-          </p>
-          <ul>
-            <li>Frontend: <code>0x865eb25df5a6d857147e078bb33c727797957247f7af2635846d65c5397b36a6</code></li>
-            <li>Backend: <code>0x1af31e2ccc2a7efd03b8c06bd0d23421fff7e87bad090bde4a7157f316cd8e18</code></li>
-          </ul>
+          <h3>Live Canister Verification</h3>
+          <div className="code-block">
+            {isLoading ? (
+              <p>Fetching current canister hashes...</p>
+            ) : error ? (
+              <p className="error">{error}</p>
+            ) : (
+              <>
+                <p>Current frontend hash:</p>
+                <pre>
+                  <code>{frontendHash}</code>
+                </pre>
+                <p>Current backend hash:</p>
+                <pre>
+                  <code>{backendHash}</code>
+                </pre>
+              </>
+            )}
+          </div>
         </section>
 
         <section>
