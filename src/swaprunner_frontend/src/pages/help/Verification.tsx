@@ -2,6 +2,9 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
 import '../../styles/Help.css';
+import { CanisterStatus, HttpAgent } from '@dfinity/agent';
+import { Principal } from '@dfinity/principal';
+import { Path, SubnetStatus } from '@dfinity/agent/lib/cjs/canisterStatus';
 
 export const Verification: React.FC = () => {
   const navigate = useNavigate();
@@ -12,16 +15,39 @@ export const Verification: React.FC = () => {
 
   const fetchModuleHash = async (canisterId: string) => {
     try {
-      const response = await fetch(
-        `https://dashboard.internetcomputer.org/canister/${canisterId}`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch canister data');
-      }
+      const paths: Path[] = ['controllers', 'subnet', 'module_hash'];
+      const request = await CanisterStatus.request({
+          canisterId: Principal.fromText(canisterId),
+          agent: HttpAgent.createSync({ host: 'https://icp0.io' }),
+          paths
+      });
 
-      const data = await response.json();
-      return data.moduleHash;
+      const controllers = request.get('controllers') as Principal[];
+      const subnet = request.get('subnet') as SubnetStatus;
+      const moduleHash = request.get('module_hash') as string;
+
+      return {
+          controllers,
+          subnet,
+          moduleHash
+      };
+
+/*
+      const agent = new HttpAgent({
+        host: 'https://ic0.app'
+      });
+
+      await agent.fetchRootKey();
+
+      const request = await CanisterStatus.request({
+        canisterId: Principal.fromText(canisterId),
+        agent,
+        paths: ['module_hash']
+      });
+
+      const moduleHash = request.get('module_hash') as string;
+      return moduleHash;
+      */
 
     } catch (err) {
       console.error('Error fetching hash:', err);
@@ -37,8 +63,8 @@ export const Verification: React.FC = () => {
           fetchModuleHash(process.env.CANISTER_ID_SWAPRUNNER_FRONTEND!),
           fetchModuleHash(process.env.CANISTER_ID_SWAPRUNNER_BACKEND!)
         ]);
-        setFrontendHash(frontend);
-        setBackendHash(backend);
+        setFrontendHash(frontend.moduleHash);
+        setBackendHash(backend.moduleHash);
       } catch (err) {
         setError('Failed to fetch current hashes');
       } finally {
