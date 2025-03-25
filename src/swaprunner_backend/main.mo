@@ -1538,6 +1538,31 @@ actor {
         Iter.toArray(userStats.entries())
     };
 
+    // Get user-token stats for the caller
+    public shared query(msg) func get_my_token_stats() : async [(Text, UserTokenStats)] {
+        let user = msg.caller;
+        var results : [(Text, UserTokenStats)] = [];
+        
+        // Get all unique token IDs from the token stats map
+        let tokenIds = Iter.map<(Text, TokenStats), Text>(
+            tokenStats.entries(),
+            func((tokenId, _)) = tokenId
+        );
+
+        // For each token, check if user-token stats exist
+        for (tokenId in tokenIds) {
+            let key = getUserTokenStatsKey(user, tokenId);
+            switch (userTokenStats.get(key)) {
+                case (?stats) {
+                    results := Array.append(results, [(tokenId, stats)]);
+                };
+                case null {};
+            };
+        };
+        
+        results
+    };
+
     // New: Record a user login
     public shared func record_login(user: Principal) : async () {
         let userText = Principal.toText(user);
