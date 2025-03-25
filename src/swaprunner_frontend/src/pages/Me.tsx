@@ -198,6 +198,42 @@ export const Me: React.FC = () => {
     });
   };
 
+  const calculateTradingActivity = () => {
+    if (!userTokenStats.length) return null;
+
+    let totalSwaps = 0;
+    let splitSwaps = 0;
+    let icpswapSwaps = 0;
+    let kongSwaps = 0;
+
+    userTokenStats.forEach(([_, stats]) => {
+      // Count total swaps
+      const inputSwaps = Number(stats.swaps_as_input_icpswap) + 
+                        Number(stats.swaps_as_input_kong) + 
+                        Number(stats.swaps_as_input_split);
+      const outputSwaps = Number(stats.swaps_as_output_icpswap) + 
+                         Number(stats.swaps_as_output_kong) + 
+                         Number(stats.swaps_as_output_split);
+      
+      // Divide by 2 because each swap is counted twice (once as input, once as output)
+      totalSwaps += (inputSwaps + outputSwaps) / 2;
+      
+      // Count split swaps (divide by 2 for the same reason)
+      splitSwaps += (Number(stats.swaps_as_input_split) + Number(stats.swaps_as_output_split)) / 2;
+      
+      // Count direct swaps (divide by 2 for the same reason)
+      icpswapSwaps += (Number(stats.swaps_as_input_icpswap) + Number(stats.swaps_as_output_icpswap)) / 2;
+      kongSwaps += (Number(stats.swaps_as_input_kong) + Number(stats.swaps_as_output_kong)) / 2;
+    });
+
+    return {
+      totalSwaps: Math.floor(totalSwaps),
+      splitSwaps: Math.floor(splitSwaps),
+      icpswapSwaps: Math.floor(icpswapSwaps),
+      kongSwaps: Math.floor(kongSwaps)
+    };
+  };
+
   if (!isAuthenticated || !principal) {
     return (
       <div className="me-page">
@@ -266,76 +302,103 @@ export const Me: React.FC = () => {
             {loading ? (
               <LoadingSpinner />
             ) : userTokenStats.length > 0 ? (
-              <div className="token-statistics-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th onClick={() => handleSort('token')} className="sortable">
-                        Token <SortIcon field="token" />
-                      </th>
-                      <th onClick={() => handleSort('swaps')} className="sortable">
-                        Total Swaps <SortIcon field="swaps" />
-                      </th>
-                      <th onClick={() => handleSort('volume')} className="sortable">
-                        Total Volume <SortIcon field="volume" />
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getSortedStats().map(([tokenId, stats]) => {
-                      const metadata = tokenMetadata[tokenId];
-                      const totalSwaps = Number(stats.swaps_as_input_icpswap) + 
-                                       Number(stats.swaps_as_input_kong) + 
-                                       Number(stats.swaps_as_input_split) +
-                                       Number(stats.swaps_as_output_icpswap) + 
-                                       Number(stats.swaps_as_output_kong) + 
-                                       Number(stats.swaps_as_output_split);
-                      const totalVolume = BigInt(stats.input_volume_e8s_icpswap) + 
-                                        BigInt(stats.input_volume_e8s_kong) + 
-                                        BigInt(stats.input_volume_e8s_split) +
-                                        BigInt(stats.output_volume_e8s_icpswap) + 
-                                        BigInt(stats.output_volume_e8s_kong) + 
-                                        BigInt(stats.output_volume_e8s_split);
-                      const isLoadingUSD = loadingUSDPrices[tokenId];
-                      const usdValue = tokenUSDPrices[tokenId] !== undefined 
-                        ? calculateUSDValue(totalVolume, tokenId)
-                        : undefined;
-                      
-                      return (
-                        <tr key={tokenId}>
-                          <td className="token-cell">
-                            {metadata && (
-                              <img 
-                                src={metadata.logo || '/generic_token.svg'}
-                                alt={metadata.symbol}
-                                className="token-logo"
-                                onError={(e) => {
-                                  const img = e.target as HTMLImageElement;
-                                  img.src = metadata.symbol === 'ICP' ? '/icp_symbol.svg' : '/generic_token.svg';
-                                }}
-                              />
-                            )}
-                            <div className="token-info">
-                              <span className="token-symbol">{metadata?.symbol || 'Unknown'}</span>
-                            </div>
-                          </td>
-                          <td>{formatAmount(BigInt(totalSwaps))}</td>
-                          <td>
-                            {metadata ? formatTokenAmount(totalVolume, tokenId) : formatAmount(totalVolume)}
-                            {isLoadingUSD ? (
-                              <span className="usd-value">
-                                <FiLoader className="spinner" />
-                              </span>
-                            ) : usdValue !== '-' && (
-                              <span className="usd-value"> • {usdValue}</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <>
+                <div className="trading-activity">
+                  <h3>Trading Activity</h3>
+                  <div className="activity-grid">
+                    <div className="activity-card">
+                      <h4>Total Swaps</h4>
+                      <div className="activity-value">{calculateTradingActivity()?.totalSwaps}</div>
+                      <div className="activity-description">All-time completed swaps</div>
+                    </div>
+                    <div className="activity-card">
+                      <h4>Split Swaps</h4>
+                      <div className="activity-value">{calculateTradingActivity()?.splitSwaps}</div>
+                      <div className="activity-description">Multi-DEX swaps</div>
+                    </div>
+                    <div className="activity-card">
+                      <h4>Direct ICPSwap Swaps</h4>
+                      <div className="activity-value">{calculateTradingActivity()?.icpswapSwaps}</div>
+                      <div className="activity-description">Direct swaps via ICPSwap</div>
+                    </div>
+                    <div className="activity-card">
+                      <h4>Direct Kong Swaps</h4>
+                      <div className="activity-value">{calculateTradingActivity()?.kongSwaps}</div>
+                      <div className="activity-description">Direct swaps via Kong</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="token-statistics-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th onClick={() => handleSort('token')} className="sortable">
+                          Token <SortIcon field="token" />
+                        </th>
+                        <th onClick={() => handleSort('swaps')} className="sortable">
+                          Total Swaps <SortIcon field="swaps" />
+                        </th>
+                        <th onClick={() => handleSort('volume')} className="sortable">
+                          Total Volume <SortIcon field="volume" />
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {getSortedStats().map(([tokenId, stats]) => {
+                        const metadata = tokenMetadata[tokenId];
+                        const totalSwaps = Number(stats.swaps_as_input_icpswap) + 
+                                         Number(stats.swaps_as_input_kong) + 
+                                         Number(stats.swaps_as_input_split) +
+                                         Number(stats.swaps_as_output_icpswap) + 
+                                         Number(stats.swaps_as_output_kong) + 
+                                         Number(stats.swaps_as_output_split);
+                        const totalVolume = BigInt(stats.input_volume_e8s_icpswap) + 
+                                          BigInt(stats.input_volume_e8s_kong) + 
+                                          BigInt(stats.input_volume_e8s_split) +
+                                          BigInt(stats.output_volume_e8s_icpswap) + 
+                                          BigInt(stats.output_volume_e8s_kong) + 
+                                          BigInt(stats.output_volume_e8s_split);
+                        const isLoadingUSD = loadingUSDPrices[tokenId];
+                        const usdValue = tokenUSDPrices[tokenId] !== undefined 
+                          ? calculateUSDValue(totalVolume, tokenId)
+                          : undefined;
+                        
+                        return (
+                          <tr key={tokenId}>
+                            <td className="token-cell">
+                              {metadata && (
+                                <img 
+                                  src={metadata.logo || '/generic_token.svg'}
+                                  alt={metadata.symbol}
+                                  className="token-logo"
+                                  onError={(e) => {
+                                    const img = e.target as HTMLImageElement;
+                                    img.src = metadata.symbol === 'ICP' ? '/icp_symbol.svg' : '/generic_token.svg';
+                                  }}
+                                />
+                              )}
+                              <div className="token-info">
+                                <span className="token-symbol">{metadata?.symbol || 'Unknown'}</span>
+                              </div>
+                            </td>
+                            <td>{formatAmount(BigInt(totalSwaps))}</td>
+                            <td>
+                              {metadata ? formatTokenAmount(totalVolume, tokenId) : formatAmount(totalVolume)}
+                              {isLoadingUSD ? (
+                                <span className="usd-value">
+                                  <FiLoader className="spinner" />
+                                </span>
+                              ) : usdValue !== '-' && (
+                                <span className="usd-value"> • {usdValue}</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             ) : (
               <div className="no-stats">
                 No trading activity found.
