@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
+import { FiChevronUp, FiChevronDown, FiUser, FiSettings, FiBarChart2 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { usePool } from '../contexts/PoolContext';
-import { PersonIcon, SettingsIcon, ChartIcon, ChevronDownIcon, ChevronUpIcon } from '@radix-ui/react-icons';
 import '../styles/Me.css';
 
 interface CollapsibleSectionProps {
@@ -20,7 +20,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ title, icon, ch
           {icon}
           <h2>{title}</h2>
         </div>
-        {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+        {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
       </div>
       {isExpanded && <div className="section-content">{children}</div>}
     </div>
@@ -41,14 +41,14 @@ const Me: React.FC = () => {
 
   return (
     <div className="me-page">
-      <CollapsibleSection title="Profile" icon={<PersonIcon />}>
+      <CollapsibleSection title="Profile" icon={<FiUser />}>
         <div className="principal-display">
           <label>Your Principal ID</label>
           <div className="principal-value">{principal}</div>
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Settings" icon={<SettingsIcon />}>
+      <CollapsibleSection title="Settings" icon={<FiSettings />}>
         <div className="settings-display">
           <div className="setting-item">
             <div className="setting-info">
@@ -69,7 +69,7 @@ const Me: React.FC = () => {
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Statistics" icon={<ChartIcon />}>
+      <CollapsibleSection title="Statistics" icon={<FiBarChart2 />}>
         <div className="statistics-display">
           <p className="placeholder-text">Statistics coming soon...</p>
         </div>

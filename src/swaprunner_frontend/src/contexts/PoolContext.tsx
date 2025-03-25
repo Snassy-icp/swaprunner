@@ -44,6 +44,8 @@ interface PoolContextType {
   isLoading: boolean;
   refreshPools: () => Promise<void>;
   refreshPoolBalances: (poolId: string) => Promise<void>;
+  keepTokensInPool: boolean;
+  setKeepTokensInPool: (value: boolean) => void;
 }
 
 const PoolContext = createContext<PoolContextType>({
@@ -51,6 +53,8 @@ const PoolContext = createContext<PoolContextType>({
   isLoading: false,
   refreshPools: async () => {},
   refreshPoolBalances: async () => {},
+  keepTokensInPool: false,
+  setKeepTokensInPool: () => {},
 });
 
 export const usePool = () => useContext(PoolContext);
@@ -58,6 +62,7 @@ export const usePool = () => useContext(PoolContext);
 export const PoolProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [pools, setPools] = useState<Pool[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [keepTokensInPool, setKeepTokensInPool] = useState(false);
   const { isAuthenticated } = useAuth();
 
   const loadPoolBalances = async (pool: Pool) => {
@@ -170,7 +175,7 @@ export const PoolProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <PoolContext.Provider value={{ pools, isLoading, refreshPools, refreshPoolBalances }}>
+    <PoolContext.Provider value={{ pools, isLoading, refreshPools, refreshPoolBalances, keepTokensInPool, setKeepTokensInPool }}>
       {children}
     </PoolContext.Provider>
   );
