@@ -31,6 +31,7 @@ import '../styles/SearchRangeProgress.css';
 import { useLogoLoading } from '../contexts/LogoLoadingContext';
 import { Principal } from '@dfinity/principal';
 import { principalToSubAccount } from "@dfinity/utils";
+import { usePool } from '../contexts/PoolContext';
 
 // Add this near the other type definitions at the top
 type DexType = 'icpswap' | 'kong' | 'split' | null;
@@ -192,7 +193,6 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
   });
 
   const [loadedLogos, setLoadedLogos] = useState<Record<string, string>>({});
-  const [skipWithdraw, setSkipWithdraw] = useState(false);
   const [isSearchingBestSplit, setIsSearchingBestSplit] = useState(false);
   const [lastRefreshTimestamp, setLastRefreshTimestamp] = useState<number | null>(null);
   const [hasInitialized, setHasInitialized] = useState(false);
@@ -207,20 +207,8 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
   const [isDirectQuotesCollapsed, setIsDirectQuotesCollapsed] = useState(true);
   const [isLoadingFromToken, setIsLoadingFromToken] = useState(true);
   const [isLoadingToToken, setIsLoadingToToken] = useState(true);
+  const { keepTokensInPool, setKeepTokensInPool } = usePool();
   
-  // Load skipWithdraw preference from localStorage on mount
-  useEffect(() => {
-    const savedSkipWithdraw = localStorage.getItem('skipWithdraw');
-    if (savedSkipWithdraw !== null) {
-      setSkipWithdraw(savedSkipWithdraw === 'true');
-    }
-  }, []);
-
-  // Save skipWithdraw preference to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('skipWithdraw', skipWithdraw.toString());
-  }, [skipWithdraw]);
-
   // Set ICP as default fromToken on mount ONLY if no URL parameter
   useEffect(() => {
     const ICP_CANISTER_ID = 'ryjl3-tyaaa-aaaaa-aaaba-cai';
@@ -1104,7 +1092,7 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
 
           return updatedSteps;
         });
-      }, skipWithdraw);
+      }, keepTokensInPool);
       
       // Check if all steps succeeded
       const allSucceeded = results.every(result => !result.error);
@@ -1400,7 +1388,7 @@ const createSplitSwapDetails = async() => {
     const kongFees = splitQuotes.kong.request?.depositNeeds ? 
       BigInt(splitQuotes.kong.request.depositNeeds.originalAmount) - BigInt(splitQuotes.kong.request.depositNeeds.adjustedAmount) : 
       BigInt(0);
-    const icpswapOutputFees = skipWithdraw ? BigInt(0) : toTokenMetadata.fee;
+    const icpswapOutputFees = keepTokensInPool ? BigInt(0) : toTokenMetadata.fee;
 
     // Create split swap details
     return {
@@ -1846,7 +1834,7 @@ const createSplitSwapDetails = async() => {
 
     // Calculate input fees from the difference between original and adjusted amounts
     const inputFees = depositNeeds.originalAmount - depositNeeds.adjustedAmount;
-    const outputFees = skipWithdraw ? BigInt(0) : toTokenMetadata.fee;
+    const outputFees = keepTokensInPool ? BigInt(0) : toTokenMetadata.fee;
     return {
       fromToken: {
         symbol: getTokenSymbol(fromToken),
@@ -2847,7 +2835,7 @@ const createSplitSwapDetails = async() => {
                 updateIcpswapStep(stepIndex + 1, 'loading', nextStepDetails);
               }
             },
-            skipWithdraw
+            keepTokensInPool
           ).then(results => {
             const success = results.every(r => r.success);
             return { success, error: results.find(r => !r.success)?.error };
@@ -4388,8 +4376,8 @@ const createSplitSwapDetails = async() => {
                   <label className="skip-withdraw-label">
                     <input
                       type="checkbox"
-                      checked={skipWithdraw}
-                      onChange={(e) => setSkipWithdraw(e.target.checked)}
+                      checked={keepTokensInPool}
+                      onChange={(e) => setKeepTokensInPool(e.target.checked)}
                     />
                     Keep your swapped tokens in swap pool
                   </label>

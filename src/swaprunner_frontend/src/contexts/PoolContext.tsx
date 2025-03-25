@@ -62,8 +62,16 @@ export const usePool = () => useContext(PoolContext);
 export const PoolProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [pools, setPools] = useState<Pool[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [keepTokensInPool, setKeepTokensInPool] = useState(false);
+  const [keepTokensInPool, setKeepTokensInPool] = useState(() => {
+    const saved = localStorage.getItem('skipWithdraw');
+    return saved ? JSON.parse(saved) : false;
+  });
   const { isAuthenticated } = useAuth();
+
+  // Persist keepTokensInPool setting
+  useEffect(() => {
+    localStorage.setItem('skipWithdraw', JSON.stringify(keepTokensInPool));
+  }, [keepTokensInPool]);
 
   const loadPoolBalances = async (pool: Pool) => {
     if (!pool.metadata) return null;
