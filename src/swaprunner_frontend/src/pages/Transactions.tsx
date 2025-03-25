@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiExternalLink, FiLogIn } from 'react-icons/fi';
+import { FiExternalLink, FiLogIn, FiList } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 
 export const Transactions: React.FC = () => {
@@ -22,12 +22,12 @@ export const Transactions: React.FC = () => {
       <div className="transactions-page">
         <div className="swap-box">
           <div className="wallet-empty-state">
-            <FiLogIn className="empty-icon" />
-            <h3>Login Required</h3>
-            <p>Please login with Internet Identity to view your transactions</p>
+            <FiList className="empty-icon" />
+            <h3>Welcome to Your Transactions</h3>
+            <p>Please login to view your transactions</p>
             <button className="login-button" onClick={login}>
               <FiLogIn className="icon" />
-              Login with Internet Identity
+              Login
             </button>
           </div>
         </div>

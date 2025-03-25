@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FiLoader, FiCreditCard, FiLogIn, FiPlus } from 'react-icons/fi';
+import { FiLoader, FiCreditCard, FiLogIn, FiPlus, FiDroplet } from 'react-icons/fi';
 import { usePool } from '../contexts/PoolContext';
 import { useAuth } from '../contexts/AuthContext';
 import { tokenService } from '../services/token';
@@ -207,7 +207,7 @@ export const PoolsPage: React.FC = () => {
       <div className="pools-page">
         <div className="pools-box">
           <div className="pools-empty-state">
-            <FiCreditCard className="empty-icon" />
+            <FiDroplet className="empty-icon" />
             <h3>Welcome to Your Pools</h3>
             <p>Please log in to view and manage your ICPSwap pool balances.</p>
             <button className="login-button" onClick={login}>
