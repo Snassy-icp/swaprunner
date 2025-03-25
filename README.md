@@ -11,6 +11,15 @@ npm install
 cd src/swaprunner_frontend
 npm install @remix-run/router
 cd ../..
-dfx deploy --network ic
+dfx start --clean --background
+dfx deploy
 ```
+
+Check the canister hashes:
+
+```bash
+dfx canister status swaprunner_frontend
+dfx canister status swaprunner_backend
+```
+
 
