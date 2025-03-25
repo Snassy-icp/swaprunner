@@ -316,12 +316,12 @@ export const Me: React.FC = () => {
                       <div className="activity-description">Multi-DEX swaps</div>
                     </div>
                     <div className="activity-card">
-                      <h4>Direct ICPSwap Swaps</h4>
+                      <h4>ICPSwap Swaps</h4>
                       <div className="activity-value">{calculateTradingActivity()?.icpswapSwaps}</div>
                       <div className="activity-description">Direct swaps via ICPSwap</div>
                     </div>
                     <div className="activity-card">
-                      <h4>Direct Kong Swaps</h4>
+                      <h4>Kong Swaps</h4>
                       <div className="activity-value">{calculateTradingActivity()?.kongSwaps}</div>
                       <div className="activity-description">Direct swaps via Kong</div>
                     </div>
