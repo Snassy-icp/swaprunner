@@ -95,6 +95,21 @@ export const Verification: React.FC = () => {
         </section>
 
         <section>
+          <h2>Source Code</h2>
+          <p>Our source code can be found and verified on <a href="https://github.com/swaprunner/swaprunner" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
+        </section>
+
+        <section>
+          <h2>Canister IDs</h2>
+          <p>Our main canisters can be verified at these addresses:</p>
+          <ul>
+            <li>Frontend Canister: {process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}</li>
+            <li>Backend Canister: {process.env.CANISTER_ID_SWAPRUNNER_BACKEND}</li>
+          </ul>
+        </section>
+
+
+        <section>
           <h2>How to Verify the Code</h2>
           <p>
             Verifying a dApp on the Internet Computer involves three main steps to ensure 
@@ -144,6 +159,30 @@ export const Verification: React.FC = () => {
             so you can choose the one that works best for you.
           </p>
 
+          <p>
+            The following hashes are the current hashes of the canisters.
+          </p>
+
+          <h3>Live Canister Verification</h3>
+          <div className="code-block">
+            {isLoading ? (
+              <p>Fetching current canister hashes...</p>
+            ) : error ? (
+              <p className="error">{error}</p>
+            ) : (
+              <>
+                <p>Current frontend hash:</p>
+                <pre>
+                  <code>{frontendHash}</code>
+                </pre>
+                <p>Current backend hash:</p>
+                <pre>
+                  <code>{backendHash}</code>
+                </pre>
+              </>
+            )}
+          </div>
+          
           <h3>Method 1: Using DFX Command Line</h3>
           <p>
             If you have the IC SDK installed, you can use the dfx command line tool. Run these commands:
@@ -191,64 +230,6 @@ Module hash: ${backendHash}`}
             </li>
             <li>Look for the "Module hash" field on each page</li>
           </ol>
-          <p>Expected output: Coming soon... (we'll add screenshots or exact output)</p>
-
-          <h3>Method 3: Using ic.rocks Explorer</h3>
-          <p>
-            The ic.rocks explorer provides another way to verify the canisters:
-          </p>
-          <ol>
-            <li>Visit the frontend canister at:<br/>
-              <a href={`https://ic.rocks/principal/${process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}`}
-                 target="_blank" rel="noopener noreferrer">
-                ic.rocks/principal/{process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}
-              </a>
-            </li>
-            <li>Visit the backend canister at:<br/>
-              <a href={`https://ic.rocks/principal/${process.env.CANISTER_ID_SWAPRUNNER_BACKEND}`}
-                 target="_blank" rel="noopener noreferrer">
-                ic.rocks/principal/{process.env.CANISTER_ID_SWAPRUNNER_BACKEND}
-              </a>
-            </li>
-            <li>Look under the "Canister" tab for the module hash</li>
-          </ol>
-          <p>Expected output: Coming soon... (we'll add screenshots or exact output)</p>
-
-          <h3>Method 4: Using IC API Directly</h3>
-          <p>
-            For the technically inclined, you can query the IC API directly:
-          </p>
-          <div className="code-block">
-            <pre>
-              <code>
-{`curl -X POST -H 'Content-Type: application/json' \\
-  -d '{"request_type": "read_state","sender": "...","paths": [[["canister",{"canister_id": "CANISTER_ID"},"module_hash"]]}' \\
-  'https://ic0.app/api/v2/canister/CANISTER_ID/read_state'`}
-              </code>
-            </pre>
-          </div>
-          <p>Expected output: Coming soon... (we'll add exact output)</p>
-
-          <h3>Live Canister Verification</h3>
-          <div className="code-block">
-            {isLoading ? (
-              <p>Fetching current canister hashes...</p>
-            ) : error ? (
-              <p className="error">{error}</p>
-            ) : (
-              <>
-                <p>Current frontend hash:</p>
-                <pre>
-                  <code>{frontendHash}</code>
-                </pre>
-                <p>Current backend hash:</p>
-                <pre>
-                  <code>{backendHash}</code>
-                </pre>
-              </>
-            )}
-          </div>
-        </section>
 
         <section>
           <h2>Step 2: Matching Source Code</h2>
@@ -258,15 +239,6 @@ Module hash: ${backendHash}`}
         <section>
           <h2>Step 3: Domain Verification</h2>
           <p>Coming soon...</p>
-        </section>
-
-        <section>
-          <h2>Canister IDs</h2>
-          <p>Our main canisters can be verified at these addresses:</p>
-          <ul>
-            <li>Frontend Canister: {process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}</li>
-            <li>Backend Canister: {process.env.CANISTER_ID_SWAPRUNNER_BACKEND}</li>
-          </ul>
         </section>
 
         <section>
