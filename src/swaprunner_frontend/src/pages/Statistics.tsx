@@ -205,7 +205,7 @@ export function Statistics() {
     <div className="statistics-container">
       {/* Token Stats */}
       <section className="statistics-section">
-        <h2>Token Statistics</h2>
+        <h2>Trading Statistics</h2>
         {!loadingTokens && (
           <div className="total-volume">
             <span className="total-volume-label">Total Volume</span>
