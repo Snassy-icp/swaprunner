@@ -176,7 +176,7 @@
   margin: 0;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 480px) {
   .me-page .statistics-display .activity-grid {
     grid-template-columns: repeat(2, 1fr);
   }
