@@ -131,4 +131,54 @@
   .help-content section {
     padding: 16px;
   }
+}
+
+.code-block {
+  background: #1a1b26;
+  border-radius: 8px;
+  margin: 20px 0;
+  padding: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #2f3042;
+}
+
+.code-block pre {
+  margin: 0;
+  padding: 12px;
+  overflow-x: auto;
+  background: #13141b;
+  border-radius: 4px;
+}
+
+.code-block code {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  color: #a9b1d6;
+  white-space: pre;
+  display: block;
+}
+
+.code-block p {
+  color: #7a7c9e;
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+/* Style the scrollbar */
+.code-block pre::-webkit-scrollbar {
+  height: 8px;
+}
+
+.code-block pre::-webkit-scrollbar-track {
+  background: #13141b;
+  border-radius: 4px;
+}
+
+.code-block pre::-webkit-scrollbar-thumb {
+  background: #2f3042;
+  border-radius: 4px;
+}
+
+.code-block pre::-webkit-scrollbar-thumb:hover {
+  background: #3f4152;
 } 
