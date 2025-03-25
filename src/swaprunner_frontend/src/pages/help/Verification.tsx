@@ -238,11 +238,12 @@ Module hash: ${backendHash}`}
           <p>
             To verify that the deployed code matches our source code, you'll need to:
             1. Get the source code
-            2. Build it
-            3. Calculate the hash
+            2. Build it locally
+            3. Check the canister hashes
           </p>
 
           <h3>Getting and Building the Source</h3>
+          <div className="code-block">
           <pre>
             <code>
 {`# Clone the repository
@@ -251,28 +252,29 @@ cd swaprunner
 
 # Install dependencies
 npm install
+cd src/swaprunner_frontend
+npm install @remix-run/router
+cd ../..
 
-# Build the canisters
-dfx build --network ic`}
+# Start local IC replica
+dfx start --clean --background
+
+# Build and deploy locally
+dfx deploy`}
             </code>
           </pre>
+          </div>
 
-          <h3>Calculating the Hash</h3>
-          <p>Install the IC WebAssembly tool:</p>
-          <pre>
-            <code>cargo install ic-wasm</code>
-          </pre>
-
-          <p>Calculate hashes:</p>
+          <h3>Checking the Hashes</h3>
+          <p>Check the canister hashes:</p>
+          <div className="code-block">
           <pre>
             <code>
-{`# Frontend hash
-ic-wasm .dfx/ic/canisters/swaprunner_frontend/swaprunner_frontend.wasm metadata hash
-
-# Backend hash
-ic-wasm .dfx/ic/canisters/swaprunner_backend/swaprunner_backend.wasm metadata hash`}
+{`dfx canister status swaprunner_frontend
+dfx canister status swaprunner_backend`}
             </code>
           </pre>
+          </div>
 
           <p>These hashes should match the live canister hashes shown above.</p>
         </section>
