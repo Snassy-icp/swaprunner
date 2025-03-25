@@ -6,6 +6,7 @@ import { statsService, UserTokenStats } from '../services/stats';
 import { tokenService } from '../services/token';
 import { TokenMetadata } from '../types/token';
 import { formatTokenAmount } from '../utils/format';
+import { priceService } from '../services/price';
 import '../styles/Me.css';
 
 interface CollapsibleSectionProps {
@@ -49,6 +50,8 @@ export const Me: React.FC = () => {
   const { keepTokensInPool, setKeepTokensInPool } = usePool();
   const [userTokenStats, setUserTokenStats] = useState<[string, UserTokenStats][]>([]);
   const [tokenMetadata, setTokenMetadata] = useState<Record<string, TokenMetadata>>({});
+  const [tokenUSDPrices, setTokenUSDPrices] = useState<Record<string, number>>({});
+  const [loadingUSDPrices, setLoadingUSDPrices] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,6 +62,13 @@ export const Me: React.FC = () => {
         setLoading(true);
         const stats = await statsService.getMyTokenStats();
         setUserTokenStats(stats);
+
+        // Initialize loading state for USD prices
+        const initialLoadingState: Record<string, boolean> = {};
+        stats.forEach(([tokenId]) => {
+          initialLoadingState[tokenId] = true;
+        });
+        setLoadingUSDPrices(initialLoadingState);
 
         // Load metadata for each token
         const metadataPromises = stats.map(async ([tokenId]) => {
@@ -73,6 +83,24 @@ export const Me: React.FC = () => {
           }
         });
         await Promise.all(metadataPromises);
+
+        // Load USD prices progressively
+        for (const [tokenId] of stats) {
+          try {
+            const price = await priceService.getTokenUSDPrice(tokenId);
+            setTokenUSDPrices(prev => ({
+              ...prev,
+              [tokenId]: price
+            }));
+          } catch (error) {
+            console.error('Failed to fetch USD price for token:', tokenId, error);
+          } finally {
+            setLoadingUSDPrices(prev => ({
+              ...prev,
+              [tokenId]: false
+            }));
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch user-token stats:', error);
       } finally {
@@ -85,6 +113,21 @@ export const Me: React.FC = () => {
 
   const formatAmount = (amount: bigint): string => {
     return Number(amount).toLocaleString();
+  };
+
+  const calculateUSDValue = (amount_e8s: bigint, tokenId: string): string => {
+    const price = tokenUSDPrices[tokenId];
+    if (!price) return '-';
+    
+    const metadata = tokenMetadata[tokenId];
+    if (!metadata) return '-';
+    
+    const decimals = metadata.decimals ?? 8;
+    const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+    const amountInWholeUnits = Number(amount_e8s) / Number(baseUnitMultiplier);
+    const value = amountInWholeUnits * price;
+    
+    return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   if (!isAuthenticated || !principal) {
@@ -172,6 +215,10 @@ export const Me: React.FC = () => {
                                         BigInt(stats.output_volume_e8s_icpswap) + 
                                         BigInt(stats.output_volume_e8s_kong) + 
                                         BigInt(stats.output_volume_e8s_split);
+                      const isLoadingUSD = loadingUSDPrices[tokenId];
+                      const usdValue = tokenUSDPrices[tokenId] !== undefined 
+                        ? calculateUSDValue(totalVolume, tokenId)
+                        : undefined;
                       
                       return (
                         <tr key={tokenId}>
@@ -192,7 +239,16 @@ export const Me: React.FC = () => {
                             </div>
                           </td>
                           <td>{formatAmount(BigInt(totalSwaps))}</td>
-                          <td>{metadata ? formatTokenAmount(totalVolume, tokenId) : formatAmount(totalVolume)}</td>
+                          <td>
+                            {metadata ? formatTokenAmount(totalVolume, tokenId) : formatAmount(totalVolume)}
+                            {isLoadingUSD ? (
+                              <span className="usd-value">
+                                <FiLoader className="spinner" />
+                              </span>
+                            ) : usdValue !== '-' && (
+                              <span className="usd-value"> • {usdValue}</span>
+                            )}
+                          </td>
                         </tr>
                       );
                     })}
