@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { FiUser, FiLogIn, FiChevronDown, FiChevronUp, FiSettings, FiBarChart2, FiLoader, FiArrowUp, FiArrowDown, FiRefreshCw } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { usePool } from '../contexts/PoolContext';
-import { statsService, UserTokenStats } from '../services/stats';
+import { statsService, UserTokenStats, TokenSavingsStats } from '../services/stats';
 import { tokenService } from '../services/token';
 import { TokenMetadata } from '../types/token';
 import { formatTokenAmount } from '../utils/format';
 import { priceService } from '../services/price';
 import '../styles/Me.css';
 
-type SortField = 'token' | 'swaps' | 'volume';
+type SortField = 'token' | 'swaps' | 'volume' | 'savings';
 type SortDirection = 'asc' | 'desc';
 
 interface SortConfig {
@@ -57,6 +57,7 @@ export const Me: React.FC = () => {
   const { isAuthenticated, principal, login } = useAuth();
   const { keepTokensInPool, setKeepTokensInPool } = usePool();
   const [userTokenStats, setUserTokenStats] = useState<[string, UserTokenStats][]>([]);
+  const [tokenSavingsStats, setTokenSavingsStats] = useState<Record<string, TokenSavingsStats>>({});
   const [tokenMetadata, setTokenMetadata] = useState<Record<string, TokenMetadata>>({});
   const [tokenUSDPrices, setTokenUSDPrices] = useState<Record<string, number>>({});
   const [loadingUSDPrices, setLoadingUSDPrices] = useState<Record<string, boolean>>({});
@@ -68,8 +69,21 @@ export const Me: React.FC = () => {
     
     try {
       setLoading(true);
-      const stats = await statsService.getMyTokenStats();
+      const [stats, savingsStats] = await Promise.all([
+        statsService.getMyTokenStats(),
+        statsService.getMyTokenSavingsStats()
+      ]);
+      
       setUserTokenStats(stats);
+      
+      // Convert savings stats array to record for easier lookup
+      const savingsRecord: Record<string, TokenSavingsStats> = {};
+      savingsStats.forEach(([tokenId, stats]) => {
+        console.log("Token ID: ", tokenId);
+        console.log("Savings stats: ", stats);
+        savingsRecord[tokenId] = stats;
+      });
+      setTokenSavingsStats(savingsRecord);
 
       // Initialize loading state for USD prices
       const initialLoadingState: Record<string, boolean> = {};
@@ -192,6 +206,15 @@ export const Me: React.FC = () => {
                          /*BigInt(statsB.output_volume_e8s_split);*/ // Split amounts are already counted in kong and icpswap amounts
           return multiplier * (volumeA > volumeB ? 1 : volumeA < volumeB ? -1 : 0);
 
+        case 'savings':
+          const savingsA = tokenSavingsStats[tokenIdA];
+          const savingsB = tokenSavingsStats[tokenIdB];
+          const totalSavingsA = savingsA ? 
+            Number(savingsA.icpswap_savings_e8s + savingsA.kong_savings_e8s + savingsA.split_savings_e8s) : 0;
+          const totalSavingsB = savingsB ? 
+            Number(savingsB.icpswap_savings_e8s + savingsB.kong_savings_e8s + savingsB.split_savings_e8s) : 0;
+          return multiplier * (totalSavingsA - totalSavingsB);
+
         default:
           return 0;
       }
@@ -268,7 +291,7 @@ export const Me: React.FC = () => {
   return (
     <div className="me-page">
       <div className="swap-box">
-        <CollapsibleSection title="Profile" icon={<FiUser />}>
+        <CollapsibleSection title="Profile" icon={<FiUser />} defaultExpanded={false}>
           <div className="principal-display">
             <label>Your Principal ID:</label>
             <div className="principal-value">{principal}</div>
@@ -297,7 +320,7 @@ export const Me: React.FC = () => {
           </div>
         </CollapsibleSection>
 
-        <CollapsibleSection title="Statistics" icon={<FiBarChart2 />} defaultExpanded={false}>
+        <CollapsibleSection title="Statistics" icon={<FiBarChart2 />} defaultExpanded={true}>
           <div className="statistics-display">
             {loading ? (
               <LoadingSpinner />
@@ -312,10 +335,10 @@ export const Me: React.FC = () => {
                           const totalUSDVolume = userTokenStats.reduce((sum, [tokenId, stats]) => {
                             const totalVolume = BigInt(stats.input_volume_e8s_icpswap) + 
                                              BigInt(stats.input_volume_e8s_kong) + 
-                                             BigInt(stats.input_volume_e8s_split) +
+                                             /*BigInt(stats.input_volume_e8s_split) +*/ // Split amounts are already counted in kong and icpswap amounts
                                              BigInt(stats.output_volume_e8s_icpswap) + 
-                                             BigInt(stats.output_volume_e8s_kong) + 
-                                             BigInt(stats.output_volume_e8s_split);
+                                             BigInt(stats.output_volume_e8s_kong); // + 
+                                             /*BigInt(stats.output_volume_e8s_split);*/ // Split amounts are already counted in kong and icpswap amounts
                             
                             const price = tokenUSDPrices[tokenId];
                             if (price === undefined || loadingUSDPrices[tokenId]) return sum;
@@ -342,6 +365,64 @@ export const Me: React.FC = () => {
                         })()}
                       </span>
                     </div>
+                    <div className="total-volume-content">
+                      <span className="total-volume-label">Total Savings</span>
+                      <span className="total-volume-value">
+                        {(() => {
+                          const totalUSDSavings = userTokenStats.reduce((sum, [tokenId, stats]) => {
+                            const savingsStats = tokenSavingsStats[tokenId];
+                            if (!savingsStats) return sum;
+                            
+                            const totalSavings = savingsStats.icpswap_savings_e8s + 
+                                               savingsStats.kong_savings_e8s +  
+                                               savingsStats.split_savings_e8s;
+                                               
+                            const price = tokenUSDPrices[tokenId];
+                            if (price === undefined || loadingUSDPrices[tokenId]) return sum;
+                            
+                            const metadata = tokenMetadata[tokenId];
+                            if (!metadata) return sum;
+                            
+                            const decimals = metadata.decimals ?? 8;
+                            const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+                            const amountInWholeUnits = Number(totalSavings) / Number(baseUnitMultiplier);
+                            return sum + (amountInWholeUnits * price);
+                          }, 0);
+
+                          const totalUSDVolume = userTokenStats.reduce((sum, [tokenId, stats]) => {
+                            const totalVolume = BigInt(stats.input_volume_e8s_icpswap) + 
+                                             BigInt(stats.input_volume_e8s_kong) + 
+                                             BigInt(stats.output_volume_e8s_icpswap) + 
+                                             BigInt(stats.output_volume_e8s_kong);
+                            
+                            const price = tokenUSDPrices[tokenId];
+                            if (price === undefined || loadingUSDPrices[tokenId]) return sum;
+                            
+                            const metadata = tokenMetadata[tokenId];
+                            if (!metadata) return sum;
+                            
+                            const decimals = metadata.decimals ?? 8;
+                            const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+                            const amountInWholeUnits = Number(totalVolume) / Number(baseUnitMultiplier);
+                            return sum + (amountInWholeUnits * price);
+                          }, 0);
+
+                          const savingsPercentage = totalUSDVolume > 0 ? (totalUSDSavings / totalUSDVolume) * 100 : 0;
+
+                          if (Object.values(loadingUSDPrices).some(loading => loading)) {
+                            return (
+                              <span className="loading">
+                                ${totalUSDSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                {` (${savingsPercentage.toFixed(2)}%)`}
+                                <FiLoader className="spinner" />
+                              </span>
+                            );
+                          }
+                          
+                          return `$${totalUSDSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${savingsPercentage.toFixed(2)}%)`;
+                        })()}
+                      </span>
+                    </div>
                     <button 
                       className="expanded-action-button"
                       onClick={fetchStats}
@@ -365,6 +446,9 @@ export const Me: React.FC = () => {
                           <th onClick={() => handleSort('volume')} className="sortable">
                             Total Volume <SortIcon field="volume" />
                           </th>
+                          <th onClick={() => handleSort('savings')} className="sortable">
+                            Total Savings <SortIcon field="savings" />
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -382,9 +466,16 @@ export const Me: React.FC = () => {
                                             BigInt(stats.output_volume_e8s_icpswap) + 
                                             BigInt(stats.output_volume_e8s_kong); // + 
                                             /*BigInt(stats.output_volume_e8s_split);*/ // Split amounts are already counted in kong and icpswap amounts
+                          const savingsStats = tokenSavingsStats[tokenId];
+                          const totalSavings = savingsStats ? 
+                            savingsStats.icpswap_savings_e8s + savingsStats.kong_savings_e8s + savingsStats.split_savings_e8s : 
+                            BigInt(0);
                           const isLoadingUSD = loadingUSDPrices[tokenId];
                           const usdValue = tokenUSDPrices[tokenId] !== undefined 
                             ? calculateUSDValue(totalVolume, tokenId)
+                            : undefined;
+                          const usdSavings = tokenUSDPrices[tokenId] !== undefined 
+                            ? calculateUSDValue(totalSavings, tokenId)
                             : undefined;
                           
                           return (
@@ -414,6 +505,27 @@ export const Me: React.FC = () => {
                                   </span>
                                 ) : usdValue !== '-' && (
                                   <span className="usd-value"> • {usdValue}</span>
+                                )}
+                              </td>
+                              <td>
+                                {metadata ? formatTokenAmount(totalSavings, tokenId) : formatAmount(totalSavings)}
+                                {isLoadingUSD ? (
+                                  <span className="usd-value">
+                                    <FiLoader className="spinner" />
+                                  </span>
+                                ) : usdSavings !== '-' && (
+                                  <span className="usd-value">
+                                    {' • '}{usdSavings}
+                                    {(() => {
+                                      const totalVolume = BigInt(stats.input_volume_e8s_icpswap) + 
+                                                        BigInt(stats.input_volume_e8s_kong) + 
+                                                        BigInt(stats.output_volume_e8s_icpswap) + 
+                                                        BigInt(stats.output_volume_e8s_kong);
+                                      if (totalVolume === 0n) return ' (0.00%)';
+                                      const savingsPercentage = (Number(totalSavings) / Number(totalVolume)) * 100;
+                                      return ` (${savingsPercentage.toFixed(2)}%)`;
+                                    })()}
+                                  </span>
                                 )}
                               </td>
                             </tr>

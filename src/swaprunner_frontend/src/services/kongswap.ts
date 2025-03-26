@@ -429,7 +429,7 @@ export class KongSwapService {
       const swapArgs: SwapArgs = {
         pay_token: symbolIn,
         pay_amount: BigInt(params.fromToken.amount_e8s),
-        pay_tx_id: metadata.standard === 'ICRC2' ? [] : [{ BlockIndex: BigInt(params.fromToken.txId!) }],
+        pay_tx_id: metadata.standard === 'ICRC1' ? [{ BlockIndex: BigInt(params.fromToken.txId!) }] : [],
         receive_token: symbolOut,
         receive_amount: [BigInt(params.toToken.minAmount_e8s)],
         receive_address: [],  // Empty array means use caller's address

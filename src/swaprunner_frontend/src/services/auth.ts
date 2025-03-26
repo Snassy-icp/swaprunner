@@ -185,6 +185,16 @@ class AuthService {
     return this.principal !== null;
   }
 
+  async isAdmin(): Promise<boolean> {
+    try {
+      const actor = await backendService.getActor();
+      return await actor.is_admin();
+    } catch (error) {
+      console.error('[AuthService] Error checking admin status:', error);
+      return false;
+    }
+  }
+
   onAuthStateChange(listener: () => void): () => void {
     authStateListeners.add(listener);
     return () => authStateListeners.delete(listener);

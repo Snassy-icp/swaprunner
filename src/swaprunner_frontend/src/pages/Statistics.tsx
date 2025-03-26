@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
-import { statsService, GlobalStats, TokenStats } from '../services/stats';
+import { statsService, GlobalStats, TokenStats, TokenSavingsStats } from '../services/stats';
 import { tokenService } from '../services/token';
 import { TokenMetadata } from '../types/token';
 import { formatTokenAmount } from '../utils/format';
 import { priceService } from '../services/price';
-import { FiChevronUp, FiChevronDown, FiLoader } from 'react-icons/fi';
+import { FiChevronUp, FiChevronDown, FiLoader, FiRefreshCw } from 'react-icons/fi';
+import { adminService } from '../services/admin';
 import '../styles/Statistics.css';
 
-type SortColumn = 'token' | 'swaps' | 'volume';
+type SortColumn = 'token' | 'swaps' | 'volume' | 'savings';
 type SortDirection = 'asc' | 'desc';
 
 export function Statistics() {
   const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
   const [tokenStats, setTokenStats] = useState<[string, TokenStats][]>([]);
+  const [tokenSavingsStats, setTokenSavingsStats] = useState<Record<string, TokenSavingsStats>>({});
   const [uniqueUsers, setUniqueUsers] = useState<bigint>(0n);
   const [uniqueTraders, setUniqueTraders] = useState<bigint>(0n);
   const [tokenMetadata, setTokenMetadata] = useState<Record<string, TokenMetadata>>({});
@@ -20,12 +22,15 @@ export function Statistics() {
   const [loadingUSDPrices, setLoadingUSDPrices] = useState<Record<string, boolean>>({});
   const [sortColumn, setSortColumn] = useState<SortColumn>('swaps');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [isAdmin, setIsAdmin] = useState(false);
   
   // Separate loading states for each section
   const [loadingTokens, setLoadingTokens] = useState(true);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingGlobal, setLoadingGlobal] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const loading = loadingTokens || loadingUsers || loadingGlobal || Object.values(loadingUSDPrices).some(isLoading => isLoading);
 
   const fetchStats = async () => {
     try {
@@ -34,17 +39,22 @@ export function Statistics() {
       setLoadingUsers(true);
       setLoadingGlobal(true);
 
-      // Fetch token stats first
-      const tokenStatsResult = await statsService.getAllTokenStats();
-      setTokenStats(tokenStatsResult);
-      setLoadingTokens(false);
+      // Fetch token stats and savings stats first
+      const [tokenStatsResult, savingsStatsResult] = await Promise.all([
+        statsService.getAllTokenStats(),
+        statsService.getAllTokenSavingsStats()
+      ]);
       
-      // Initialize loading state for all tokens
-      const initialLoadingState: Record<string, boolean> = {};
-      tokenStatsResult.forEach(([tokenId]) => {
-        initialLoadingState[tokenId] = true;
+      setTokenStats(tokenStatsResult);
+      
+      // Convert savings stats array to record for easier lookup
+      const savingsRecord: Record<string, TokenSavingsStats> = {};
+      savingsStatsResult.forEach(([tokenId, stats]) => {
+        savingsRecord[tokenId] = stats;
       });
-      setLoadingUSDPrices(initialLoadingState);
+      setTokenSavingsStats(savingsRecord);
+      
+      setLoadingTokens(false);
       
       // Fetch other stats in parallel
       const [uniqueUsersResult, uniqueTradersResult, globalStatsResult] = await Promise.all([
@@ -60,6 +70,13 @@ export function Statistics() {
       setGlobalStats(globalStatsResult);
       setLoadingGlobal(false);
 
+      // Initialize loading state for all tokens
+      const initialLoadingState: Record<string, boolean> = {};
+      tokenStatsResult.forEach(([tokenId]) => {
+        initialLoadingState[tokenId] = true;
+      });
+      setLoadingUSDPrices(initialLoadingState);
+      
       // Fetch prices for tokens progressively
       for (const [tokenId] of tokenStatsResult) {
         try {
@@ -111,6 +128,19 @@ export function Statistics() {
       loadTokenMetadata();
     }
   }, [tokenStats]);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const adminStatus = await adminService.isAdmin();
+        setIsAdmin(adminStatus);
+      } catch (error) {
+        console.error('Failed to check admin status:', error);
+        setIsAdmin(false);
+      }
+    };
+    checkAdminStatus();
+  }, []);
 
   const formatAmount = (amount: bigint | number): string => {
     if (typeof amount === 'bigint') {
@@ -169,6 +199,15 @@ export function Statistics() {
           const valueB = calculateUSDValueNumber(statsB.volume_e8s, tokenIdB);
           comparison = valueA - valueB;
           break;
+        case 'savings':
+          const savingsA = tokenSavingsStats[tokenIdA];
+          const savingsB = tokenSavingsStats[tokenIdB];
+          const totalSavingsA = savingsA ? 
+            Number(savingsA.icpswap_savings_e8s + savingsA.kong_savings_e8s + savingsA.split_savings_e8s) : 0;
+          const totalSavingsB = savingsB ? 
+            Number(savingsB.icpswap_savings_e8s + savingsB.kong_savings_e8s + savingsB.split_savings_e8s) : 0;
+          comparison = totalSavingsA - totalSavingsB;
+          break;
       }
       return sortDirection === 'asc' ? comparison : -comparison;
     });
@@ -205,7 +244,18 @@ export function Statistics() {
     <div className="statistics-container">
       {/* Token Stats */}
       <section className="statistics-section">
-        <h2>Trading Statistics</h2>
+        <div className="statistics-header-row">
+          <span className="statistics-title">Trading Statistics</span>
+          <button 
+            onClick={fetchStats} 
+            className="expanded-action-button"
+            disabled={loading}
+            title="Refresh statistics"
+          >
+            <span className="action-symbol"><FiRefreshCw /></span>
+            <span className="action-text">{loading ? 'Refreshing...' : 'Refresh'}</span>
+          </button>
+        </div>
         {!loadingTokens && (
           <div className="total-volume">
             <span className="total-volume-label">Total Volume</span>
@@ -218,6 +268,48 @@ export function Statistics() {
               ) : (
                 formatUSDValue(totalUSDVolume)
               )}
+            </span>
+          </div>
+        )}
+        {!loadingTokens && isAdmin && (
+          <div className="total-volume">
+            <span className="total-volume-label">Total Savings</span>
+            <span className="total-volume-value secondary">
+              {(() => {
+                const totalUSDSavings = sortedTokenStats.reduce((sum, [tokenId, _]) => {
+                  const savingsStats = tokenSavingsStats[tokenId];
+                  if (!savingsStats) return sum;
+                  
+                  const totalSavings = savingsStats.icpswap_savings_e8s + 
+                                     savingsStats.kong_savings_e8s + 
+                                     savingsStats.split_savings_e8s;
+                  
+                  const price = tokenUSDPrices[tokenId];
+                  if (price === undefined || loadingUSDPrices[tokenId]) return sum;
+                  
+                  const metadata = tokenMetadata[tokenId];
+                  if (!metadata) return sum;
+                  
+                  const decimals = metadata.decimals ?? 8;
+                  const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+                  const amountInWholeUnits = Number(totalSavings) / Number(baseUnitMultiplier);
+                  return sum + (amountInWholeUnits * price);
+                }, 0);
+
+                const savingsPercentage = totalUSDVolume > 0 ? (totalUSDSavings / totalUSDVolume) * 100 : 0;
+
+                if (Object.values(loadingUSDPrices).some(loading => loading)) {
+                  return (
+                    <span className="loading">
+                      ${totalUSDSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {` (${savingsPercentage.toFixed(2)}%)`}
+                      <FiLoader className="spinner" />
+                    </span>
+                  );
+                }
+                
+                return `$${totalUSDSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${savingsPercentage.toFixed(2)}%)`;
+              })()}
             </span>
           </div>
         )}
@@ -252,15 +344,31 @@ export function Statistics() {
                       </span>
                     )}
                   </th>
+                  <th onClick={() => handleSort('savings')}>
+                    Total Savings
+                    {sortColumn === 'savings' && (
+                      <span className="sort-icon">
+                        {sortDirection === 'asc' ? <FiChevronUp /> : <FiChevronDown />}
+                      </span>
+                    )}
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {sortedTokenStats.map(([tokenId, stats]) => {
                   const metadata = tokenMetadata[tokenId];
                   const formattedTokenAmount = metadata ? formatTokenAmount(stats.volume_e8s, tokenId) : formatAmount(stats.volume_e8s);
+                  const savingsStats = tokenSavingsStats[tokenId];
+                  const totalSavings = savingsStats ? 
+                    savingsStats.icpswap_savings_e8s + savingsStats.kong_savings_e8s + savingsStats.split_savings_e8s : 
+                    0n;
+                  const formattedSavingsAmount = metadata ? formatTokenAmount(totalSavings, tokenId) : formatAmount(totalSavings);
                   const isLoadingUSD = loadingUSDPrices[tokenId];
                   const usdValue = tokenUSDPrices[tokenId] !== undefined 
                     ? calculateUSDValue(stats.volume_e8s, tokenId)
+                    : undefined;
+                  const usdSavings = tokenUSDPrices[tokenId] !== undefined 
+                    ? calculateUSDValue(totalSavings, tokenId)
                     : undefined;
 
                   return (
@@ -290,6 +398,16 @@ export function Statistics() {
                           </span>
                         ) : usdValue !== '-' && (
                           <span className="usd-value"> • {usdValue}</span>
+                        )}
+                      </td>
+                      <td>
+                        {formattedSavingsAmount}
+                        {isLoadingUSD ? (
+                          <span className="usd-value">
+                            <FiLoader className="spinner" />
+                          </span>
+                        ) : usdSavings !== '-' && (
+                          <span className="usd-value"> • {usdSavings}</span>
                         )}
                       </td>
                     </tr>
@@ -356,13 +474,6 @@ export function Statistics() {
           )
         )}
       </section>
-
-      <button 
-        onClick={fetchStats} 
-        className="refresh-button"
-      >
-        Refresh Statistics
-      </button>
     </div>
   );
 } 

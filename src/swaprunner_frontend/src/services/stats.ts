@@ -60,6 +60,12 @@ export interface UserTokenStats {
   total_withdrawals: bigint;
 }
 
+export interface TokenSavingsStats {
+  icpswap_savings_e8s: bigint;
+  kong_savings_e8s: bigint;
+  split_savings_e8s: bigint;
+}
+
 export class StatsService {
   private queryActor: any = null;
 
@@ -92,6 +98,7 @@ export class StatsService {
     amount_in_e8s: string,
     token_out: string,
     amount_out_e8s: string,
+    savings_out_e8s: string,
     pool_id: Principal,
   ): Promise<void> {
     console.log('Recording ICPSwap swap:', {
@@ -100,6 +107,7 @@ export class StatsService {
       amount_in_e8s,
       token_out,
       amount_out_e8s,
+      savings_out_e8s,
       pool_id: pool_id.toString(),
     });
 
@@ -111,6 +119,7 @@ export class StatsService {
         BigInt(amount_in_e8s),
         token_out,
         BigInt(amount_out_e8s),
+        BigInt(savings_out_e8s),
         pool_id,
       );
       console.log('Successfully recorded ICPSwap swap');
@@ -124,16 +133,18 @@ export class StatsService {
   async recordKongSwap(
     user: Principal,
     token_in: string,
-    amount_in_e8s: string,
+    amount_in_e8s: bigint,
     token_out: string,
-    amount_out_e8s: string,
+    amount_out_e8s: bigint,
+    savings_out_e8s: bigint,
   ): Promise<void> {
     console.log('Recording Kong swap:', {
       user: user.toString(),
       token_in,
-      amount_in_e8s,
+      amount_in_e8s: amount_in_e8s.toString(),
       token_out,
-      amount_out_e8s,
+      amount_out_e8s: amount_out_e8s.toString(),
+      savings_out_e8s: savings_out_e8s.toString(),
     });
 
     try {
@@ -141,9 +152,10 @@ export class StatsService {
       await actor.record_kong_swap(
         user,
         token_in,
-        BigInt(amount_in_e8s),
+        amount_in_e8s,
         token_out,
-        BigInt(amount_out_e8s),
+        amount_out_e8s,
+        savings_out_e8s,
       );
       console.log('Successfully recorded Kong swap');
     } catch (error) {
@@ -161,6 +173,7 @@ export class StatsService {
     token_out: string,
     icpswap_amount_out_e8s: string,
     kong_amount_out_e8s: string,
+    savings_out_e8s: string,
     icpswap_pool_id: Principal,
   ): Promise<void> {
     console.log('Recording split swap:', {
@@ -171,6 +184,7 @@ export class StatsService {
       token_out,
       icpswap_amount_out_e8s,
       kong_amount_out_e8s,
+      savings_out_e8s,
       icpswap_pool_id: icpswap_pool_id.toString(),
     });
 
@@ -184,6 +198,7 @@ export class StatsService {
         token_out,
         BigInt(icpswap_amount_out_e8s),
         BigInt(kong_amount_out_e8s),
+        BigInt(savings_out_e8s),
         icpswap_pool_id,
       );
       console.log('Successfully recorded split swap');
@@ -395,6 +410,22 @@ export class StatsService {
     const count = await actor.get_unique_trader_count();
     console.log('Unique trader count:', count);
     return count;
+  }
+
+  async getAllTokenSavingsStats(): Promise<[string, TokenSavingsStats][]> {
+    console.log('Getting all token savings stats...');
+    const actor = await backendService.getActor();
+    const stats = await actor.get_all_token_savings_stats();
+    console.log('All token savings stats:', stats);
+    return stats;
+  }
+
+  async getMyTokenSavingsStats(): Promise<[string, TokenSavingsStats][]> {
+    console.log('Getting user token savings stats...');
+    const actor = await backendService.getActor();
+    const stats = await actor.get_my_token_savings_stats();
+    console.log('User token savings stats:', stats);
+    return stats;
   }
 }
 

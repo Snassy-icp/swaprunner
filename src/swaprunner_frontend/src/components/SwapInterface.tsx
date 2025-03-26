@@ -243,6 +243,7 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
   // Function to handle swapping direction
   const handleSwapDirection = async () => {
     const tempFromToken = fromToken;
+ 
     setFromAmount('');
     setFromToken(toToken);
     setToToken(tempFromToken);
@@ -953,12 +954,6 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
     }
   };
 
-  const resetForm = () => {
-    // Reset form fields but preserve step information
-    setFromAmount('');
-    // Do not reset steps here
-  };
-
   // Execute the swap with the callback
   const onConfirm = async (): Promise<SwapResult> => {
     if (!fromToken || !toToken || !swapDetails) return { success: false };
@@ -967,6 +962,9 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
 
     setIsSwapping(true);
     try {
+      // Save the kong quote
+      const kongOutput = kongQuote?.amountOut || BigInt(0);
+
       // Get pool metadata to determine token order
       const metadata = await icpSwapFactoryService.getPool({
         token0: { address: fromToken, standard: 'ICRC1' },
@@ -1109,12 +1107,18 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
       try {
         const principal = authService.getPrincipal();
         if (principal && poolId) {
-          await statsService.recordICPSwapSwap(
+          // Calculate savings using our existing quotes - if ICPSwap was chosen, compare with Kong quote
+          const icpswapOutput = swapped_amount;
+          // If ICPSwap gives better output than Kong, savings is the difference, otherwise 0
+          const savings = icpswapOutput > kongOutput ? (icpswapOutput - kongOutput).toString() : '0';
+
+          /*await*/ statsService.recordICPSwapSwap(
             principal,
             executionParams.fromToken.canisterId,
             executionParams.fromToken.amount_e8s,
             executionParams.toToken.canisterId,
             swapped_amount.toString() || '0',
+            savings,
             typeof poolId === 'string' ? Principal.fromText(poolId) : poolId,
           );
         }
@@ -1383,10 +1387,10 @@ const createSplitSwapDetails = async() => {
 
     // Calculate fees from the difference between original and adjusted amounts
     const icpswapFees = splitQuotes.icpswap.request?.depositNeeds ? 
-      BigInt(splitQuotes.icpswap.request.depositNeeds.originalAmount) - BigInt(splitQuotes.icpswap.request.depositNeeds.adjustedAmount) : 
+      BigInt(splitQuotes.icpswap.request.depositNeeds?.originalAmount?.toString() || icpswap_amount_e8s.toString()) - BigInt(splitQuotes.icpswap.request.depositNeeds?.adjustedAmount.toString() || icpswap_amount_e8s.toString()) : 
       BigInt(0);
     const kongFees = splitQuotes.kong.request?.depositNeeds ? 
-      BigInt(splitQuotes.kong.request.depositNeeds.originalAmount) - BigInt(splitQuotes.kong.request.depositNeeds.adjustedAmount) : 
+      BigInt(splitQuotes.kong.request.depositNeeds?.originalAmount?.toString() || kong_amount_e8s.toString()) - BigInt(splitQuotes.kong.request.depositNeeds?.adjustedAmount.toString() || kong_amount_e8s.toString()) : 
       BigInt(0);
     const icpswapOutputFees = keepTokensInPool ? BigInt(0) : toTokenMetadata.fee;
 
@@ -1501,6 +1505,9 @@ const createSplitSwapDetails = async() => {
       return { success: false, error: 'Missing required data' };
 
     try {
+      // Save the ICPSwap quote for savings comparison
+      const icpswapOutput = BigInt(quote?.amountOut?.toString() || '0');
+
       // Use the adjusted amount from the quote instead of parsing raw input
       const amount_e8s = BigInt(kongQuote.request.amount_e8s);
       console.log('Using adjusted amount from quote:', amount_e8s.toString());
@@ -1615,12 +1622,18 @@ const createSplitSwapDetails = async() => {
         try {
           const principal = authService.getPrincipal();
           if (principal) {
-            await statsService.recordKongSwap(
+            // Calculate savings using saved quotes - if Kong was chosen, compare with ICPSwap quote
+            const kongOutput = swapResult.success ? swapResult?.amountOut || BigInt(0) : BigInt(0);
+            // If Kong gives better output than ICPSwap, savings is the difference, otherwise 0
+            const savings = kongOutput > icpswapOutput ? kongOutput - icpswapOutput : BigInt(0);
+
+            /*await*/ statsService.recordKongSwap(
               principal,
               swapDetails.fromToken.canisterId,
-              actualAmount.toString(),
+              actualAmount,
               swapDetails.toToken.canisterId,
-              swapResult.success ? swapDetails.toToken.amount_e8s.toString() : '0',
+              swapResult.success ? swapResult?.amountOut || BigInt(0) : BigInt(0),
+              savings,
             );
           }
         } catch (error) {
@@ -1679,13 +1692,22 @@ const createSplitSwapDetails = async() => {
           const principal = authService.getPrincipal();
           console.log("Principal: ", principal);
           if (principal) {
-            await statsService.recordKongSwap(
+            console.log("ICPSwap output: ", icpswapOutput);
+            // Calculate savings using saved quotes - if Kong was chosen, compare with ICPSwap quote
+            const kongOutput = swapResult.success ? BigInt(swapResult.amountOut?.toString() || '0') : BigInt(0);
+            console.log("Kong output: ", kongOutput);
+            // If Kong gives better output than ICPSwap, savings is the difference, otherwise 0
+            const savings = kongOutput > icpswapOutput ? kongOutput - icpswapOutput : BigInt(0);
+            console.log("Savings: ", savings);
+            /*await*/ statsService.recordKongSwap(
               principal,
               swapDetails.fromToken.canisterId,
-              actualAmount.toString(),
+              BigInt(actualAmount.toString()),
               swapDetails.toToken.canisterId,
-              swapResult.success ? swapDetails.toToken.amount_e8s.toString() : '0',
+              BigInt(swapResult.success ? swapResult.amountOut?.toString() || '0' : '0'),
+              BigInt(savings.toString()),
             );
+            console.log("Recorded Kong stats");
           }
         } catch (error) {
           console.error('Failed to record Kong stats:', error);
@@ -2674,6 +2696,10 @@ const createSplitSwapDetails = async() => {
         return onConfirmKongSwap();
       }
 
+      // Save the direct swap quotes for savings comparison
+      const icpswapOutput = quote?.amountOut || BigInt(0);
+      const kongOutput = kongQuote?.amountOut || BigInt(0);
+
       const icpswapNeeds = swapDetails.icpswap.depositNeeds;
       const kongWithdrawalNeeds = swapDetails.kong.depositNeeds;
 
@@ -2983,16 +3009,23 @@ const createSplitSwapDetails = async() => {
         setNotification({ type: 'success', message: 'Split swap executed successfully!' });
         // Record statistics using statsService
         try {
-          await statsService.recordSplitSwap(
-            authService.getPrincipal()!,
-            swapDetails.fromToken.canisterId,
-            icpswap_amount_e8s.toString(),
-            kong_amount_e8s.toString(),
-            swapDetails.toToken.canisterId,
-            icpswap_swapped_amount.toString(),
-            kong_swapped_amount.toString(),
-            typeof poolId === 'string' ? Principal.fromText(poolId) : poolId,
-          );
+          // Calculate savings - for split swaps, savings is the difference between total output and best direct output
+          const totalOutput = BigInt(icpswap_swapped_amount.toString()) + BigInt(kong_swapped_amount.toString());
+           
+          const bestDirectOutput = icpswapOutput > kongOutput ? icpswapOutput : kongOutput;
+          const savings = totalOutput > bestDirectOutput ? (totalOutput - bestDirectOutput).toString() : '0';
+
+            /*await*/ statsService.recordSplitSwap(
+              authService.getPrincipal()!,
+              swapDetails.fromToken.canisterId,
+              icpswap_amount_e8s.toString(),
+              kong_amount_e8s.toString(),
+              swapDetails.toToken.canisterId,
+              icpswap_swapped_amount.toString(),
+              kong_swapped_amount.toString(),
+              savings,
+              typeof poolId === 'string' ? Principal.fromText(poolId) : poolId,
+            );
         } catch (error) {
           console.error('Failed to record split swap stats:', error);
         }
@@ -3012,7 +3045,7 @@ const createSplitSwapDetails = async() => {
           kongResult.status === 'fulfilled' && !kongResult.value.success ? kongResult.value.error : null,
         ].filter(Boolean).join('; '),
       };
-    } catch (error) {
+        } catch (error) {
       console.error('Split swap execution failed:', error);
       console.log('Refreshing balances after failed split swap');
       /*await*/ refreshBalances();
@@ -3163,7 +3196,10 @@ const createSplitSwapDetails = async() => {
   }, [fromAmount, quote.request?.tokenIn]);
 
   // Wrap token setters to cache metadata
-  const handleFromTokenChange = async (tokenId: string) => {
+  const handleFromTokenChange = async (tokenId: string, clearInput: boolean = true) => {
+    if (clearInput) {
+      setFromAmount(''); // Clear input amount when token changes
+  }
     await cacheTokenMetadata(tokenId);
     setFromToken(tokenId);
   };
@@ -3200,7 +3236,6 @@ const createSplitSwapDetails = async() => {
       if (!undeposited.error) {
         totalBalance += undeposited.balance_e8s;
       }
-      
       setFromAmount(formatTokenAmount(totalBalance, fromToken));
     } catch (error) {
       console.error('Error in handleMax:', error);
@@ -3364,7 +3399,7 @@ const createSplitSwapDetails = async() => {
     handleCloseModal();
     setFromAmount('');
     //console.log('Refreshing balances after action success');
-    //refreshBalances();
+    //refreshBalances(); // don't do this, it led to infinite loop!
   };
 
   // Helper function to determine if a token is token0
@@ -3462,7 +3497,7 @@ const createSplitSwapDetails = async() => {
         // Verify the token exists in our list
         const fromTokenExists = tokens.some(t => t.canisterId === fromTokenParam);
         if (fromTokenExists) {
-          await handleFromTokenChange(fromTokenParam);
+          await handleFromTokenChange(fromTokenParam, false);
         } else {
           console.warn(`Token ${fromTokenParam} from URL not found in token list`);
         }
@@ -3797,7 +3832,9 @@ const createSplitSwapDetails = async() => {
           <div className="token-input-row">
             <TokenSelect 
               value={fromToken}
-              onChange={handleFromTokenChange}
+              onChange={(tokenId) => {
+                handleFromTokenChange(tokenId);
+              }}
               label=""
               onMax={handleMax}
               isLoading={isLoadingFromToken}

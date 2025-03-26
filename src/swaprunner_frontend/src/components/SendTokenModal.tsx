@@ -156,7 +156,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
         console.log('Debug - amountE8s type:', typeof amountE8s);
         console.log('Debug - amountE8s value:', amountE8s.toString());
         console.log('Debug - amountE8s raw:', amountE8s);
-        await statsService.recordSend(
+        /*await*/ statsService.recordSend(
           authService.getPrincipal()!,
           tokenId,
           amountE8s.toString()
