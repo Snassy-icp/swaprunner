@@ -228,7 +228,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
     try {
       const principal = authService.getPrincipal();
       if (principal) {
-        await statsService.recordDeposit(
+        /*await*/ statsService.recordDeposit(
           principal,
           tokenId,
           amount_e8s.toString(),

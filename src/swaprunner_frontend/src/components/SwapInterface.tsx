@@ -1117,7 +1117,7 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
           // If ICPSwap gives better output than Kong, savings is the difference, otherwise 0
           const savings = icpswapOutput > kongOutput ? (icpswapOutput - kongOutput).toString() : '0';
 
-          await statsService.recordICPSwapSwap(
+          /*await*/ statsService.recordICPSwapSwap(
             principal,
             executionParams.fromToken.canisterId,
             executionParams.fromToken.amount_e8s,
@@ -1632,7 +1632,7 @@ const createSplitSwapDetails = async() => {
             // If Kong gives better output than ICPSwap, savings is the difference, otherwise 0
             const savings = kongOutput > icpswapOutput ? (kongOutput - icpswapOutput).toString() : '0';
 
-            await statsService.recordKongSwap(
+            /*await*/ statsService.recordKongSwap(
               principal,
               swapDetails.fromToken.canisterId,
               actualAmount.toString(),
@@ -1702,7 +1702,7 @@ const createSplitSwapDetails = async() => {
             // If Kong gives better output than ICPSwap, savings is the difference, otherwise 0
             const savings = kongOutput > icpswapOutput ? (kongOutput - icpswapOutput).toString() : '0';
 
-            await statsService.recordKongSwap(
+            /*await*/ statsService.recordKongSwap(
               principal,
               swapDetails.fromToken.canisterId,
               actualAmount.toString(),
@@ -3017,7 +3017,7 @@ const createSplitSwapDetails = async() => {
           const bestDirectOutput = icpswapOutput > kongOutput ? icpswapOutput : kongOutput;
           const savings = totalOutput > bestDirectOutput ? (totalOutput - bestDirectOutput).toString() : '0';
 
-            await statsService.recordSplitSwap(
+            /*await*/ statsService.recordSplitSwap(
               authService.getPrincipal()!,
               swapDetails.fromToken.canisterId,
               icpswap_amount_e8s.toString(),
