@@ -304,11 +304,48 @@ export const Me: React.FC = () => {
             ) : userTokenStats.length > 0 ? (
               <>
                 <div className="trading-activity">
+                  <div className="total-volume">
+                    <span className="total-volume-label">Total Volume</span>
+                    <span className="total-volume-value">
+                      {(() => {
+                        const totalUSDVolume = userTokenStats.reduce((sum, [tokenId, stats]) => {
+                          const totalVolume = BigInt(stats.input_volume_e8s_icpswap) + 
+                                           BigInt(stats.input_volume_e8s_kong) + 
+                                           BigInt(stats.input_volume_e8s_split) +
+                                           BigInt(stats.output_volume_e8s_icpswap) + 
+                                           BigInt(stats.output_volume_e8s_kong) + 
+                                           BigInt(stats.output_volume_e8s_split);
+                          
+                          const price = tokenUSDPrices[tokenId];
+                          if (price === undefined || loadingUSDPrices[tokenId]) return sum;
+                          
+                          const metadata = tokenMetadata[tokenId];
+                          if (!metadata) return sum;
+                          
+                          const decimals = metadata.decimals ?? 8;
+                          const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+                          const amountInWholeUnits = Number(totalVolume) / Number(baseUnitMultiplier);
+                          return sum + (amountInWholeUnits * price);
+                        }, 0);
+
+                        if (Object.values(loadingUSDPrices).some(loading => loading)) {
+                          return (
+                            <>
+                              ${totalUSDVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              <FiLoader className="spinner" />
+                            </>
+                          );
+                        }
+                        
+                        return `$${totalUSDVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                      })()}
+                    </span>
+                  </div>
                   <div className="activity-grid">
                     <div className="activity-card">
                       <h4>Total Swaps</h4>
                       <div className="activity-value">{calculateTradingActivity()?.totalSwaps}</div>
-                      <div className="activity-description">All-time completed swaps</div>
+                      <div className="activity-description">All-time swaps</div>
                     </div>
                     <div className="activity-card">
                       <h4>Split Swaps</h4>
