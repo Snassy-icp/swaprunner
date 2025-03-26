@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { FiUser, FiLogIn, FiChevronDown, FiChevronUp, FiSettings, FiBarChart2, FiLoader, FiArrowUp, FiArrowDown, FiRefreshCw } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { usePool } from '../contexts/PoolContext';
-import { statsService, UserTokenStats } from '../services/stats';
+import { statsService, UserTokenStats, TokenSavingsStats } from '../services/stats';
 import { tokenService } from '../services/token';
 import { TokenMetadata } from '../types/token';
 import { formatTokenAmount } from '../utils/format';
 import { priceService } from '../services/price';
 import '../styles/Me.css';
 
-type SortField = 'token' | 'swaps' | 'volume';
+type SortField = 'token' | 'swaps' | 'volume' | 'savings';
 type SortDirection = 'asc' | 'desc';
 
 interface SortConfig {
@@ -57,6 +57,7 @@ export const Me: React.FC = () => {
   const { isAuthenticated, principal, login } = useAuth();
   const { keepTokensInPool, setKeepTokensInPool } = usePool();
   const [userTokenStats, setUserTokenStats] = useState<[string, UserTokenStats][]>([]);
+  const [tokenSavingsStats, setTokenSavingsStats] = useState<Record<string, TokenSavingsStats>>({});
   const [tokenMetadata, setTokenMetadata] = useState<Record<string, TokenMetadata>>({});
   const [tokenUSDPrices, setTokenUSDPrices] = useState<Record<string, number>>({});
   const [loadingUSDPrices, setLoadingUSDPrices] = useState<Record<string, boolean>>({});
@@ -68,8 +69,19 @@ export const Me: React.FC = () => {
     
     try {
       setLoading(true);
-      const stats = await statsService.getMyTokenStats();
+      const [stats, savingsStats] = await Promise.all([
+        statsService.getMyTokenStats(),
+        statsService.getMyTokenSavingsStats()
+      ]);
+      
       setUserTokenStats(stats);
+      
+      // Convert savings stats array to record for easier lookup
+      const savingsRecord: Record<string, TokenSavingsStats> = {};
+      savingsStats.forEach(([tokenId, stats]) => {
+        savingsRecord[tokenId] = stats;
+      });
+      setTokenSavingsStats(savingsRecord);
 
       // Initialize loading state for USD prices
       const initialLoadingState: Record<string, boolean> = {};
@@ -191,6 +203,15 @@ export const Me: React.FC = () => {
                          BigInt(statsB.output_volume_e8s_kong); // + 
                          /*BigInt(statsB.output_volume_e8s_split);*/ // Split amounts are already counted in kong and icpswap amounts
           return multiplier * (volumeA > volumeB ? 1 : volumeA < volumeB ? -1 : 0);
+
+        case 'savings':
+          const savingsA = tokenSavingsStats[tokenIdA];
+          const savingsB = tokenSavingsStats[tokenIdB];
+          const totalSavingsA = savingsA ? 
+            Number(savingsA.icpswap_savings_e8s + savingsA.kong_savings_e8s + savingsA.split_savings_e8s) : 0;
+          const totalSavingsB = savingsB ? 
+            Number(savingsB.icpswap_savings_e8s + savingsB.kong_savings_e8s + savingsB.split_savings_e8s) : 0;
+          return multiplier * (totalSavingsA - totalSavingsB);
 
         default:
           return 0;
@@ -365,6 +386,9 @@ export const Me: React.FC = () => {
                           <th onClick={() => handleSort('volume')} className="sortable">
                             Total Volume <SortIcon field="volume" />
                           </th>
+                          <th onClick={() => handleSort('savings')} className="sortable">
+                            Total Savings <SortIcon field="savings" />
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -382,9 +406,16 @@ export const Me: React.FC = () => {
                                             BigInt(stats.output_volume_e8s_icpswap) + 
                                             BigInt(stats.output_volume_e8s_kong); // + 
                                             /*BigInt(stats.output_volume_e8s_split);*/ // Split amounts are already counted in kong and icpswap amounts
+                          const savingsStats = tokenSavingsStats[tokenId];
+                          const totalSavings = savingsStats ? 
+                            savingsStats.icpswap_savings_e8s + savingsStats.kong_savings_e8s + savingsStats.split_savings_e8s : 
+                            BigInt(0);
                           const isLoadingUSD = loadingUSDPrices[tokenId];
                           const usdValue = tokenUSDPrices[tokenId] !== undefined 
                             ? calculateUSDValue(totalVolume, tokenId)
+                            : undefined;
+                          const usdSavings = tokenUSDPrices[tokenId] !== undefined 
+                            ? calculateUSDValue(totalSavings, tokenId)
                             : undefined;
                           
                           return (
@@ -414,6 +445,16 @@ export const Me: React.FC = () => {
                                   </span>
                                 ) : usdValue !== '-' && (
                                   <span className="usd-value"> • {usdValue}</span>
+                                )}
+                              </td>
+                              <td>
+                                {metadata ? formatTokenAmount(totalSavings, tokenId) : formatAmount(totalSavings)}
+                                {isLoadingUSD ? (
+                                  <span className="usd-value">
+                                    <FiLoader className="spinner" />
+                                  </span>
+                                ) : usdSavings !== '-' && (
+                                  <span className="usd-value"> • {usdSavings}</span>
                                 )}
                               </td>
                             </tr>

@@ -141,10 +141,10 @@ export class StatsService {
     console.log('Recording Kong swap:', {
       user: user.toString(),
       token_in,
-      amount_in_e8s,
+      amount_in_e8s: amount_in_e8s.toString(),
       token_out,
-      amount_out_e8s,
-      savings_out_e8s,
+      amount_out_e8s: amount_out_e8s.toString(),
+      savings_out_e8s: savings_out_e8s.toString(),
     });
 
     try {
@@ -417,6 +417,14 @@ export class StatsService {
     const actor = await backendService.getActor();
     const stats = await actor.get_all_token_savings_stats();
     console.log('All token savings stats:', stats);
+    return stats;
+  }
+
+  async getMyTokenSavingsStats(): Promise<[string, TokenSavingsStats][]> {
+    console.log('Getting user token savings stats...');
+    const actor = await backendService.getActor();
+    const stats = await actor.get_my_token_savings_stats();
+    console.log('User token savings stats:', stats);
     return stats;
   }
 }
