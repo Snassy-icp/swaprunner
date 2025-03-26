@@ -291,7 +291,7 @@ export const Me: React.FC = () => {
   return (
     <div className="me-page">
       <div className="swap-box">
-        <CollapsibleSection title="Profile" icon={<FiUser />}>
+        <CollapsibleSection title="Profile" icon={<FiUser />} defaultExpanded={false}>
           <div className="principal-display">
             <label>Your Principal ID:</label>
             <div className="principal-value">{principal}</div>
@@ -320,7 +320,7 @@ export const Me: React.FC = () => {
           </div>
         </CollapsibleSection>
 
-        <CollapsibleSection title="Statistics" icon={<FiBarChart2 />} defaultExpanded={false}>
+        <CollapsibleSection title="Statistics" icon={<FiBarChart2 />} defaultExpanded={true}>
           <div className="statistics-display">
             {loading ? (
               <LoadingSpinner />
