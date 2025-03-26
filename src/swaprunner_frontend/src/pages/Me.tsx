@@ -180,16 +180,16 @@ export const Me: React.FC = () => {
         case 'volume':
           const volumeA = BigInt(statsA.input_volume_e8s_icpswap) + 
                          BigInt(statsA.input_volume_e8s_kong) + 
-                         BigInt(statsA.input_volume_e8s_split) +
+                         /*BigInt(statsA.input_volume_e8s_split) +*/ // Split amounts are already counted in kong and icpswap amounts
                          BigInt(statsA.output_volume_e8s_icpswap) + 
-                         BigInt(statsA.output_volume_e8s_kong) + 
-                         BigInt(statsA.output_volume_e8s_split);
+                         BigInt(statsA.output_volume_e8s_kong); // + 
+                         /*BigInt(statsA.output_volume_e8s_split);*/ // Split amounts are already counted in kong and icpswap amounts
           const volumeB = BigInt(statsB.input_volume_e8s_icpswap) + 
                          BigInt(statsB.input_volume_e8s_kong) + 
-                         BigInt(statsB.input_volume_e8s_split) +
+                         /*BigInt(statsB.input_volume_e8s_split) +*/ // Split amounts are already counted in kong and icpswap amounts
                          BigInt(statsB.output_volume_e8s_icpswap) + 
-                         BigInt(statsB.output_volume_e8s_kong) + 
-                         BigInt(statsB.output_volume_e8s_split);
+                         BigInt(statsB.output_volume_e8s_kong); // + 
+                         /*BigInt(statsB.output_volume_e8s_split);*/ // Split amounts are already counted in kong and icpswap amounts
           return multiplier * (volumeA > volumeB ? 1 : volumeA < volumeB ? -1 : 0);
 
         default:
@@ -367,10 +367,10 @@ export const Me: React.FC = () => {
                                          Number(stats.swaps_as_output_split);
                         const totalVolume = BigInt(stats.input_volume_e8s_icpswap) + 
                                           BigInt(stats.input_volume_e8s_kong) + 
-                                          BigInt(stats.input_volume_e8s_split) +
+                                          /*BigInt(stats.input_volume_e8s_split) +*/ // Split amounts are already counted in kong and icpswap amounts
                                           BigInt(stats.output_volume_e8s_icpswap) + 
-                                          BigInt(stats.output_volume_e8s_kong) + 
-                                          BigInt(stats.output_volume_e8s_split);
+                                          BigInt(stats.output_volume_e8s_kong); // + 
+                                          /*BigInt(stats.output_volume_e8s_split);*/ // Split amounts are already counted in kong and icpswap amounts
                         const isLoadingUSD = loadingUSDPrices[tokenId];
                         const usdValue = tokenUSDPrices[tokenId] !== undefined 
                           ? calculateUSDValue(totalVolume, tokenId)
