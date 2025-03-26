@@ -61,9 +61,6 @@ actor {
         output_volume_e8s_split: Nat;
 
         // Savings stats
-        savings_as_input_icpswap_e8s: Nat;  // Amount saved when using ICPSwap vs Kong for input
-        savings_as_input_kong_e8s: Nat;     // Amount saved when using Kong vs ICPSwap for input
-        savings_as_input_split_e8s: Nat;    // Amount saved when using split vs best direct for input
         savings_as_output_icpswap_e8s: Nat; // Amount saved when using ICPSwap vs Kong for output
         savings_as_output_kong_e8s: Nat;    // Amount saved when using Kong vs ICPSwap for output
         savings_as_output_split_e8s: Nat;   // Amount saved when using split vs best direct for output
@@ -869,9 +866,6 @@ actor {
                     output_volume_e8s_icpswap = 0;
                     output_volume_e8s_kong = 0;
                     output_volume_e8s_split = 0;
-                    savings_as_input_icpswap_e8s = 0;
-                    savings_as_input_kong_e8s = 0;
-                    savings_as_input_split_e8s = 0;
                     savings_as_output_icpswap_e8s = 0;
                     savings_as_output_kong_e8s = 0;
                     savings_as_output_split_e8s = 0;
@@ -908,6 +902,7 @@ actor {
         amount_in_e8s: Nat,
         token_out: Text,  // Canister ID
         amount_out_e8s: Nat,
+        savings_out_e8s: Nat,
         pool_id: Principal,  // Pool ID
     ) : async () {
         // Existing global stats update
@@ -980,6 +975,9 @@ actor {
             output_volume_e8s_icpswap = user_token_in_stats.output_volume_e8s_icpswap;
             output_volume_e8s_kong = user_token_in_stats.output_volume_e8s_kong;
             output_volume_e8s_split = user_token_in_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_in_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_in_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_in_stats.savings_as_output_split_e8s;
             total_sends = user_token_in_stats.total_sends;
             total_deposits = user_token_in_stats.total_deposits;
             total_withdrawals = user_token_in_stats.total_withdrawals;
@@ -1000,6 +998,9 @@ actor {
             output_volume_e8s_icpswap = user_token_out_stats.output_volume_e8s_icpswap + amount_out_e8s;
             output_volume_e8s_kong = user_token_out_stats.output_volume_e8s_kong;
             output_volume_e8s_split = user_token_out_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_in_stats.savings_as_output_icpswap_e8s + savings_out_e8s;
+            savings_as_output_kong_e8s = user_token_in_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_in_stats.savings_as_output_split_e8s;
             total_sends = user_token_out_stats.total_sends;
             total_deposits = user_token_out_stats.total_deposits;
             total_withdrawals = user_token_out_stats.total_withdrawals;
@@ -1045,6 +1046,7 @@ actor {
         amount_in_e8s: Nat,
         token_out: Text,  // Canister ID
         amount_out_e8s: Nat,
+        savings_out_e8s: Nat,
     ) : async () {
         // Update global stats
         globalStats := {
@@ -1115,6 +1117,9 @@ actor {
             output_volume_e8s_icpswap = user_token_in_stats.output_volume_e8s_icpswap;
             output_volume_e8s_kong = user_token_in_stats.output_volume_e8s_kong;
             output_volume_e8s_split = user_token_in_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_in_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_in_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_in_stats.savings_as_output_split_e8s;
             total_sends = user_token_in_stats.total_sends;
             total_deposits = user_token_in_stats.total_deposits;
             total_withdrawals = user_token_in_stats.total_withdrawals;
@@ -1135,6 +1140,9 @@ actor {
             output_volume_e8s_icpswap = user_token_out_stats.output_volume_e8s_icpswap;
             output_volume_e8s_kong = user_token_out_stats.output_volume_e8s_kong + amount_out_e8s;
             output_volume_e8s_split = user_token_out_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_in_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_in_stats.savings_as_output_kong_e8s + savings_out_e8s;
+            savings_as_output_split_e8s = user_token_in_stats.savings_as_output_split_e8s;
             total_sends = user_token_out_stats.total_sends;
             total_deposits = user_token_out_stats.total_deposits;
             total_withdrawals = user_token_out_stats.total_withdrawals;
@@ -1179,6 +1187,7 @@ actor {
         token_out: Text,  // Canister ID
         icpswap_amount_out_e8s: Nat,
         kong_amount_out_e8s: Nat,
+        savings_out_e8s: Nat,
         icpswap_pool_id: Principal,  // Add pool ID
     ) : async () {
         // Update global stats
@@ -1250,6 +1259,9 @@ actor {
             output_volume_e8s_icpswap = user_token_in_stats.output_volume_e8s_icpswap;
             output_volume_e8s_kong = user_token_in_stats.output_volume_e8s_kong;
             output_volume_e8s_split = user_token_in_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_in_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_in_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_in_stats.savings_as_output_split_e8s;
             total_sends = user_token_in_stats.total_sends;
             total_deposits = user_token_in_stats.total_deposits;
             total_withdrawals = user_token_in_stats.total_withdrawals;
@@ -1270,6 +1282,9 @@ actor {
             output_volume_e8s_icpswap = user_token_out_stats.output_volume_e8s_icpswap + icpswap_amount_out_e8s;
             output_volume_e8s_kong = user_token_out_stats.output_volume_e8s_kong + kong_amount_out_e8s;
             output_volume_e8s_split = user_token_out_stats.output_volume_e8s_split + icpswap_amount_out_e8s + kong_amount_out_e8s;
+            savings_as_output_icpswap_e8s = user_token_in_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_in_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_in_stats.savings_as_output_split_e8s + savings_out_e8s;
             total_sends = user_token_out_stats.total_sends;
             total_deposits = user_token_out_stats.total_deposits;
             total_withdrawals = user_token_out_stats.total_withdrawals;
@@ -1368,6 +1383,9 @@ actor {
             output_volume_e8s_icpswap = user_token_stats.output_volume_e8s_icpswap;
             output_volume_e8s_kong = user_token_stats.output_volume_e8s_kong;
             output_volume_e8s_split = user_token_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_stats.savings_as_output_split_e8s;
             total_sends = user_token_stats.total_sends + 1;
             total_deposits = user_token_stats.total_deposits;
             total_withdrawals = user_token_stats.total_withdrawals;
@@ -1435,6 +1453,9 @@ actor {
             output_volume_e8s_icpswap = user_token_stats.output_volume_e8s_icpswap;
             output_volume_e8s_kong = user_token_stats.output_volume_e8s_kong;
             output_volume_e8s_split = user_token_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_stats.savings_as_output_split_e8s;
             total_sends = user_token_stats.total_sends;
             total_deposits = user_token_stats.total_deposits + 1;
             total_withdrawals = user_token_stats.total_withdrawals;
@@ -1505,6 +1526,9 @@ actor {
             output_volume_e8s_icpswap = user_token_stats.output_volume_e8s_icpswap;
             output_volume_e8s_kong = user_token_stats.output_volume_e8s_kong;
             output_volume_e8s_split = user_token_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_stats.savings_as_output_split_e8s;
             total_sends = user_token_stats.total_sends;
             total_deposits = user_token_stats.total_deposits;
             total_withdrawals = user_token_stats.total_withdrawals + 1;
