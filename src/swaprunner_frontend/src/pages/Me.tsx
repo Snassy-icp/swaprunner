@@ -335,10 +335,10 @@ export const Me: React.FC = () => {
                           const totalUSDVolume = userTokenStats.reduce((sum, [tokenId, stats]) => {
                             const totalVolume = BigInt(stats.input_volume_e8s_icpswap) + 
                                              BigInt(stats.input_volume_e8s_kong) + 
-                                             BigInt(stats.input_volume_e8s_split) +
+                                             /*BigInt(stats.input_volume_e8s_split) +*/ // Split amounts are already counted in kong and icpswap amounts
                                              BigInt(stats.output_volume_e8s_icpswap) + 
-                                             BigInt(stats.output_volume_e8s_kong) + 
-                                             BigInt(stats.output_volume_e8s_split);
+                                             BigInt(stats.output_volume_e8s_kong); // + 
+                                             /*BigInt(stats.output_volume_e8s_split);*/ // Split amounts are already counted in kong and icpswap amounts
                             
                             const price = tokenUSDPrices[tokenId];
                             if (price === undefined || loadingUSDPrices[tokenId]) return sum;
@@ -374,9 +374,9 @@ export const Me: React.FC = () => {
                             if (!savingsStats) return sum;
                             
                             const totalSavings = savingsStats.icpswap_savings_e8s + 
-                                               savingsStats.kong_savings_e8s + 
+                                               savingsStats.kong_savings_e8s +  
                                                savingsStats.split_savings_e8s;
-                            
+                                               
                             const price = tokenUSDPrices[tokenId];
                             if (price === undefined || loadingUSDPrices[tokenId]) return sum;
                             
@@ -389,16 +389,37 @@ export const Me: React.FC = () => {
                             return sum + (amountInWholeUnits * price);
                           }, 0);
 
+                          const totalUSDVolume = userTokenStats.reduce((sum, [tokenId, stats]) => {
+                            const totalVolume = BigInt(stats.input_volume_e8s_icpswap) + 
+                                             BigInt(stats.input_volume_e8s_kong) + 
+                                             BigInt(stats.output_volume_e8s_icpswap) + 
+                                             BigInt(stats.output_volume_e8s_kong);
+                            
+                            const price = tokenUSDPrices[tokenId];
+                            if (price === undefined || loadingUSDPrices[tokenId]) return sum;
+                            
+                            const metadata = tokenMetadata[tokenId];
+                            if (!metadata) return sum;
+                            
+                            const decimals = metadata.decimals ?? 8;
+                            const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+                            const amountInWholeUnits = Number(totalVolume) / Number(baseUnitMultiplier);
+                            return sum + (amountInWholeUnits * price);
+                          }, 0);
+
+                          const savingsPercentage = totalUSDVolume > 0 ? (totalUSDSavings / totalUSDVolume) * 100 : 0;
+
                           if (Object.values(loadingUSDPrices).some(loading => loading)) {
                             return (
-                              <>
+                              <span className="loading">
                                 ${totalUSDSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                {` (${savingsPercentage.toFixed(2)}%)`}
                                 <FiLoader className="spinner" />
-                              </>
+                              </span>
                             );
                           }
                           
-                          return `$${totalUSDSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                          return `$${totalUSDSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${savingsPercentage.toFixed(2)}%)`;
                         })()}
                       </span>
                     </div>
