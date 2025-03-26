@@ -170,6 +170,10 @@
   }
 }
 
+.me-page .statistics-display .token-statistics-table {
+  margin-bottom: 24px;
+}
+
 .me-page .statistics-display .activity-grid {
   display: grid;
   grid-template-columns: 1fr;
