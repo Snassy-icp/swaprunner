@@ -1109,12 +1109,22 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
       try {
         const principal = authService.getPrincipal();
         if (principal && poolId) {
+          // Calculate savings - for ICPSwap swaps, savings is the difference between ICPSwap output and Kong output
+          const icpswapOutput = BigInt(swapped_amount.toString() || '0');
+          const kongQuote = await kongSwapService.getQuote({
+            tokenIn: executionParams.fromToken.canisterId,
+            tokenOut: executionParams.toToken.canisterId,
+            amountIn: BigInt(executionParams.fromToken.amount_e8s),
+          });
+          const savings = icpswapOutput > (kongQuote.amountOut || BigInt(0)) ? (icpswapOutput - (kongQuote.amountOut || BigInt(0))).toString() : '0';
+
           await statsService.recordICPSwapSwap(
             principal,
             executionParams.fromToken.canisterId,
             executionParams.fromToken.amount_e8s,
             executionParams.toToken.canisterId,
             swapped_amount.toString() || '0',
+            savings,
             typeof poolId === 'string' ? Principal.fromText(poolId) : poolId,
           );
         }
@@ -1615,12 +1625,23 @@ const createSplitSwapDetails = async() => {
         try {
           const principal = authService.getPrincipal();
           if (principal) {
+            // Calculate savings - for Kong swaps, savings is the difference between Kong output and ICPSwap output
+            const kongOutput = BigInt(swapResult.success ? swapDetails.toToken.amount_e8s.toString() : '0');
+            const icpswapQuote = await icpSwapService.getQuote({
+              amountIn: BigInt(actualAmount.toString()),
+              tokenIn: swapDetails.fromToken.canisterId,
+              tokenOut: swapDetails.toToken.canisterId,
+              fee: DEFAULT_FEE,
+            });
+            const savings = kongOutput > icpswapQuote.amountOut ? (kongOutput - icpswapQuote.amountOut).toString() : '0';
+
             await statsService.recordKongSwap(
               principal,
               swapDetails.fromToken.canisterId,
               actualAmount.toString(),
               swapDetails.toToken.canisterId,
               swapResult.success ? swapDetails.toToken.amount_e8s.toString() : '0',
+              savings,
             );
           }
         } catch (error) {
@@ -1679,12 +1700,23 @@ const createSplitSwapDetails = async() => {
           const principal = authService.getPrincipal();
           console.log("Principal: ", principal);
           if (principal) {
+            // Calculate savings - for Kong swaps, savings is the difference between Kong output and ICPSwap output
+            const kongOutput = BigInt(swapResult.success ? swapDetails.toToken.amount_e8s.toString() : '0');
+            const icpswapQuote = await icpSwapService.getQuote({
+              amountIn: BigInt(actualAmount.toString()),
+              tokenIn: swapDetails.fromToken.canisterId,
+              tokenOut: swapDetails.toToken.canisterId,
+              fee: DEFAULT_FEE,
+            });
+            const savings = kongOutput > icpswapQuote.amountOut ? (kongOutput - icpswapQuote.amountOut).toString() : '0';
+
             await statsService.recordKongSwap(
               principal,
               swapDetails.fromToken.canisterId,
               actualAmount.toString(),
               swapDetails.toToken.canisterId,
               swapResult.success ? swapDetails.toToken.amount_e8s.toString() : '0',
+              savings,
             );
           }
         } catch (error) {
@@ -2983,6 +3015,27 @@ const createSplitSwapDetails = async() => {
         setNotification({ type: 'success', message: 'Split swap executed successfully!' });
         // Record statistics using statsService
         try {
+          // Calculate savings - for split swaps, savings is the difference between total output and best direct output
+          const totalOutput = BigInt(icpswap_swapped_amount.toString()) + BigInt(kong_swapped_amount.toString());
+          
+          // Get quotes for direct swaps
+          const [icpswapQuote, kongQuote] = await Promise.all([
+            icpSwapService.getQuote({
+              amountIn: BigInt(swapDetails.fromToken.amount_e8s.toString()),
+              tokenIn: swapDetails.fromToken.canisterId,
+              tokenOut: swapDetails.toToken.canisterId,
+              fee: DEFAULT_FEE,
+            }),
+            kongSwapService.getQuote({
+              amountIn: BigInt(swapDetails.fromToken.amount_e8s.toString()),
+              tokenIn: swapDetails.fromToken.canisterId,
+              tokenOut: swapDetails.toToken.canisterId,
+            })
+          ]);
+
+          const bestDirectOutput = icpswapQuote.amountOut > kongQuote.amountOut ? icpswapQuote.amountOut : kongQuote.amountOut;
+          const savings = totalOutput > bestDirectOutput ? (totalOutput - bestDirectOutput).toString() : '0';
+
           await statsService.recordSplitSwap(
             authService.getPrincipal()!,
             swapDetails.fromToken.canisterId,
@@ -2991,6 +3044,7 @@ const createSplitSwapDetails = async() => {
             swapDetails.toToken.canisterId,
             icpswap_swapped_amount.toString(),
             kong_swapped_amount.toString(),
+            savings,
             typeof poolId === 'string' ? Principal.fromText(poolId) : poolId,
           );
         } catch (error) {
