@@ -92,6 +92,7 @@ export class StatsService {
     amount_in_e8s: string,
     token_out: string,
     amount_out_e8s: string,
+    savings_out_e8s: string,
     pool_id: Principal,
   ): Promise<void> {
     console.log('Recording ICPSwap swap:', {
@@ -100,6 +101,7 @@ export class StatsService {
       amount_in_e8s,
       token_out,
       amount_out_e8s,
+      savings_out_e8s,
       pool_id: pool_id.toString(),
     });
 
@@ -111,6 +113,7 @@ export class StatsService {
         BigInt(amount_in_e8s),
         token_out,
         BigInt(amount_out_e8s),
+        BigInt(savings_out_e8s),
         pool_id,
       );
       console.log('Successfully recorded ICPSwap swap');
@@ -127,6 +130,7 @@ export class StatsService {
     amount_in_e8s: string,
     token_out: string,
     amount_out_e8s: string,
+    savings_out_e8s: string,
   ): Promise<void> {
     console.log('Recording Kong swap:', {
       user: user.toString(),
@@ -134,6 +138,7 @@ export class StatsService {
       amount_in_e8s,
       token_out,
       amount_out_e8s,
+      savings_out_e8s,
     });
 
     try {
@@ -144,6 +149,7 @@ export class StatsService {
         BigInt(amount_in_e8s),
         token_out,
         BigInt(amount_out_e8s),
+        BigInt(savings_out_e8s),
       );
       console.log('Successfully recorded Kong swap');
     } catch (error) {
@@ -161,6 +167,7 @@ export class StatsService {
     token_out: string,
     icpswap_amount_out_e8s: string,
     kong_amount_out_e8s: string,
+    savings_out_e8s: string,
     icpswap_pool_id: Principal,
   ): Promise<void> {
     console.log('Recording split swap:', {
@@ -171,6 +178,7 @@ export class StatsService {
       token_out,
       icpswap_amount_out_e8s,
       kong_amount_out_e8s,
+      savings_out_e8s,
       icpswap_pool_id: icpswap_pool_id.toString(),
     });
 
@@ -184,6 +192,7 @@ export class StatsService {
         token_out,
         BigInt(icpswap_amount_out_e8s),
         BigInt(kong_amount_out_e8s),
+        BigInt(savings_out_e8s),
         icpswap_pool_id,
       );
       console.log('Successfully recorded split swap');
