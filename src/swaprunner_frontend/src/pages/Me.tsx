@@ -365,6 +365,43 @@ export const Me: React.FC = () => {
                         })()}
                       </span>
                     </div>
+                    <div className="total-volume-content">
+                      <span className="total-volume-label">Total Savings</span>
+                      <span className="total-volume-value">
+                        {(() => {
+                          const totalUSDSavings = userTokenStats.reduce((sum, [tokenId, stats]) => {
+                            const savingsStats = tokenSavingsStats[tokenId];
+                            if (!savingsStats) return sum;
+                            
+                            const totalSavings = savingsStats.icpswap_savings_e8s + 
+                                               savingsStats.kong_savings_e8s + 
+                                               savingsStats.split_savings_e8s;
+                            
+                            const price = tokenUSDPrices[tokenId];
+                            if (price === undefined || loadingUSDPrices[tokenId]) return sum;
+                            
+                            const metadata = tokenMetadata[tokenId];
+                            if (!metadata) return sum;
+                            
+                            const decimals = metadata.decimals ?? 8;
+                            const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+                            const amountInWholeUnits = Number(totalSavings) / Number(baseUnitMultiplier);
+                            return sum + (amountInWholeUnits * price);
+                          }, 0);
+
+                          if (Object.values(loadingUSDPrices).some(loading => loading)) {
+                            return (
+                              <>
+                                ${totalUSDSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                <FiLoader className="spinner" />
+                              </>
+                            );
+                          }
+                          
+                          return `$${totalUSDSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                        })()}
+                      </span>
+                    </div>
                     <button 
                       className="expanded-action-button"
                       onClick={fetchStats}
