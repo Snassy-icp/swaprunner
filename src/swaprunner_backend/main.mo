@@ -3673,4 +3673,39 @@ actor {
         poolMetadata.put(pool_canister_id, metadata);
         #ok()
     };
+
+    public shared func clear_user_token_savings_stats() : async () {
+        // Iterate through all user-token stats and reset their savings fields
+        for ((key, stats) in userTokenStats.entries()) {
+            userTokenStats.put(key, {
+                swaps_as_input_icpswap = stats.swaps_as_input_icpswap;
+                swaps_as_input_kong = stats.swaps_as_input_kong;
+                swaps_as_input_split = stats.swaps_as_input_split;
+                input_volume_e8s_icpswap = stats.input_volume_e8s_icpswap;
+                input_volume_e8s_kong = stats.input_volume_e8s_kong;
+                input_volume_e8s_split = stats.input_volume_e8s_split;
+                swaps_as_output_icpswap = stats.swaps_as_output_icpswap;
+                swaps_as_output_kong = stats.swaps_as_output_kong;
+                swaps_as_output_split = stats.swaps_as_output_split;
+                output_volume_e8s_icpswap = stats.output_volume_e8s_icpswap;
+                output_volume_e8s_kong = stats.output_volume_e8s_kong;
+                output_volume_e8s_split = stats.output_volume_e8s_split;
+                savings_as_output_icpswap_e8s = 0;  // Reset savings
+                savings_as_output_kong_e8s = 0;     // Reset savings
+                savings_as_output_split_e8s = 0;    // Reset savings
+                total_sends = stats.total_sends;
+                total_deposits = stats.total_deposits;
+                total_withdrawals = stats.total_withdrawals;
+            });
+        };
+
+        // Also clear the global token savings stats
+        for ((tokenId, _) in tokenSavingsStats.entries()) {
+            tokenSavingsStats.put(tokenId, {
+                icpswap_savings_e8s = 0;
+                kong_savings_e8s = 0;
+                split_savings_e8s = 0;
+            });
+        };
+    };
 }
