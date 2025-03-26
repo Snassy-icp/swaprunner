@@ -5,12 +5,14 @@ import { TokenMetadata } from '../types/token';
 import { formatTokenAmount } from '../utils/format';
 import { priceService } from '../services/price';
 import { FiChevronUp, FiChevronDown, FiLoader, FiRefreshCw } from 'react-icons/fi';
+import { useAuth } from '../contexts/AuthContext';
 import '../styles/Statistics.css';
 
 type SortColumn = 'token' | 'swaps' | 'volume' | 'savings';
 type SortDirection = 'asc' | 'desc';
 
 export function Statistics() {
+  const { isAuthenticated, isAdmin } = useAuth();
   const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
   const [tokenStats, setTokenStats] = useState<[string, TokenStats][]>([]);
   const [tokenSavingsStats, setTokenSavingsStats] = useState<Record<string, TokenSavingsStats>>({});
@@ -256,7 +258,7 @@ export function Statistics() {
             </span>
           </div>
         )}
-        {!loadingTokens && (
+        {!loadingTokens && isAuthenticated && isAdmin && (
           <div className="total-volume">
             <span className="total-volume-label">Total Savings</span>
             <span className="total-volume-value secondary">
