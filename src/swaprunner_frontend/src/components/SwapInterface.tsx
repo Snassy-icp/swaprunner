@@ -213,7 +213,6 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
   useEffect(() => {
     const ICP_CANISTER_ID = 'ryjl3-tyaaa-aaaaa-aaaba-cai';
     if (!fromTokenParam) {
-      console.log('AAAAAAAA useEffect', ICP_CANISTER_ID);
       handleFromTokenChange(ICP_CANISTER_ID);
       setHasInitialized(true);
     }
@@ -244,7 +243,6 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
   // Function to handle swapping direction
   const handleSwapDirection = async () => {
     const tempFromToken = fromToken;
-    console.log('AAAAAAAA handleSwapDirection');
  
     setFromAmount('');
     setFromToken(toToken);
@@ -3199,7 +3197,6 @@ const createSplitSwapDetails = async() => {
 
   // Wrap token setters to cache metadata
   const handleFromTokenChange = async (tokenId: string, clearInput: boolean = true) => {
-    console.log('AAAAAAAA handleFromTokenChange', tokenId);
     if (clearInput) {
       setFromAmount(''); // Clear input amount when token changes
   }
@@ -3239,7 +3236,6 @@ const createSplitSwapDetails = async() => {
       if (!undeposited.error) {
         totalBalance += undeposited.balance_e8s;
       }
-      console.log('AAAAAAAA handleMax', totalBalance, fromToken);
       setFromAmount(formatTokenAmount(totalBalance, fromToken));
     } catch (error) {
       console.error('Error in handleMax:', error);
@@ -3401,10 +3397,9 @@ const createSplitSwapDetails = async() => {
   // Handler for successful action
   const handleActionSuccess = () => {
     handleCloseModal();
-    console.log('AAAAAAAA handleActionSuccess', fromAmount);
     setFromAmount('');
     //console.log('Refreshing balances after action success');
-    //refreshBalances();
+    //refreshBalances(); // don't do this, it led to infinite loop!
   };
 
   // Helper function to determine if a token is token0
@@ -3502,7 +3497,6 @@ const createSplitSwapDetails = async() => {
         // Verify the token exists in our list
         const fromTokenExists = tokens.some(t => t.canisterId === fromTokenParam);
         if (fromTokenExists) {
-          console.log('AAAAAAAA fromTokenExists', fromTokenParam);
           await handleFromTokenChange(fromTokenParam, false);
         } else {
           console.warn(`Token ${fromTokenParam} from URL not found in token list`);
@@ -3839,7 +3833,6 @@ const createSplitSwapDetails = async() => {
             <TokenSelect 
               value={fromToken}
               onChange={(tokenId) => {
-                console.log('AAAAAAAAAAAAAAAAAAAAA onChange', tokenId);
                 handleFromTokenChange(tokenId);
               }}
               label=""
