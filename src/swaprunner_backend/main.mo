@@ -1086,7 +1086,7 @@ actor {
         let token_out_stats = getOrCreateTokenStats(token_out);
         tokenStats.put(token_out, {
             total_swaps = token_out_stats.total_swaps + 1;
-            icpswap_swaps = token_out_stats.icpswap_swaps + 1;
+            icpswap_swaps = token_out_stats.icpswap_swaps;
             kong_swaps = token_out_stats.kong_swaps + 1;
             split_swaps = token_out_stats.split_swaps;
             volume_e8s = token_out_stats.volume_e8s + amount_out_e8s;
@@ -1271,9 +1271,9 @@ actor {
         // Update user-token stats for input token
         let user_token_in_stats = getOrCreateUserTokenStats(user, token_in);
         userTokenStats.put(getUserTokenStatsKey(user, token_in), {
-            swaps_as_input_icpswap = user_token_in_stats.swaps_as_input_icpswap + 1;
+            swaps_as_input_icpswap = user_token_in_stats.swaps_as_input_icpswap;
             swaps_as_input_kong = user_token_in_stats.swaps_as_input_kong;
-            swaps_as_input_split = user_token_in_stats.swaps_as_input_split;
+            swaps_as_input_split = user_token_in_stats.swaps_as_input_split + 1;
             input_volume_e8s_icpswap = user_token_in_stats.input_volume_e8s_icpswap + icpswap_amount_in_e8s;
             input_volume_e8s_kong = user_token_in_stats.input_volume_e8s_kong + kong_amount_in_e8s;
             input_volume_e8s_split = user_token_in_stats.input_volume_e8s_split + icpswap_amount_in_e8s + kong_amount_in_e8s;
@@ -1300,9 +1300,9 @@ actor {
             input_volume_e8s_icpswap = user_token_out_stats.input_volume_e8s_icpswap;
             input_volume_e8s_kong = user_token_out_stats.input_volume_e8s_kong;
             input_volume_e8s_split = user_token_out_stats.input_volume_e8s_split;
-            swaps_as_output_icpswap = user_token_out_stats.swaps_as_output_icpswap + 1;
+            swaps_as_output_icpswap = user_token_out_stats.swaps_as_output_icpswap;
             swaps_as_output_kong = user_token_out_stats.swaps_as_output_kong;
-            swaps_as_output_split = user_token_out_stats.swaps_as_output_split;
+            swaps_as_output_split = user_token_out_stats.swaps_as_output_split + 1;
             output_volume_e8s_icpswap = user_token_out_stats.output_volume_e8s_icpswap + icpswap_amount_out_e8s;
             output_volume_e8s_kong = user_token_out_stats.output_volume_e8s_kong + kong_amount_out_e8s;
             output_volume_e8s_split = user_token_out_stats.output_volume_e8s_split + icpswap_amount_out_e8s + kong_amount_out_e8s;
