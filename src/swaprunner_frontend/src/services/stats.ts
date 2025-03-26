@@ -60,6 +60,12 @@ export interface UserTokenStats {
   total_withdrawals: bigint;
 }
 
+export interface TokenSavingsStats {
+  icpswap_savings_e8s: bigint;
+  kong_savings_e8s: bigint;
+  split_savings_e8s: bigint;
+}
+
 export class StatsService {
   private queryActor: any = null;
 
@@ -404,6 +410,14 @@ export class StatsService {
     const count = await actor.get_unique_trader_count();
     console.log('Unique trader count:', count);
     return count;
+  }
+
+  async getAllTokenSavingsStats(): Promise<[string, TokenSavingsStats][]> {
+    console.log('Getting all token savings stats...');
+    const actor = await backendService.getActor();
+    const stats = await actor.get_all_token_savings_stats();
+    console.log('All token savings stats:', stats);
+    return stats;
   }
 }
 
