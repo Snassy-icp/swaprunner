@@ -4,7 +4,7 @@ import { tokenService } from '../services/token';
 import { TokenMetadata } from '../types/token';
 import { formatTokenAmount } from '../utils/format';
 import { priceService } from '../services/price';
-import { FiChevronUp, FiChevronDown, FiLoader } from 'react-icons/fi';
+import { FiChevronUp, FiChevronDown, FiLoader, FiRefreshCw } from 'react-icons/fi';
 import '../styles/Statistics.css';
 
 type SortColumn = 'token' | 'swaps' | 'volume' | 'savings';
@@ -27,6 +27,8 @@ export function Statistics() {
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingGlobal, setLoadingGlobal] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const loading = loadingTokens || loadingUsers || loadingGlobal || Object.values(loadingUSDPrices).some(isLoading => isLoading);
 
   const fetchStats = async () => {
     try {
@@ -227,7 +229,18 @@ export function Statistics() {
     <div className="statistics-container">
       {/* Token Stats */}
       <section className="statistics-section">
-        <h2>Trading Statistics</h2>
+        <div className="statistics-header-row">
+          <span className="statistics-title">Trading Statistics</span>
+          <button 
+            onClick={fetchStats} 
+            className="expanded-action-button"
+            disabled={loading}
+            title="Refresh statistics"
+          >
+            <span className="action-symbol"><FiRefreshCw /></span>
+            <span className="action-text">{loading ? 'Refreshing...' : 'Refresh'}</span>
+          </button>
+        </div>
         {!loadingTokens && (
           <div className="total-volume">
             <span className="total-volume-label">Total Volume</span>
@@ -446,13 +459,6 @@ export function Statistics() {
           )
         )}
       </section>
-
-      <button 
-        onClick={fetchStats} 
-        className="refresh-button"
-      >
-        Refresh Statistics
-      </button>
     </div>
   );
 } 
