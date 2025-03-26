@@ -243,6 +243,45 @@ export function Statistics() {
             </span>
           </div>
         )}
+        {!loadingTokens && (
+          <div className="total-volume">
+            <span className="total-volume-label">Total Savings</span>
+            <span className="total-volume-value">
+              {(() => {
+                const totalUSDSavings = sortedTokenStats.reduce((sum, [tokenId, _]) => {
+                  const savingsStats = tokenSavingsStats[tokenId];
+                  if (!savingsStats) return sum;
+                  
+                  const totalSavings = savingsStats.icpswap_savings_e8s + 
+                                     savingsStats.kong_savings_e8s + 
+                                     savingsStats.split_savings_e8s;
+                  
+                  const price = tokenUSDPrices[tokenId];
+                  if (price === undefined || loadingUSDPrices[tokenId]) return sum;
+                  
+                  const metadata = tokenMetadata[tokenId];
+                  if (!metadata) return sum;
+                  
+                  const decimals = metadata.decimals ?? 8;
+                  const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+                  const amountInWholeUnits = Number(totalSavings) / Number(baseUnitMultiplier);
+                  return sum + (amountInWholeUnits * price);
+                }, 0);
+
+                if (Object.values(loadingUSDPrices).some(loading => loading)) {
+                  return (
+                    <span className="loading">
+                      {formatUSDValue(totalUSDSavings)}
+                      <FiLoader className="spinner" />
+                    </span>
+                  );
+                }
+                
+                return formatUSDValue(totalUSDSavings);
+              })()}
+            </span>
+          </div>
+        )}
         <div className="token-statistics-table">
           {loadingTokens ? (
             <LoadingSpinner />
