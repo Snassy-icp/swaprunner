@@ -5,14 +5,13 @@ import { TokenMetadata } from '../types/token';
 import { formatTokenAmount } from '../utils/format';
 import { priceService } from '../services/price';
 import { FiChevronUp, FiChevronDown, FiLoader, FiRefreshCw } from 'react-icons/fi';
-import { useAuth } from '../contexts/AuthContext';
+import { adminService } from '../services/admin';
 import '../styles/Statistics.css';
 
 type SortColumn = 'token' | 'swaps' | 'volume' | 'savings';
 type SortDirection = 'asc' | 'desc';
 
 export function Statistics() {
-  const { isAuthenticated, isAdmin } = useAuth();
   const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
   const [tokenStats, setTokenStats] = useState<[string, TokenStats][]>([]);
   const [tokenSavingsStats, setTokenSavingsStats] = useState<Record<string, TokenSavingsStats>>({});
@@ -23,6 +22,7 @@ export function Statistics() {
   const [loadingUSDPrices, setLoadingUSDPrices] = useState<Record<string, boolean>>({});
   const [sortColumn, setSortColumn] = useState<SortColumn>('swaps');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [isAdmin, setIsAdmin] = useState(false);
   
   // Separate loading states for each section
   const [loadingTokens, setLoadingTokens] = useState(true);
@@ -128,6 +128,19 @@ export function Statistics() {
       loadTokenMetadata();
     }
   }, [tokenStats]);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const adminStatus = await adminService.isAdmin();
+        setIsAdmin(adminStatus);
+      } catch (error) {
+        console.error('Failed to check admin status:', error);
+        setIsAdmin(false);
+      }
+    };
+    checkAdminStatus();
+  }, []);
 
   const formatAmount = (amount: bigint | number): string => {
     if (typeof amount === 'bigint') {
@@ -258,7 +271,7 @@ export function Statistics() {
             </span>
           </div>
         )}
-        {!loadingTokens && isAuthenticated && isAdmin && (
+        {!loadingTokens && isAdmin && (
           <div className="total-volume">
             <span className="total-volume-label">Total Savings</span>
             <span className="total-volume-value secondary">
