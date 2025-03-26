@@ -213,6 +213,7 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
   useEffect(() => {
     const ICP_CANISTER_ID = 'ryjl3-tyaaa-aaaaa-aaaba-cai';
     if (!fromTokenParam) {
+      console.log('AAAAAAAA useEffect', ICP_CANISTER_ID);
       handleFromTokenChange(ICP_CANISTER_ID);
       setHasInitialized(true);
     }
@@ -243,6 +244,8 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
   // Function to handle swapping direction
   const handleSwapDirection = async () => {
     const tempFromToken = fromToken;
+    console.log('AAAAAAAA handleSwapDirection');
+ 
     setFromAmount('');
     setFromToken(toToken);
     setToToken(tempFromToken);
@@ -951,12 +954,6 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
     } finally {
       setIsLoadingBalances(false);
     }
-  };
-
-  const resetForm = () => {
-    // Reset form fields but preserve step information
-    setFromAmount('');
-    // Do not reset steps here
   };
 
   // Execute the swap with the callback
@@ -3201,11 +3198,13 @@ const createSplitSwapDetails = async() => {
   }, [fromAmount, quote.request?.tokenIn]);
 
   // Wrap token setters to cache metadata
-  const handleFromTokenChange = async (tokenId: string) => {
+  const handleFromTokenChange = async (tokenId: string, clearInput: boolean = true) => {
+    console.log('AAAAAAAA handleFromTokenChange', tokenId);
+    if (clearInput) {
+      setFromAmount(''); // Clear input amount when token changes
+  }
     await cacheTokenMetadata(tokenId);
     setFromToken(tokenId);
-    setFromAmount(''); // Clear input amount when token changes
-    clearQuotes();
   };
 
   const handleToTokenChange = async (tokenId: string) => {
@@ -3240,7 +3239,7 @@ const createSplitSwapDetails = async() => {
       if (!undeposited.error) {
         totalBalance += undeposited.balance_e8s;
       }
-      
+      console.log('AAAAAAAA handleMax', totalBalance, fromToken);
       setFromAmount(formatTokenAmount(totalBalance, fromToken));
     } catch (error) {
       console.error('Error in handleMax:', error);
@@ -3402,6 +3401,7 @@ const createSplitSwapDetails = async() => {
   // Handler for successful action
   const handleActionSuccess = () => {
     handleCloseModal();
+    console.log('AAAAAAAA handleActionSuccess', fromAmount);
     setFromAmount('');
     //console.log('Refreshing balances after action success');
     //refreshBalances();
@@ -3502,7 +3502,8 @@ const createSplitSwapDetails = async() => {
         // Verify the token exists in our list
         const fromTokenExists = tokens.some(t => t.canisterId === fromTokenParam);
         if (fromTokenExists) {
-          await handleFromTokenChange(fromTokenParam);
+          console.log('AAAAAAAA fromTokenExists', fromTokenParam);
+          await handleFromTokenChange(fromTokenParam, false);
         } else {
           console.warn(`Token ${fromTokenParam} from URL not found in token list`);
         }
@@ -3837,7 +3838,10 @@ const createSplitSwapDetails = async() => {
           <div className="token-input-row">
             <TokenSelect 
               value={fromToken}
-              onChange={handleFromTokenChange}
+              onChange={(tokenId) => {
+                console.log('AAAAAAAAAAAAAAAAAAAAA onChange', tokenId);
+                handleFromTokenChange(tokenId);
+              }}
               label=""
               onMax={handleMax}
               isLoading={isLoadingFromToken}
