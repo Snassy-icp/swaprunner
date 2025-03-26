@@ -401,24 +401,19 @@
 
 .wallet-total {
   display: flex;
-  gap: 12px;
   align-items: center;
-  border-bottom: none;
-  padding-bottom: 0;
-  margin-bottom: 0;
-  width: 100%;
-  justify-content: center;
+  gap: 8px;
+  justify-content: flex-start;
 }
 
-.wallet-total .total-label {
+.total-label {
   color: var(--text-secondary);
-  font-size: 16px;
+  font-size: 14px;
 }
 
-.wallet-total .total-value {
+.total-value {
   color: var(--text-primary);
-  font-size: 24px;
-  font-family: 'Roboto Mono', monospace;
+  font-size: 16px;
   font-weight: 500;
 }
 
