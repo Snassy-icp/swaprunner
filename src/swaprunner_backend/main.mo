@@ -948,6 +948,14 @@ actor {
             withdrawals_volume_e8s = token_out_stats.withdrawals_volume_e8s;
         });
 
+        // Update token savings stats for output token
+        let token_out_savings_stats = getOrCreateTokenSavingsStats(token_out);
+        tokenSavingsStats.put(token_out, {
+            icpswap_savings_e8s = token_out_savings_stats.icpswap_savings_e8s + savings_out_e8s;
+            kong_savings_e8s = token_out_savings_stats.kong_savings_e8s;
+            split_savings_e8s = token_out_savings_stats.split_savings_e8s;
+        });
+
         // Update user stats
         let user_stats = getOrCreateUserStats(Principal.toText(user));
         userStats.put(Principal.toText(user), {
@@ -1090,6 +1098,14 @@ actor {
             withdrawals_volume_e8s = token_out_stats.withdrawals_volume_e8s;
         });
 
+        // Update token savings stats for output token
+        let token_out_savings_stats = getOrCreateTokenSavingsStats(token_out);
+        tokenSavingsStats.put(token_out, {
+            icpswap_savings_e8s = token_out_savings_stats.icpswap_savings_e8s;
+            kong_savings_e8s = token_out_savings_stats.kong_savings_e8s + savings_out_e8s;
+            split_savings_e8s = token_out_savings_stats.split_savings_e8s;
+        });
+
         // Update user stats
         let user_stats = getOrCreateUserStats(Principal.toText(user));
         userStats.put(Principal.toText(user), {
@@ -1230,6 +1246,14 @@ actor {
             deposits_volume_e8s = token_out_stats.deposits_volume_e8s;
             total_withdrawals = token_out_stats.total_withdrawals;
             withdrawals_volume_e8s = token_out_stats.withdrawals_volume_e8s;
+        });
+
+        // Update token savings stats for output token
+        let token_out_savings_stats = getOrCreateTokenSavingsStats(token_out);
+        tokenSavingsStats.put(token_out, {
+            icpswap_savings_e8s = token_out_savings_stats.icpswap_savings_e8s;
+            kong_savings_e8s = token_out_savings_stats.kong_savings_e8s;
+            split_savings_e8s = token_out_savings_stats.split_savings_e8s + savings_out_e8s;
         });
 
         // Update user stats
@@ -1608,6 +1632,16 @@ actor {
     // Add method to get all user stats
     public query func get_all_user_stats() : async [(Text, UserStats)] {
         Iter.toArray(userStats.entries())
+    };
+
+    // Get token savings stats
+    public query func get_token_savings_stats(token_id: Text) : async ?TokenSavingsStats {
+        tokenSavingsStats.get(token_id)
+    };
+
+    // Get all token savings stats
+    public query func get_all_token_savings_stats() : async [(Text, TokenSavingsStats)] {
+        Iter.toArray(tokenSavingsStats.entries())
     };
 
     // Get user-token stats for the caller
