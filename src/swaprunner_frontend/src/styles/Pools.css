@@ -473,26 +473,26 @@
 
 .controls-buttons {
   display: flex;
-  align-items: center;
   gap: 8px;
 }
 
 .expanded-action-button {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 6px;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary);
-  font-size: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  font-size: 14px;
 }
 
 .expanded-action-button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
 }
 
 .expanded-action-button:disabled {
@@ -500,12 +500,12 @@
   cursor: not-allowed;
 }
 
-.action-symbol {
+.expanded-action-button .action-symbol {
   display: flex;
   align-items: center;
-  font-size: 14px;
+  justify-content: center;
 }
 
-.action-text {
-  font-size: 12px;
+.expanded-action-button .action-text {
+  white-space: nowrap;
 } 

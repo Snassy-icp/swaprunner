@@ -294,31 +294,43 @@
   margin-bottom: 12px;
 }
 
+.controls-buttons {
+  display: flex;
+  gap: 8px;
+}
+
 .expanded-action-button {
-  all: unset;
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--text-secondary);
-  cursor: pointer;
   padding: 8px 12px;
   border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  cursor: pointer;
   transition: all 0.2s ease;
   font-size: 14px;
 }
 
-.expanded-action-button:hover {
+.expanded-action-button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
 }
 
-.expanded-action-button .action-symbol {
-  font-size: 16px;
+.expanded-action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.expanded-action-button .action-symbol svg {
-  width: 16px;
-  height: 16px;
+.expanded-action-button .action-symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expanded-action-button .action-text {
+  white-space: nowrap;
 }
 
 .expanded-action-button:first-child:hover {
