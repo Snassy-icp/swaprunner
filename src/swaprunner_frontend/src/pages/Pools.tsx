@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FiLoader, FiCreditCard, FiLogIn, FiPlus, FiDroplet } from 'react-icons/fi';
+import { FiLoader, FiCreditCard, FiLogIn, FiPlus, FiDroplet, FiRefreshCw } from 'react-icons/fi';
 import { usePool } from '../contexts/PoolContext';
 import { useAuth } from '../contexts/AuthContext';
 import { tokenService } from '../services/token';
@@ -20,7 +20,7 @@ interface TokenDisplay {
 }
 
 export const PoolsPage: React.FC = () => {
-  const { pools, isLoading: poolsLoading, refreshPoolBalances } = usePool();
+  const { pools, isLoading: poolsLoading, refreshPools } = usePool();
   const { isAuthenticated, login } = useAuth();
   const [tokenMetadata, setTokenMetadata] = useState<Record<string, TokenDisplay>>({});
   const [showAddPoolModal, setShowAddPoolModal] = useState(false);
@@ -145,7 +145,7 @@ export const PoolsPage: React.FC = () => {
       await withdrawToken(pool.metadata.token1.address, false);
 
       // Refresh balances
-      await refreshPoolBalances(pool.canisterId);
+      await refreshPools();
     } catch (error) {
       console.error('Error withdrawing all:', error);
     } finally {
@@ -262,6 +262,15 @@ export const PoolsPage: React.FC = () => {
                 <span>Hide empty balances</span>
               </label>
               <div className="controls-buttons">
+                <button 
+                  className="expanded-action-button"
+                  onClick={refreshPools}
+                  disabled={poolsLoading}
+                  title="Refresh pool balances"
+                >
+                  <span className="action-symbol"><FiRefreshCw /></span>
+                  <span className="action-text">{poolsLoading ? 'Refreshing...' : 'Refresh'}</span>
+                </button>
                 <button 
                   className="expanded-action-button"
                   onClick={withdrawEverything}
@@ -391,9 +400,6 @@ export const PoolsPage: React.FC = () => {
                                       pool.metadata.token0.address
                                     )}
                                   </span>
-                                  <span className="token-symbol">
-                                    {tokenMetadata[pool.metadata.token0.address]?.metadata?.symbol || '...'}
-                                  </span>
                                   {tokenMetadata[pool.metadata.token0.address]?.usdPrice !== null && (
                                     <>
                                       <span className="separator">•</span>
@@ -444,9 +450,6 @@ export const PoolsPage: React.FC = () => {
                                       pool.metadata.token1.address
                                     )}
                                   </span>
-                                  <span className="token-symbol">
-                                    {tokenMetadata[pool.metadata.token1.address]?.metadata?.symbol || '...'}
-                                  </span>
                                   {tokenMetadata[pool.metadata.token1.address]?.usdPrice !== null && (
                                     <>
                                       <span className="separator">•</span>
@@ -495,7 +498,7 @@ export const PoolsPage: React.FC = () => {
             poolId={withdrawModalState.poolId}
             source="pool"
             isToken0={withdrawModalState.isToken0}
-            refreshBalances={() => refreshPoolBalances(withdrawModalState.poolId)}
+            refreshBalances={refreshPools}
             onSuccess={() => setWithdrawModalState(null)}
           />
         )}

@@ -462,14 +462,25 @@ export const WalletPage: React.FC = () => {
                   />
                   <span>Hide empty balances</span>
                 </label>
-                <button 
-                  className="expanded-action-button" 
-                  onClick={() => setShowTokenSelect(true)}
-                  title="Add or remove tokens from your wallet"
-                >
-                  <span className="action-symbol"><FiPlus /></span>
-                  <span className="action-text">Add/Remove Tokens</span>
-                </button>
+                <div className="controls-buttons">
+                  <button 
+                    className="expanded-action-button"
+                    onClick={loadWalletTokens}
+                    disabled={isLoading}
+                    title="Refresh wallet balances"
+                  >
+                    <span className="action-symbol"><FiRefreshCw /></span>
+                    <span className="action-text">{isLoading ? 'Refreshing...' : 'Refresh'}</span>
+                  </button>
+                  <button 
+                    className="expanded-action-button" 
+                    onClick={() => setShowTokenSelect(true)}
+                    title="Add or remove tokens from your wallet"
+                  >
+                    <span className="action-symbol"><FiPlus /></span>
+                    <span className="action-text">Add/Remove Tokens</span>
+                  </button>
+                </div>
               </div>
               {isAuthenticated && (
                 <div className="bottom-row">
