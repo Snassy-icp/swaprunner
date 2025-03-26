@@ -79,6 +79,8 @@ export const Me: React.FC = () => {
       // Convert savings stats array to record for easier lookup
       const savingsRecord: Record<string, TokenSavingsStats> = {};
       savingsStats.forEach(([tokenId, stats]) => {
+        console.log("Token ID: ", tokenId);
+        console.log("Savings stats: ", stats);
         savingsRecord[tokenId] = stats;
       });
       setTokenSavingsStats(savingsRecord);

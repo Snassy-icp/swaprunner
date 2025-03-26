@@ -1157,7 +1157,7 @@ actor {
             output_volume_e8s_kong = user_token_out_stats.output_volume_e8s_kong + amount_out_e8s;
             output_volume_e8s_split = user_token_out_stats.output_volume_e8s_split;
             savings_as_output_icpswap_e8s = user_token_in_stats.savings_as_output_icpswap_e8s;
-            savings_as_output_kong_e8s = user_token_in_stats.savings_as_output_kong_e8s + savings_out_e8s;
+            savings_as_output_kong_e8s = user_token_in_stats.savings_as_output_kong_e8s;
             savings_as_output_split_e8s = user_token_in_stats.savings_as_output_split_e8s;
             total_sends = user_token_out_stats.total_sends;
             total_deposits = user_token_out_stats.total_deposits;
@@ -1661,6 +1661,37 @@ actor {
             switch (userTokenStats.get(key)) {
                 case (?stats) {
                     results := Array.append(results, [(tokenId, stats)]);
+                };
+                case null {};
+            };
+        };
+        
+        results
+    };
+
+    // Get user-token savings stats for the caller
+    public shared query(msg) func get_my_token_savings_stats() : async [(Text, TokenSavingsStats)] {
+        let user = msg.caller;
+        var results : [(Text, TokenSavingsStats)] = [];
+        
+        // Get all unique token IDs from the token stats map
+        let tokenIds = Iter.map<(Text, TokenStats), Text>(
+            tokenStats.entries(),
+            func((tokenId, _)) = tokenId
+        );
+
+        // For each token, check if user-token stats exist and calculate savings
+        for (tokenId in tokenIds) {
+            let key = getUserTokenStatsKey(user, tokenId);
+            switch (userTokenStats.get(key)) {
+                case (?stats) {
+                    // Create a TokenSavingsStats record from the user's savings for this token
+                    let savingsStats = {
+                        icpswap_savings_e8s = stats.savings_as_output_icpswap_e8s;
+                        kong_savings_e8s = stats.savings_as_output_kong_e8s;
+                        split_savings_e8s = stats.savings_as_output_split_e8s;
+                    };
+                    results := Array.append(results, [(tokenId, savingsStats)]);
                 };
                 case null {};
             };
