@@ -250,6 +250,15 @@ export const PoolsPage: React.FC = () => {
                 }, 0).toFixed(2)}
               </span>
             </div>
+            <button 
+              className="expanded-action-button"
+              onClick={refreshPools}
+              disabled={poolsLoading}
+              title="Refresh pool balances"
+            >
+              <span className="action-symbol"><FiRefreshCw /></span>
+              <span className="action-text">{poolsLoading ? 'Refreshing...' : 'Refresh'}</span>
+            </button>
           </div>
           <div className="controls-row">
             <div className="top-row">
@@ -262,15 +271,6 @@ export const PoolsPage: React.FC = () => {
                 <span>Hide empty balances</span>
               </label>
               <div className="controls-buttons">
-                <button 
-                  className="expanded-action-button"
-                  onClick={refreshPools}
-                  disabled={poolsLoading}
-                  title="Refresh pool balances"
-                >
-                  <span className="action-symbol"><FiRefreshCw /></span>
-                  <span className="action-text">{poolsLoading ? 'Refreshing...' : 'Refresh'}</span>
-                </button>
                 <button 
                   className="expanded-action-button"
                   onClick={withdrawEverything}
