@@ -227,22 +227,27 @@
 }
 
 .total-volume {
-  margin-bottom: 24px;
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .total-volume-label {
-  font-size: 16px;
-  color: var(--text-secondary);
+  display: block;
+  color: #8f9ba8;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
 }
 
 .total-volume-value {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 600;
-  color: var(--text-primary);
-  font-family: 'Roboto Mono', monospace;
+  color: #e4e7eb;
+}
+
+.total-volume-value.secondary {
+  font-size: 1.25rem;
 }
 
 .total-row,

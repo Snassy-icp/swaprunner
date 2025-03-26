@@ -246,7 +246,7 @@ export function Statistics() {
         {!loadingTokens && (
           <div className="total-volume">
             <span className="total-volume-label">Total Savings</span>
-            <span className="total-volume-value">
+            <span className="total-volume-value secondary">
               {(() => {
                 const totalUSDSavings = sortedTokenStats.reduce((sum, [tokenId, _]) => {
                   const savingsStats = tokenSavingsStats[tokenId];
