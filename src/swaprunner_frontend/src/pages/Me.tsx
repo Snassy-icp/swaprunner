@@ -493,7 +493,18 @@ export const Me: React.FC = () => {
                                     <FiLoader className="spinner" />
                                   </span>
                                 ) : usdSavings !== '-' && (
-                                  <span className="usd-value"> • {usdSavings}</span>
+                                  <span className="usd-value">
+                                    {' • '}{usdSavings}
+                                    {(() => {
+                                      const totalVolume = BigInt(stats.input_volume_e8s_icpswap) + 
+                                                        BigInt(stats.input_volume_e8s_kong) + 
+                                                        BigInt(stats.output_volume_e8s_icpswap) + 
+                                                        BigInt(stats.output_volume_e8s_kong);
+                                      if (totalVolume === 0n) return ' (0.00%)';
+                                      const savingsPercentage = (Number(totalSavings) / Number(totalVolume)) * 100;
+                                      return ` (${savingsPercentage.toFixed(2)}%)`;
+                                    })()}
+                                  </span>
                                 )}
                               </td>
                             </tr>
