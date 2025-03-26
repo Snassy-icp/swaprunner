@@ -341,29 +341,6 @@ export const Me: React.FC = () => {
                       })()}
                     </span>
                   </div>
-                  <div className="activity-grid">
-                    <div className="activity-card">
-                      <h4>Total Swaps</h4>
-                      <div className="activity-value">{calculateTradingActivity()?.totalSwaps}</div>
-                      <div className="activity-description">All-time swaps</div>
-                    </div>
-                    <div className="activity-card">
-                      <h4>Split Swaps</h4>
-                      <div className="activity-value">{calculateTradingActivity()?.splitSwaps}</div>
-                      <div className="activity-description">Multi-DEX swaps</div>
-                    </div>
-                    <div className="activity-card">
-                      <h4>ICPSwap Swaps</h4>
-                      <div className="activity-value">{calculateTradingActivity()?.icpswapSwaps}</div>
-                      <div className="activity-description">Direct swaps via ICPSwap</div>
-                    </div>
-                    <div className="activity-card">
-                      <h4>Kong Swaps</h4>
-                      <div className="activity-value">{calculateTradingActivity()?.kongSwaps}</div>
-                      <div className="activity-description">Direct swaps via Kong</div>
-                    </div>
-                  </div>
-                </div>
                 <div className="token-statistics-table">
                   <table>
                     <thead>
@@ -433,6 +410,29 @@ export const Me: React.FC = () => {
                       })}
                     </tbody>
                   </table>
+                </div>
+                <div className="activity-grid">
+                    <div className="activity-card">
+                      <h4>Total Swaps</h4>
+                      <div className="activity-value">{calculateTradingActivity()?.totalSwaps}</div>
+                      <div className="activity-description">All-time swaps</div>
+                    </div>
+                    <div className="activity-card">
+                      <h4>Split Swaps</h4>
+                      <div className="activity-value">{calculateTradingActivity()?.splitSwaps}</div>
+                      <div className="activity-description">Multi-DEX swaps</div>
+                    </div>
+                    <div className="activity-card">
+                      <h4>ICPSwap Swaps</h4>
+                      <div className="activity-value">{calculateTradingActivity()?.icpswapSwaps}</div>
+                      <div className="activity-description">Direct swaps via ICPSwap</div>
+                    </div>
+                    <div className="activity-card">
+                      <h4>Kong Swaps</h4>
+                      <div className="activity-value">{calculateTradingActivity()?.kongSwaps}</div>
+                      <div className="activity-description">Direct swaps via Kong</div>
+                    </div>
+                  </div>
                 </div>
               </>
             ) : (
