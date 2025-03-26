@@ -967,6 +967,9 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
 
     setIsSwapping(true);
     try {
+      // Save the kong quote
+      const kongOutput = kongQuote?.amountOut || BigInt(0);
+
       // Get pool metadata to determine token order
       const metadata = await icpSwapFactoryService.getPool({
         token0: { address: fromToken, standard: 'ICRC1' },
@@ -1109,14 +1112,10 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
       try {
         const principal = authService.getPrincipal();
         if (principal && poolId) {
-          // Calculate savings - for ICPSwap swaps, savings is the difference between ICPSwap output and Kong output
-          const icpswapOutput = BigInt(swapped_amount.toString() || '0');
-          const kongQuote = await kongSwapService.getQuote({
-            tokenIn: executionParams.fromToken.canisterId,
-            tokenOut: executionParams.toToken.canisterId,
-            amountIn: BigInt(executionParams.fromToken.amount_e8s),
-          });
-          const savings = icpswapOutput > (kongQuote.amountOut || BigInt(0)) ? (icpswapOutput - (kongQuote.amountOut || BigInt(0))).toString() : '0';
+          // Calculate savings using our existing quotes - if ICPSwap was chosen, compare with Kong quote
+          const icpswapOutput = swapped_amount;
+          // If ICPSwap gives better output than Kong, savings is the difference, otherwise 0
+          const savings = icpswapOutput > kongOutput ? (icpswapOutput - kongOutput).toString() : '0';
 
           await statsService.recordICPSwapSwap(
             principal,
