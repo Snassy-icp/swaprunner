@@ -1153,11 +1153,11 @@ actor {
             split_swaps = token_in_stats.split_swaps + 1;
             volume_e8s = token_in_stats.volume_e8s + icpswap_amount_in_e8s + kong_amount_in_e8s;
             total_sends = token_in_stats.total_sends;
-            sends_volume_e8s = token_in_stats.sends_volume_e8s + icpswap_amount_in_e8s;
+            sends_volume_e8s = token_in_stats.sends_volume_e8s;
             total_deposits = token_in_stats.total_deposits;
-            deposits_volume_e8s = token_in_stats.deposits_volume_e8s + icpswap_amount_in_e8s;
+            deposits_volume_e8s = token_in_stats.deposits_volume_e8s;
             total_withdrawals = token_in_stats.total_withdrawals;
-            withdrawals_volume_e8s = token_in_stats.withdrawals_volume_e8s + icpswap_amount_in_e8s;
+            withdrawals_volume_e8s = token_in_stats.withdrawals_volume_e8s;
         });
 
         let token_out_stats = getOrCreateTokenStats(token_out);
@@ -1168,11 +1168,11 @@ actor {
             split_swaps = token_out_stats.split_swaps + 1;
             volume_e8s = token_out_stats.volume_e8s + icpswap_amount_out_e8s + kong_amount_out_e8s;
             total_sends = token_out_stats.total_sends;
-            sends_volume_e8s = token_out_stats.sends_volume_e8s + icpswap_amount_out_e8s;
+            sends_volume_e8s = token_out_stats.sends_volume_e8s;
             total_deposits = token_out_stats.total_deposits;
-            deposits_volume_e8s = token_out_stats.deposits_volume_e8s + icpswap_amount_out_e8s;
+            deposits_volume_e8s = token_out_stats.deposits_volume_e8s;
             total_withdrawals = token_out_stats.total_withdrawals;
-            withdrawals_volume_e8s = token_out_stats.withdrawals_volume_e8s + icpswap_amount_out_e8s;
+            withdrawals_volume_e8s = token_out_stats.withdrawals_volume_e8s;
         });
 
         // Update user stats
@@ -1191,8 +1191,8 @@ actor {
         let user_token_in_stats = getOrCreateUserTokenStats(user, token_in);
         userTokenStats.put(getUserTokenStatsKey(user, token_in), {
             swaps_as_input_icpswap = user_token_in_stats.swaps_as_input_icpswap + 1;
-            swaps_as_input_kong = user_token_in_stats.swaps_as_input_kong + 1;
-            swaps_as_input_split = user_token_in_stats.swaps_as_input_split + 1;
+            swaps_as_input_kong = user_token_in_stats.swaps_as_input_kong;
+            swaps_as_input_split = user_token_in_stats.swaps_as_input_split;
             input_volume_e8s_icpswap = user_token_in_stats.input_volume_e8s_icpswap + icpswap_amount_in_e8s;
             input_volume_e8s_kong = user_token_in_stats.input_volume_e8s_kong + kong_amount_in_e8s;
             input_volume_e8s_split = user_token_in_stats.input_volume_e8s_split + icpswap_amount_in_e8s + kong_amount_in_e8s;
@@ -1217,8 +1217,8 @@ actor {
             input_volume_e8s_kong = user_token_out_stats.input_volume_e8s_kong;
             input_volume_e8s_split = user_token_out_stats.input_volume_e8s_split;
             swaps_as_output_icpswap = user_token_out_stats.swaps_as_output_icpswap + 1;
-            swaps_as_output_kong = user_token_out_stats.swaps_as_output_kong + 1;
-            swaps_as_output_split = user_token_out_stats.swaps_as_output_split + 1;
+            swaps_as_output_kong = user_token_out_stats.swaps_as_output_kong;
+            swaps_as_output_split = user_token_out_stats.swaps_as_output_split;
             output_volume_e8s_icpswap = user_token_out_stats.output_volume_e8s_icpswap + icpswap_amount_out_e8s;
             output_volume_e8s_kong = user_token_out_stats.output_volume_e8s_kong + kong_amount_out_e8s;
             output_volume_e8s_split = user_token_out_stats.output_volume_e8s_split + icpswap_amount_out_e8s + kong_amount_out_e8s;
