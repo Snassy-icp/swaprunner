@@ -268,16 +268,19 @@ export function Statistics() {
                   return sum + (amountInWholeUnits * price);
                 }, 0);
 
+                const savingsPercentage = totalUSDVolume > 0 ? (totalUSDSavings / totalUSDVolume) * 100 : 0;
+
                 if (Object.values(loadingUSDPrices).some(loading => loading)) {
                   return (
                     <span className="loading">
-                      {formatUSDValue(totalUSDSavings)}
+                      ${totalUSDSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {` (${savingsPercentage.toFixed(2)}%)`}
                       <FiLoader className="spinner" />
                     </span>
                   );
                 }
                 
-                return formatUSDValue(totalUSDSavings);
+                return `$${totalUSDSavings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${savingsPercentage.toFixed(2)}%)`;
               })()}
             </span>
           </div>
