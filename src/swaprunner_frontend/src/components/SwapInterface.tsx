@@ -1392,10 +1392,10 @@ const createSplitSwapDetails = async() => {
 
     // Calculate fees from the difference between original and adjusted amounts
     const icpswapFees = splitQuotes.icpswap.request?.depositNeeds ? 
-      BigInt(splitQuotes.icpswap.request.depositNeeds.originalAmount) - BigInt(splitQuotes.icpswap.request.depositNeeds.adjustedAmount) : 
+      BigInt(splitQuotes.icpswap.request.depositNeeds?.originalAmount?.toString() || icpswap_amount_e8s.toString()) - BigInt(splitQuotes.icpswap.request.depositNeeds?.adjustedAmount.toString() || icpswap_amount_e8s.toString()) : 
       BigInt(0);
     const kongFees = splitQuotes.kong.request?.depositNeeds ? 
-      BigInt(splitQuotes.kong.request.depositNeeds.originalAmount) - BigInt(splitQuotes.kong.request.depositNeeds.adjustedAmount) : 
+      BigInt(splitQuotes.kong.request.depositNeeds?.originalAmount?.toString() || kong_amount_e8s.toString()) - BigInt(splitQuotes.kong.request.depositNeeds?.adjustedAmount.toString() || kong_amount_e8s.toString()) : 
       BigInt(0);
     const icpswapOutputFees = keepTokensInPool ? BigInt(0) : toTokenMetadata.fee;
 
@@ -3204,6 +3204,8 @@ const createSplitSwapDetails = async() => {
   const handleFromTokenChange = async (tokenId: string) => {
     await cacheTokenMetadata(tokenId);
     setFromToken(tokenId);
+    setFromAmount(''); // Clear input amount when token changes
+    clearQuotes();
   };
 
   const handleToTokenChange = async (tokenId: string) => {
