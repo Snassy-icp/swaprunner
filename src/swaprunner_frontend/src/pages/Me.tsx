@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiUser, FiLogIn, FiChevronDown, FiChevronUp, FiSettings, FiBarChart2, FiLoader, FiArrowUp, FiArrowDown } from 'react-icons/fi';
+import { FiUser, FiLogIn, FiChevronDown, FiChevronUp, FiSettings, FiBarChart2, FiLoader, FiArrowUp, FiArrowDown, FiRefreshCw } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { usePool } from '../contexts/PoolContext';
 import { statsService, UserTokenStats } from '../services/stats';
@@ -63,60 +63,60 @@ export const Me: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'volume', direction: 'desc' });
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      if (!isAuthenticated || !principal) return;
-      
-      try {
-        setLoading(true);
-        const stats = await statsService.getMyTokenStats();
-        setUserTokenStats(stats);
+  const fetchStats = async () => {
+    if (!isAuthenticated || !principal) return;
+    
+    try {
+      setLoading(true);
+      const stats = await statsService.getMyTokenStats();
+      setUserTokenStats(stats);
 
-        // Initialize loading state for USD prices
-        const initialLoadingState: Record<string, boolean> = {};
-        stats.forEach(([tokenId]) => {
-          initialLoadingState[tokenId] = true;
-        });
-        setLoadingUSDPrices(initialLoadingState);
+      // Initialize loading state for USD prices
+      const initialLoadingState: Record<string, boolean> = {};
+      stats.forEach(([tokenId]) => {
+        initialLoadingState[tokenId] = true;
+      });
+      setLoadingUSDPrices(initialLoadingState);
 
-        // Load metadata for each token
-        const metadataPromises = stats.map(async ([tokenId]) => {
-          try {
-            const metadata = await tokenService.getMetadataWithLogo(tokenId);
-            setTokenMetadata(prev => ({
-              ...prev,
-              [tokenId]: metadata
-            }));
-          } catch (error) {
-            console.error('Failed to load metadata for token:', tokenId, error);
-          }
-        });
-        await Promise.all(metadataPromises);
-
-        // Load USD prices progressively
-        for (const [tokenId] of stats) {
-          try {
-            const price = await priceService.getTokenUSDPrice(tokenId);
-            setTokenUSDPrices(prev => ({
-              ...prev,
-              [tokenId]: price
-            }));
-          } catch (error) {
-            console.error('Failed to fetch USD price for token:', tokenId, error);
-          } finally {
-            setLoadingUSDPrices(prev => ({
-              ...prev,
-              [tokenId]: false
-            }));
-          }
+      // Load metadata for each token
+      const metadataPromises = stats.map(async ([tokenId]) => {
+        try {
+          const metadata = await tokenService.getMetadataWithLogo(tokenId);
+          setTokenMetadata(prev => ({
+            ...prev,
+            [tokenId]: metadata
+          }));
+        } catch (error) {
+          console.error('Failed to load metadata for token:', tokenId, error);
         }
-      } catch (error) {
-        console.error('Failed to fetch user-token stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      });
+      await Promise.all(metadataPromises);
 
+      // Load USD prices progressively
+      for (const [tokenId] of stats) {
+        try {
+          const price = await priceService.getTokenUSDPrice(tokenId);
+          setTokenUSDPrices(prev => ({
+            ...prev,
+            [tokenId]: price
+          }));
+        } catch (error) {
+          console.error('Failed to fetch USD price for token:', tokenId, error);
+        } finally {
+          setLoadingUSDPrices(prev => ({
+            ...prev,
+            [tokenId]: false
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch user-token stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchStats();
   }, [isAuthenticated, principal]);
 
@@ -305,133 +305,144 @@ export const Me: React.FC = () => {
               <>
                 <div className="trading-activity">
                   <div className="total-volume">
-                    <span className="total-volume-label">Total Volume</span>
-                    <span className="total-volume-value">
-                      {(() => {
-                        const totalUSDVolume = userTokenStats.reduce((sum, [tokenId, stats]) => {
-                          const totalVolume = BigInt(stats.input_volume_e8s_icpswap) + 
-                                           BigInt(stats.input_volume_e8s_kong) + 
-                                           BigInt(stats.input_volume_e8s_split) +
-                                           BigInt(stats.output_volume_e8s_icpswap) + 
-                                           BigInt(stats.output_volume_e8s_kong) + 
-                                           BigInt(stats.output_volume_e8s_split);
-                          
-                          const price = tokenUSDPrices[tokenId];
-                          if (price === undefined || loadingUSDPrices[tokenId]) return sum;
-                          
-                          const metadata = tokenMetadata[tokenId];
-                          if (!metadata) return sum;
-                          
-                          const decimals = metadata.decimals ?? 8;
-                          const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
-                          const amountInWholeUnits = Number(totalVolume) / Number(baseUnitMultiplier);
-                          return sum + (amountInWholeUnits * price);
-                        }, 0);
+                    <div className="total-volume-content">
+                      <span className="total-volume-label">Total Volume</span>
+                      <span className="total-volume-value">
+                        {(() => {
+                          const totalUSDVolume = userTokenStats.reduce((sum, [tokenId, stats]) => {
+                            const totalVolume = BigInt(stats.input_volume_e8s_icpswap) + 
+                                             BigInt(stats.input_volume_e8s_kong) + 
+                                             BigInt(stats.input_volume_e8s_split) +
+                                             BigInt(stats.output_volume_e8s_icpswap) + 
+                                             BigInt(stats.output_volume_e8s_kong) + 
+                                             BigInt(stats.output_volume_e8s_split);
+                            
+                            const price = tokenUSDPrices[tokenId];
+                            if (price === undefined || loadingUSDPrices[tokenId]) return sum;
+                            
+                            const metadata = tokenMetadata[tokenId];
+                            if (!metadata) return sum;
+                            
+                            const decimals = metadata.decimals ?? 8;
+                            const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+                            const amountInWholeUnits = Number(totalVolume) / Number(baseUnitMultiplier);
+                            return sum + (amountInWholeUnits * price);
+                          }, 0);
 
-                        if (Object.values(loadingUSDPrices).some(loading => loading)) {
-                          return (
-                            <>
-                              ${totalUSDVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              <FiLoader className="spinner" />
-                            </>
-                          );
-                        }
-                        
-                        return `$${totalUSDVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                      })()}
-                    </span>
+                          if (Object.values(loadingUSDPrices).some(loading => loading)) {
+                            return (
+                              <>
+                                ${totalUSDVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                <FiLoader className="spinner" />
+                              </>
+                            );
+                          }
+                          
+                          return `$${totalUSDVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                        })()}
+                      </span>
+                    </div>
+                    <button 
+                      className="expanded-action-button"
+                      onClick={fetchStats}
+                      disabled={loading}
+                      title="Refresh statistics"
+                    >
+                      <span className="action-symbol"><FiRefreshCw /></span>
+                      <span className="action-text">{loading ? 'Refreshing...' : 'Refresh'}</span>
+                    </button>
                   </div>
-                <div className="token-statistics-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th onClick={() => handleSort('token')} className="sortable">
-                          Token <SortIcon field="token" />
-                        </th>
-                        <th onClick={() => handleSort('swaps')} className="sortable">
-                          Total Swaps <SortIcon field="swaps" />
-                        </th>
-                        <th onClick={() => handleSort('volume')} className="sortable">
-                          Total Volume <SortIcon field="volume" />
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {getSortedStats().map(([tokenId, stats]) => {
-                        const metadata = tokenMetadata[tokenId];
-                        const totalSwaps = Number(stats.swaps_as_input_icpswap) + 
-                                         Number(stats.swaps_as_input_kong) + 
-                                         Number(stats.swaps_as_input_split) +
-                                         Number(stats.swaps_as_output_icpswap) + 
-                                         Number(stats.swaps_as_output_kong) + 
-                                         Number(stats.swaps_as_output_split);
-                        const totalVolume = BigInt(stats.input_volume_e8s_icpswap) + 
-                                          BigInt(stats.input_volume_e8s_kong) + 
-                                          /*BigInt(stats.input_volume_e8s_split) +*/ // Split amounts are already counted in kong and icpswap amounts
-                                          BigInt(stats.output_volume_e8s_icpswap) + 
-                                          BigInt(stats.output_volume_e8s_kong); // + 
-                                          /*BigInt(stats.output_volume_e8s_split);*/ // Split amounts are already counted in kong and icpswap amounts
-                        const isLoadingUSD = loadingUSDPrices[tokenId];
-                        const usdValue = tokenUSDPrices[tokenId] !== undefined 
-                          ? calculateUSDValue(totalVolume, tokenId)
-                          : undefined;
-                        
-                        return (
-                          <tr key={tokenId}>
-                            <td className="token-cell">
-                              {metadata && (
-                                <img 
-                                  src={metadata.logo || '/generic_token.svg'}
-                                  alt={metadata.symbol}
-                                  className="token-logo"
-                                  onError={(e) => {
-                                    const img = e.target as HTMLImageElement;
-                                    img.src = metadata.symbol === 'ICP' ? '/icp_symbol.svg' : '/generic_token.svg';
-                                  }}
-                                />
-                              )}
-                              <div className="token-info">
-                                <span className="token-symbol">{metadata?.symbol || 'Unknown'}</span>
-                              </div>
-                            </td>
-                            <td>{formatAmount(BigInt(totalSwaps))}</td>
-                            <td>
-                              {metadata ? formatTokenAmount(totalVolume, tokenId) : formatAmount(totalVolume)}
-                              {isLoadingUSD ? (
-                                <span className="usd-value">
-                                  <FiLoader className="spinner" />
-                                </span>
-                              ) : usdValue !== '-' && (
-                                <span className="usd-value"> • {usdValue}</span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="activity-grid">
-                    <div className="activity-card">
-                      <h4>Total Swaps</h4>
-                      <div className="activity-value">{calculateTradingActivity()?.totalSwaps}</div>
-                      <div className="activity-description">All-time swaps</div>
-                    </div>
-                    <div className="activity-card">
-                      <h4>Split Swaps</h4>
-                      <div className="activity-value">{calculateTradingActivity()?.splitSwaps}</div>
-                      <div className="activity-description">Multi-DEX swaps</div>
-                    </div>
-                    <div className="activity-card">
-                      <h4>ICPSwap Swaps</h4>
-                      <div className="activity-value">{calculateTradingActivity()?.icpswapSwaps}</div>
-                      <div className="activity-description">Direct swaps via ICPSwap</div>
-                    </div>
-                    <div className="activity-card">
-                      <h4>Kong Swaps</h4>
-                      <div className="activity-value">{calculateTradingActivity()?.kongSwaps}</div>
-                      <div className="activity-description">Direct swaps via Kong</div>
-                    </div>
+                  <div className="token-statistics-table">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th onClick={() => handleSort('token')} className="sortable">
+                            Token <SortIcon field="token" />
+                          </th>
+                          <th onClick={() => handleSort('swaps')} className="sortable">
+                            Total Swaps <SortIcon field="swaps" />
+                          </th>
+                          <th onClick={() => handleSort('volume')} className="sortable">
+                            Total Volume <SortIcon field="volume" />
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {getSortedStats().map(([tokenId, stats]) => {
+                          const metadata = tokenMetadata[tokenId];
+                          const totalSwaps = Number(stats.swaps_as_input_icpswap) + 
+                                          Number(stats.swaps_as_input_kong) + 
+                                          Number(stats.swaps_as_input_split) +
+                                          Number(stats.swaps_as_output_icpswap) + 
+                                          Number(stats.swaps_as_output_kong) + 
+                                          Number(stats.swaps_as_output_split);
+                          const totalVolume = BigInt(stats.input_volume_e8s_icpswap) + 
+                                            BigInt(stats.input_volume_e8s_kong) + 
+                                            /*BigInt(stats.input_volume_e8s_split) +*/ // Split amounts are already counted in kong and icpswap amounts
+                                            BigInt(stats.output_volume_e8s_icpswap) + 
+                                            BigInt(stats.output_volume_e8s_kong); // + 
+                                            /*BigInt(stats.output_volume_e8s_split);*/ // Split amounts are already counted in kong and icpswap amounts
+                          const isLoadingUSD = loadingUSDPrices[tokenId];
+                          const usdValue = tokenUSDPrices[tokenId] !== undefined 
+                            ? calculateUSDValue(totalVolume, tokenId)
+                            : undefined;
+                          
+                          return (
+                            <tr key={tokenId}>
+                              <td className="token-cell">
+                                {metadata && (
+                                  <img 
+                                    src={metadata.logo || '/generic_token.svg'}
+                                    alt={metadata.symbol}
+                                    className="token-logo"
+                                    onError={(e) => {
+                                      const img = e.target as HTMLImageElement;
+                                      img.src = metadata.symbol === 'ICP' ? '/icp_symbol.svg' : '/generic_token.svg';
+                                    }}
+                                  />
+                                )}
+                                <div className="token-info">
+                                  <span className="token-symbol">{metadata?.symbol || 'Unknown'}</span>
+                                </div>
+                              </td>
+                              <td>{formatAmount(BigInt(totalSwaps))}</td>
+                              <td>
+                                {metadata ? formatTokenAmount(totalVolume, tokenId) : formatAmount(totalVolume)}
+                                {isLoadingUSD ? (
+                                  <span className="usd-value">
+                                    <FiLoader className="spinner" />
+                                  </span>
+                                ) : usdValue !== '-' && (
+                                  <span className="usd-value"> • {usdValue}</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="activity-grid">
+                      <div className="activity-card">
+                        <h4>Total Swaps</h4>
+                        <div className="activity-value">{calculateTradingActivity()?.totalSwaps}</div>
+                        <div className="activity-description">All-time swaps</div>
+                      </div>
+                      <div className="activity-card">
+                        <h4>Split Swaps</h4>
+                        <div className="activity-value">{calculateTradingActivity()?.splitSwaps}</div>
+                        <div className="activity-description">Multi-DEX swaps</div>
+                      </div>
+                      <div className="activity-card">
+                        <h4>ICPSwap Swaps</h4>
+                        <div className="activity-value">{calculateTradingActivity()?.icpswapSwaps}</div>
+                        <div className="activity-description">Direct swaps via ICPSwap</div>
+                      </div>
+                      <div className="activity-card">
+                        <h4>Kong Swaps</h4>
+                        <div className="activity-value">{calculateTradingActivity()?.kongSwaps}</div>
+                        <div className="activity-description">Direct swaps via Kong</div>
+                      </div>
                   </div>
                 </div>
               </>
@@ -445,4 +456,6 @@ export const Me: React.FC = () => {
       </div>
     </div>
   );
-}; 
+};
+
+export default Me; 

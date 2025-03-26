@@ -138,10 +138,17 @@
 
 .me-page .statistics-display .total-volume {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
-  text-align: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.me-page .statistics-display .total-volume .total-volume-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .me-page .statistics-display .total-volume .total-volume-label {
@@ -151,8 +158,8 @@
 }
 
 .me-page .statistics-display .total-volume .total-volume-value {
-  font-size: 32px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 500;
   color: var(--text-primary);
   display: flex;
   align-items: center;
