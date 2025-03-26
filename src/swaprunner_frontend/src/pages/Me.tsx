@@ -192,28 +192,60 @@ export const Me: React.FC = () => {
           return multiplier * (swapsA - swapsB);
 
         case 'volume':
-          const volumeA = BigInt(statsA.input_volume_e8s_icpswap) + 
-                         BigInt(statsA.input_volume_e8s_kong) + 
-                         /*BigInt(statsA.input_volume_e8s_split) +*/ // Split amounts are already counted in kong and icpswap amounts
-                         BigInt(statsA.output_volume_e8s_icpswap) + 
-                         BigInt(statsA.output_volume_e8s_kong); // + 
-                         /*BigInt(statsA.output_volume_e8s_split);*/ // Split amounts are already counted in kong and icpswap amounts
-          const volumeB = BigInt(statsB.input_volume_e8s_icpswap) + 
-                         BigInt(statsB.input_volume_e8s_kong) + 
-                         /*BigInt(statsB.input_volume_e8s_split) +*/ // Split amounts are already counted in kong and icpswap amounts
-                         BigInt(statsB.output_volume_e8s_icpswap) + 
-                         BigInt(statsB.output_volume_e8s_kong); // + 
-                         /*BigInt(statsB.output_volume_e8s_split);*/ // Split amounts are already counted in kong and icpswap amounts
-          return multiplier * (volumeA > volumeB ? 1 : volumeA < volumeB ? -1 : 0);
+          const volumeA = (() => {
+            const totalVolume = BigInt(statsA.input_volume_e8s_icpswap) + 
+                              BigInt(statsA.input_volume_e8s_kong) + 
+                              BigInt(statsA.output_volume_e8s_icpswap) + 
+                              BigInt(statsA.output_volume_e8s_kong);
+            const price = tokenUSDPrices[tokenIdA];
+            if (!price || !metadataA) return 0;
+            const decimals = metadataA.decimals ?? 8;
+            const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+            const amountInWholeUnits = Number(totalVolume) / Number(baseUnitMultiplier);
+            return amountInWholeUnits * price;
+          })();
+          const volumeB = (() => {
+            const totalVolume = BigInt(statsB.input_volume_e8s_icpswap) + 
+                              BigInt(statsB.input_volume_e8s_kong) + 
+                              BigInt(statsB.output_volume_e8s_icpswap) + 
+                              BigInt(statsB.output_volume_e8s_kong);
+            const price = tokenUSDPrices[tokenIdB];
+            if (!price || !metadataB) return 0;
+            const decimals = metadataB.decimals ?? 8;
+            const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+            const amountInWholeUnits = Number(totalVolume) / Number(baseUnitMultiplier);
+            return amountInWholeUnits * price;
+          })();
+          return multiplier * (volumeA - volumeB);
 
         case 'savings':
-          const savingsA = tokenSavingsStats[tokenIdA];
-          const savingsB = tokenSavingsStats[tokenIdB];
-          const totalSavingsA = savingsA ? 
-            Number(savingsA.icpswap_savings_e8s + savingsA.kong_savings_e8s + savingsA.split_savings_e8s) : 0;
-          const totalSavingsB = savingsB ? 
-            Number(savingsB.icpswap_savings_e8s + savingsB.kong_savings_e8s + savingsB.split_savings_e8s) : 0;
-          return multiplier * (totalSavingsA - totalSavingsB);
+          const savingsUsdA = (() => {
+            const savingsA = tokenSavingsStats[tokenIdA];
+            if (!savingsA || !metadataA) return 0;
+            const totalSavings = savingsA.icpswap_savings_e8s + 
+                               savingsA.kong_savings_e8s + 
+                               savingsA.split_savings_e8s;
+            const price = tokenUSDPrices[tokenIdA];
+            if (!price) return 0;
+            const decimals = metadataA.decimals ?? 8;
+            const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+            const amountInWholeUnits = Number(totalSavings) / Number(baseUnitMultiplier);
+            return amountInWholeUnits * price;
+          })();
+          const savingsUsdB = (() => {
+            const savingsB = tokenSavingsStats[tokenIdB];
+            if (!savingsB || !metadataB) return 0;
+            const totalSavings = savingsB.icpswap_savings_e8s + 
+                               savingsB.kong_savings_e8s + 
+                               savingsB.split_savings_e8s;
+            const price = tokenUSDPrices[tokenIdB];
+            if (!price) return 0;
+            const decimals = metadataB.decimals ?? 8;
+            const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+            const amountInWholeUnits = Number(totalSavings) / Number(baseUnitMultiplier);
+            return amountInWholeUnits * price;
+          })();
+          return multiplier * (savingsUsdA - savingsUsdB);
 
         default:
           return 0;

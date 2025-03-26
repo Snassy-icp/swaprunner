@@ -103,7 +103,7 @@ export const Verification: React.FC = () => {
         <section>
           <h2>Canister IDs</h2>
           <p>Our canisters have the following principal IDs:</p>
-          <ul>
+          <ul className="canister-hashes">
             <li>
               Frontend Canister: {process.env.CANISTER_ID_SWAPRUNNER_FRONTEND}
               <CopyButton text={process.env.CANISTER_ID_SWAPRUNNER_FRONTEND!} />
@@ -123,7 +123,7 @@ export const Verification: React.FC = () => {
           ) : error ? (
             <p className="error">{error}</p>
           ) : (
-            <ul>
+            <ul className="canister-hashes">
               <li>
                 Frontend Hash: {frontendHash}
                 <CopyButton text={frontendHash!} />
@@ -144,7 +144,7 @@ export const Verification: React.FC = () => {
           </p>
 
           <h3>Overview of Verification Steps</h3>
-          <ol>
+          <ol className="verification-steps">
             <li>
               <strong>Verify Canister Code</strong>: First, we'll get the cryptographic hashes of the 
               currently running frontend and backend canisters. These hashes uniquely identify the exact 
@@ -165,7 +165,7 @@ export const Verification: React.FC = () => {
           <p>
             This verification process ensures:
           </p>
-          <ul>
+          <ul className="verification-steps">
             <li>The code running on the IC matches our public source code</li>
             <li>No unauthorized changes have been made to the deployed canisters</li>
             <li>You're connecting to the legitimate SwapRunner application</li>

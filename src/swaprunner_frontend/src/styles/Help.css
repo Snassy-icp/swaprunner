@@ -217,4 +217,20 @@
 
 .help-content li .copy-button {
   flex-shrink: 0;
+}
+
+/* Add specific text wrapping rules */
+.canister-hashes {
+  word-break: break-all;
+  word-wrap: break-word;
+}
+
+.verification-steps {
+  word-break: normal;
+  word-wrap: break-word;
+}
+
+/* Override the default word-break for verification steps */
+.verification-steps li {
+  word-break: normal;
 } 
