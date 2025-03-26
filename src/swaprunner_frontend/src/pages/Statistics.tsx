@@ -202,11 +202,21 @@ export function Statistics() {
         case 'savings':
           const savingsA = tokenSavingsStats[tokenIdA];
           const savingsB = tokenSavingsStats[tokenIdB];
-          const totalSavingsA = savingsA ? 
-            Number(savingsA.icpswap_savings_e8s + savingsA.kong_savings_e8s + savingsA.split_savings_e8s) : 0;
-          const totalSavingsB = savingsB ? 
-            Number(savingsB.icpswap_savings_e8s + savingsB.kong_savings_e8s + savingsB.split_savings_e8s) : 0;
-          comparison = totalSavingsA - totalSavingsB;
+          const savingsUsdA = (() => {
+            if (!savingsA || !metadataA) return 0;
+            const totalSavings = savingsA.icpswap_savings_e8s + 
+                               savingsA.kong_savings_e8s + 
+                               savingsA.split_savings_e8s;
+            return calculateUSDValueNumber(totalSavings, tokenIdA);
+          })();
+          const savingsUsdB = (() => {
+            if (!savingsB || !metadataB) return 0;
+            const totalSavings = savingsB.icpswap_savings_e8s + 
+                               savingsB.kong_savings_e8s + 
+                               savingsB.split_savings_e8s;
+            return calculateUSDValueNumber(totalSavings, tokenIdB);
+          })();
+          comparison = savingsUsdA - savingsUsdB;
           break;
       }
       return sortDirection === 'asc' ? comparison : -comparison;
