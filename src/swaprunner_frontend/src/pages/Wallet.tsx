@@ -451,6 +451,15 @@ export const WalletPage: React.FC = () => {
                   {formatUSDPrice(walletTokens.reduce((total, token) => total + (token.usdValue || 0), 0))}
                 </span>
               </div>
+              <button 
+                className="expanded-action-button"
+                onClick={loadWalletTokens}
+                disabled={isLoading}
+                title="Refresh wallet balances"
+              >
+                <span className="action-symbol"><FiRefreshCw /></span>
+                <span className="action-text">{isLoading ? 'Refreshing...' : 'Refresh'}</span>
+              </button>
             </div>
             <div className="controls-row">
               <div className="top-row">
@@ -463,15 +472,6 @@ export const WalletPage: React.FC = () => {
                   <span>Hide empty balances</span>
                 </label>
                 <div className="controls-buttons">
-                  <button 
-                    className="expanded-action-button"
-                    onClick={loadWalletTokens}
-                    disabled={isLoading}
-                    title="Refresh wallet balances"
-                  >
-                    <span className="action-symbol"><FiRefreshCw /></span>
-                    <span className="action-text">{isLoading ? 'Refreshing...' : 'Refresh'}</span>
-                  </button>
                   <button 
                     className="expanded-action-button" 
                     onClick={() => setShowTokenSelect(true)}
