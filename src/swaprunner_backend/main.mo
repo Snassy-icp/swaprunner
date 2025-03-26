@@ -60,6 +60,14 @@ actor {
         output_volume_e8s_kong: Nat;
         output_volume_e8s_split: Nat;
 
+        // Savings stats
+        savings_as_input_icpswap_e8s: Nat;  // Amount saved when using ICPSwap vs Kong for input
+        savings_as_input_kong_e8s: Nat;     // Amount saved when using Kong vs ICPSwap for input
+        savings_as_input_split_e8s: Nat;    // Amount saved when using split vs best direct for input
+        savings_as_output_icpswap_e8s: Nat; // Amount saved when using ICPSwap vs Kong for output
+        savings_as_output_kong_e8s: Nat;    // Amount saved when using Kong vs ICPSwap for output
+        savings_as_output_split_e8s: Nat;   // Amount saved when using split vs best direct for output
+
         // Other operations (unchanged)
         total_sends: Nat;
         total_deposits: Nat;
@@ -68,10 +76,17 @@ actor {
 
     // Add with other stable storage declarations
     private stable var userTokenStatsEntries : [(Text, UserTokenStats)] = [];
+    private stable var tokenSavingsStatsEntries : [(Text, TokenSavingsStats)] = [];
 
     // Add with other runtime maps
     private var userTokenStats = HashMap.fromIter<Text, UserTokenStats>(
         userTokenStatsEntries.vals(),
+        0,
+        Text.equal,
+        Text.hash
+    );
+    private var tokenSavingsStats = HashMap.fromIter<Text, TokenSavingsStats>(
+        tokenSavingsStatsEntries.vals(),
         0,
         Text.equal,
         Text.hash
@@ -202,6 +217,13 @@ actor {
         deposits_volume_e8s: Nat;   // New: Track deposit volume for this token
         total_withdrawals: Nat;     // New: Track withdrawals for this token
         withdrawals_volume_e8s: Nat; // New: Track withdrawal volume for this token
+    };
+
+    // New: Track savings per token
+    type TokenSavingsStats = {
+        icpswap_savings_e8s: Nat;  // Amount saved when using ICPSwap vs Kong
+        kong_savings_e8s: Nat;     // Amount saved when using Kong vs ICPSwap
+        split_savings_e8s: Nat;    // Amount saved when using split vs best direct
     };
 
     type UserStats = {
@@ -450,6 +472,7 @@ actor {
         userPoolEntries := Iter.toArray(userPools.entries());
         userIndexEntries := Iter.toArray(principalToIndex.entries());
         userTokenStatsEntries := Iter.toArray(userTokenStats.entries());
+        tokenSavingsStatsEntries := Iter.toArray(tokenSavingsStats.entries());
     };
 
     system func postupgrade() {
@@ -465,6 +488,7 @@ actor {
         poolMetadataEntries :=[];
         userPoolEntries := [];
         userTokenStatsEntries := [];
+        tokenSavingsStatsEntries := [];
 
         principalToIndex := HashMap.fromIter<Principal, Nat16>(userIndexEntries.vals(), 0, Principal.equal, Principal.hash);
         indexToPrincipal := HashMap.HashMap<Nat16, Principal>(0, Nat16.equal, func(x : Nat16) : Hash.Hash { Hash.hash(Nat16.toNat(x)) });
@@ -832,7 +856,7 @@ actor {
         switch (userTokenStats.get(key)) {
             case (?stats) stats;
             case null {
-                {
+                let newStats = {
                     swaps_as_input_icpswap = 0;
                     swaps_as_input_kong = 0;
                     swaps_as_input_split = 0;
@@ -845,10 +869,34 @@ actor {
                     output_volume_e8s_icpswap = 0;
                     output_volume_e8s_kong = 0;
                     output_volume_e8s_split = 0;
+                    savings_as_input_icpswap_e8s = 0;
+                    savings_as_input_kong_e8s = 0;
+                    savings_as_input_split_e8s = 0;
+                    savings_as_output_icpswap_e8s = 0;
+                    savings_as_output_kong_e8s = 0;
+                    savings_as_output_split_e8s = 0;
                     total_sends = 0;
                     total_deposits = 0;
                     total_withdrawals = 0;
-                }
+                };
+                userTokenStats.put(key, newStats);
+                newStats
+            };
+        }
+    };
+
+    // Helper function to get or create token savings stats
+    private func getOrCreateTokenSavingsStats(token_id: Text) : TokenSavingsStats {
+        switch (tokenSavingsStats.get(token_id)) {
+            case (?stats) stats;
+            case null {
+                let newStats = {
+                    icpswap_savings_e8s = 0;
+                    kong_savings_e8s = 0;
+                    split_savings_e8s = 0;
+                };
+                tokenSavingsStats.put(token_id, newStats);
+                newStats
             };
         }
     };
@@ -1028,7 +1076,7 @@ actor {
         let token_out_stats = getOrCreateTokenStats(token_out);
         tokenStats.put(token_out, {
             total_swaps = token_out_stats.total_swaps + 1;
-            icpswap_swaps = token_out_stats.icpswap_swaps;
+            icpswap_swaps = token_out_stats.icpswap_swaps + 1;
             kong_swaps = token_out_stats.kong_swaps + 1;
             split_swaps = token_out_stats.split_swaps;
             volume_e8s = token_out_stats.volume_e8s + amount_out_e8s;
