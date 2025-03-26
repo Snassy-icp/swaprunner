@@ -133,10 +133,10 @@ export class StatsService {
   async recordKongSwap(
     user: Principal,
     token_in: string,
-    amount_in_e8s: string,
+    amount_in_e8s: bigint,
     token_out: string,
-    amount_out_e8s: string,
-    savings_out_e8s: string,
+    amount_out_e8s: bigint,
+    savings_out_e8s: bigint,
   ): Promise<void> {
     console.log('Recording Kong swap:', {
       user: user.toString(),
@@ -152,10 +152,10 @@ export class StatsService {
       await actor.record_kong_swap(
         user,
         token_in,
-        BigInt(amount_in_e8s),
+        amount_in_e8s,
         token_out,
-        BigInt(amount_out_e8s),
-        BigInt(savings_out_e8s),
+        amount_out_e8s,
+        savings_out_e8s,
       );
       console.log('Successfully recorded Kong swap');
     } catch (error) {

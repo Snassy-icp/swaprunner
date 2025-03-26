@@ -1511,7 +1511,7 @@ const createSplitSwapDetails = async() => {
 
     try {
       // Save the ICPSwap quote for savings comparison
-      const icpswapOutput = quote?.amountOut || BigInt(0);
+      const icpswapOutput = BigInt(quote?.amountOut?.toString() || '0');
 
       // Use the adjusted amount from the quote instead of parsing raw input
       const amount_e8s = BigInt(kongQuote.request.amount_e8s);
@@ -1630,14 +1630,14 @@ const createSplitSwapDetails = async() => {
             // Calculate savings using saved quotes - if Kong was chosen, compare with ICPSwap quote
             const kongOutput = swapResult.success ? swapResult?.amountOut || BigInt(0) : BigInt(0);
             // If Kong gives better output than ICPSwap, savings is the difference, otherwise 0
-            const savings = kongOutput > icpswapOutput ? (kongOutput - icpswapOutput).toString() : '0';
+            const savings = kongOutput > icpswapOutput ? kongOutput - icpswapOutput : BigInt(0);
 
             /*await*/ statsService.recordKongSwap(
               principal,
               swapDetails.fromToken.canisterId,
-              actualAmount.toString(),
+              actualAmount,
               swapDetails.toToken.canisterId,
-              swapResult.success ? swapResult?.amountOut?.toString() || '0' : '0',
+              swapResult.success ? swapResult?.amountOut || BigInt(0) : BigInt(0),
               savings,
             );
           }
@@ -1697,19 +1697,22 @@ const createSplitSwapDetails = async() => {
           const principal = authService.getPrincipal();
           console.log("Principal: ", principal);
           if (principal) {
+            console.log("ICPSwap output: ", icpswapOutput);
             // Calculate savings using saved quotes - if Kong was chosen, compare with ICPSwap quote
-            const kongOutput = swapResult.success ? swapResult.amountOut || BigInt(0) : BigInt(0);
+            const kongOutput = swapResult.success ? BigInt(swapResult.amountOut?.toString() || '0') : BigInt(0);
+            console.log("Kong output: ", kongOutput);
             // If Kong gives better output than ICPSwap, savings is the difference, otherwise 0
-            const savings = kongOutput > icpswapOutput ? (kongOutput - icpswapOutput).toString() : '0';
-
+            const savings = kongOutput > icpswapOutput ? kongOutput - icpswapOutput : BigInt(0);
+            console.log("Savings: ", savings);
             /*await*/ statsService.recordKongSwap(
               principal,
               swapDetails.fromToken.canisterId,
-              actualAmount.toString(),
+              BigInt(actualAmount.toString()),
               swapDetails.toToken.canisterId,
-              swapResult.success ? swapResult.amountOut?.toString() || '0' : '0',
-              savings,
+              BigInt(swapResult.success ? swapResult.amountOut?.toString() || '0' : '0'),
+              BigInt(savings.toString()),
             );
+            console.log("Recorded Kong stats");
           }
         } catch (error) {
           console.error('Failed to record Kong stats:', error);
