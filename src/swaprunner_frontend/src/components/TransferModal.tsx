@@ -86,7 +86,7 @@ export const TransferModal: React.FC<TransferModalProps> = ({
 
       // Record statistics after successful transfer
       try {
-        await statsService.recordTransfer(
+        /*await*/ statsService.recordTransfer(
           userPrincipal,
           tokenId,
           amount_e8s.toString(),

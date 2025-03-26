@@ -120,7 +120,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
       try {
         const principal = authService.getPrincipal();
         if (principal) {
-          await statsService.recordWithdrawal(
+          /*await*/ statsService.recordWithdrawal(
             principal,
             tokenId,
             amount_e8s.toString(),
@@ -173,7 +173,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
       try {
         const principal = authService.getPrincipal();
         if (principal) {
-          await statsService.recordWithdrawal(
+          /*await*/ statsService.recordWithdrawal(
             principal,
             tokenId,
             actualDepositedAmount.toString(),
@@ -223,7 +223,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
       try {
         const principal = authService.getPrincipal();
         if (principal) {
-          await statsService.recordWithdrawal(
+          /*await*/ statsService.recordWithdrawal(
             principal,
             tokenId,
             amount_e8s.toString(),

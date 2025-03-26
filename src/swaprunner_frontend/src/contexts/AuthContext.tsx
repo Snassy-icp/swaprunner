@@ -6,6 +6,7 @@ interface AuthContextType {
   principal: string | null;
   login: () => Promise<boolean>;
   logout: () => Promise<void>;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +22,16 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [principal, setPrincipal] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  const checkAdminStatus = async () => {
+    if (isAuthenticated) {
+      const adminStatus = await authService.isAdmin();
+      setIsAdmin(adminStatus);
+    } else {
+      setIsAdmin(false);
+    }
+  };
 
   useEffect(() => {
     // Check authentication status on mount
@@ -30,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (authenticated) {
         const p = authService.getPrincipal();
         setPrincipal(p ? p.toString() : null);
+        await checkAdminStatus();
       }
     };
     checkAuth();
@@ -41,8 +53,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (authenticated) {
         const p = authService.getPrincipal();
         setPrincipal(p ? p.toString() : null);
+        checkAdminStatus();
       } else {
         setPrincipal(null);
+        setIsAdmin(false);
       }
     });
 
@@ -57,6 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated(true);
         const p = authService.getPrincipal();
         setPrincipal(p ? p.toString() : null);
+        await checkAdminStatus();
       }
       return success;
     } catch (error) {
@@ -69,10 +84,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await authService.logout();
     setIsAuthenticated(false);
     setPrincipal(null);
+    setIsAdmin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, principal, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, principal, login, logout, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

@@ -60,6 +60,11 @@ actor {
         output_volume_e8s_kong: Nat;
         output_volume_e8s_split: Nat;
 
+        // Savings stats
+        savings_as_output_icpswap_e8s: Nat; // Amount saved when using ICPSwap vs Kong for output
+        savings_as_output_kong_e8s: Nat;    // Amount saved when using Kong vs ICPSwap for output
+        savings_as_output_split_e8s: Nat;   // Amount saved when using split vs best direct for output
+
         // Other operations (unchanged)
         total_sends: Nat;
         total_deposits: Nat;
@@ -68,10 +73,17 @@ actor {
 
     // Add with other stable storage declarations
     private stable var userTokenStatsEntries : [(Text, UserTokenStats)] = [];
+    private stable var tokenSavingsStatsEntries : [(Text, TokenSavingsStats)] = [];
 
     // Add with other runtime maps
     private var userTokenStats = HashMap.fromIter<Text, UserTokenStats>(
         userTokenStatsEntries.vals(),
+        0,
+        Text.equal,
+        Text.hash
+    );
+    private var tokenSavingsStats = HashMap.fromIter<Text, TokenSavingsStats>(
+        tokenSavingsStatsEntries.vals(),
         0,
         Text.equal,
         Text.hash
@@ -202,6 +214,13 @@ actor {
         deposits_volume_e8s: Nat;   // New: Track deposit volume for this token
         total_withdrawals: Nat;     // New: Track withdrawals for this token
         withdrawals_volume_e8s: Nat; // New: Track withdrawal volume for this token
+    };
+
+    // New: Track savings per token
+    type TokenSavingsStats = {
+        icpswap_savings_e8s: Nat;  // Amount saved when using ICPSwap vs Kong
+        kong_savings_e8s: Nat;     // Amount saved when using Kong vs ICPSwap
+        split_savings_e8s: Nat;    // Amount saved when using split vs best direct
     };
 
     type UserStats = {
@@ -450,6 +469,7 @@ actor {
         userPoolEntries := Iter.toArray(userPools.entries());
         userIndexEntries := Iter.toArray(principalToIndex.entries());
         userTokenStatsEntries := Iter.toArray(userTokenStats.entries());
+        tokenSavingsStatsEntries := Iter.toArray(tokenSavingsStats.entries());
     };
 
     system func postupgrade() {
@@ -465,6 +485,7 @@ actor {
         poolMetadataEntries :=[];
         userPoolEntries := [];
         userTokenStatsEntries := [];
+        tokenSavingsStatsEntries := [];
 
         principalToIndex := HashMap.fromIter<Principal, Nat16>(userIndexEntries.vals(), 0, Principal.equal, Principal.hash);
         indexToPrincipal := HashMap.HashMap<Nat16, Principal>(0, Nat16.equal, func(x : Nat16) : Hash.Hash { Hash.hash(Nat16.toNat(x)) });
@@ -832,7 +853,7 @@ actor {
         switch (userTokenStats.get(key)) {
             case (?stats) stats;
             case null {
-                {
+                let newStats = {
                     swaps_as_input_icpswap = 0;
                     swaps_as_input_kong = 0;
                     swaps_as_input_split = 0;
@@ -845,10 +866,31 @@ actor {
                     output_volume_e8s_icpswap = 0;
                     output_volume_e8s_kong = 0;
                     output_volume_e8s_split = 0;
+                    savings_as_output_icpswap_e8s = 0;
+                    savings_as_output_kong_e8s = 0;
+                    savings_as_output_split_e8s = 0;
                     total_sends = 0;
                     total_deposits = 0;
                     total_withdrawals = 0;
-                }
+                };
+                userTokenStats.put(key, newStats);
+                newStats
+            };
+        }
+    };
+
+    // Helper function to get or create token savings stats
+    private func getOrCreateTokenSavingsStats(token_id: Text) : TokenSavingsStats {
+        switch (tokenSavingsStats.get(token_id)) {
+            case (?stats) stats;
+            case null {
+                let newStats = {
+                    icpswap_savings_e8s = 0;
+                    kong_savings_e8s = 0;
+                    split_savings_e8s = 0;
+                };
+                tokenSavingsStats.put(token_id, newStats);
+                newStats
             };
         }
     };
@@ -860,6 +902,7 @@ actor {
         amount_in_e8s: Nat,
         token_out: Text,  // Canister ID
         amount_out_e8s: Nat,
+        savings_out_e8s: Nat,
         pool_id: Principal,  // Pool ID
     ) : async () {
         // Existing global stats update
@@ -905,6 +948,14 @@ actor {
             withdrawals_volume_e8s = token_out_stats.withdrawals_volume_e8s;
         });
 
+        // Update token savings stats for output token
+        let token_out_savings_stats = getOrCreateTokenSavingsStats(token_out);
+        tokenSavingsStats.put(token_out, {
+            icpswap_savings_e8s = token_out_savings_stats.icpswap_savings_e8s + savings_out_e8s;
+            kong_savings_e8s = token_out_savings_stats.kong_savings_e8s;
+            split_savings_e8s = token_out_savings_stats.split_savings_e8s;
+        });
+
         // Update user stats
         let user_stats = getOrCreateUserStats(Principal.toText(user));
         userStats.put(Principal.toText(user), {
@@ -932,6 +983,9 @@ actor {
             output_volume_e8s_icpswap = user_token_in_stats.output_volume_e8s_icpswap;
             output_volume_e8s_kong = user_token_in_stats.output_volume_e8s_kong;
             output_volume_e8s_split = user_token_in_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_in_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_in_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_in_stats.savings_as_output_split_e8s;
             total_sends = user_token_in_stats.total_sends;
             total_deposits = user_token_in_stats.total_deposits;
             total_withdrawals = user_token_in_stats.total_withdrawals;
@@ -952,6 +1006,9 @@ actor {
             output_volume_e8s_icpswap = user_token_out_stats.output_volume_e8s_icpswap + amount_out_e8s;
             output_volume_e8s_kong = user_token_out_stats.output_volume_e8s_kong;
             output_volume_e8s_split = user_token_out_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_out_stats.savings_as_output_icpswap_e8s + savings_out_e8s;
+            savings_as_output_kong_e8s = user_token_out_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_out_stats.savings_as_output_split_e8s;
             total_sends = user_token_out_stats.total_sends;
             total_deposits = user_token_out_stats.total_deposits;
             total_withdrawals = user_token_out_stats.total_withdrawals;
@@ -997,6 +1054,7 @@ actor {
         amount_in_e8s: Nat,
         token_out: Text,  // Canister ID
         amount_out_e8s: Nat,
+        savings_out_e8s: Nat,
     ) : async () {
         // Update global stats
         globalStats := {
@@ -1040,6 +1098,14 @@ actor {
             withdrawals_volume_e8s = token_out_stats.withdrawals_volume_e8s;
         });
 
+        // Update token savings stats for output token
+        let token_out_savings_stats = getOrCreateTokenSavingsStats(token_out);
+        tokenSavingsStats.put(token_out, {
+            icpswap_savings_e8s = token_out_savings_stats.icpswap_savings_e8s;
+            kong_savings_e8s = token_out_savings_stats.kong_savings_e8s + savings_out_e8s;
+            split_savings_e8s = token_out_savings_stats.split_savings_e8s;
+        });
+
         // Update user stats
         let user_stats = getOrCreateUserStats(Principal.toText(user));
         userStats.put(Principal.toText(user), {
@@ -1067,6 +1133,9 @@ actor {
             output_volume_e8s_icpswap = user_token_in_stats.output_volume_e8s_icpswap;
             output_volume_e8s_kong = user_token_in_stats.output_volume_e8s_kong;
             output_volume_e8s_split = user_token_in_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_in_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_in_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_in_stats.savings_as_output_split_e8s;
             total_sends = user_token_in_stats.total_sends;
             total_deposits = user_token_in_stats.total_deposits;
             total_withdrawals = user_token_in_stats.total_withdrawals;
@@ -1087,6 +1156,9 @@ actor {
             output_volume_e8s_icpswap = user_token_out_stats.output_volume_e8s_icpswap;
             output_volume_e8s_kong = user_token_out_stats.output_volume_e8s_kong + amount_out_e8s;
             output_volume_e8s_split = user_token_out_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_out_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_out_stats.savings_as_output_kong_e8s + savings_out_e8s;
+            savings_as_output_split_e8s = user_token_out_stats.savings_as_output_split_e8s;
             total_sends = user_token_out_stats.total_sends;
             total_deposits = user_token_out_stats.total_deposits;
             total_withdrawals = user_token_out_stats.total_withdrawals;
@@ -1131,6 +1203,7 @@ actor {
         token_out: Text,  // Canister ID
         icpswap_amount_out_e8s: Nat,
         kong_amount_out_e8s: Nat,
+        savings_out_e8s: Nat,
         icpswap_pool_id: Principal,  // Add pool ID
     ) : async () {
         // Update global stats
@@ -1175,6 +1248,14 @@ actor {
             withdrawals_volume_e8s = token_out_stats.withdrawals_volume_e8s;
         });
 
+        // Update token savings stats for output token
+        let token_out_savings_stats = getOrCreateTokenSavingsStats(token_out);
+        tokenSavingsStats.put(token_out, {
+            icpswap_savings_e8s = token_out_savings_stats.icpswap_savings_e8s;
+            kong_savings_e8s = token_out_savings_stats.kong_savings_e8s;
+            split_savings_e8s = token_out_savings_stats.split_savings_e8s + savings_out_e8s;
+        });
+
         // Update user stats
         let user_stats = getOrCreateUserStats(Principal.toText(user));
         userStats.put(Principal.toText(user), {
@@ -1190,9 +1271,9 @@ actor {
         // Update user-token stats for input token
         let user_token_in_stats = getOrCreateUserTokenStats(user, token_in);
         userTokenStats.put(getUserTokenStatsKey(user, token_in), {
-            swaps_as_input_icpswap = user_token_in_stats.swaps_as_input_icpswap + 1;
+            swaps_as_input_icpswap = user_token_in_stats.swaps_as_input_icpswap;
             swaps_as_input_kong = user_token_in_stats.swaps_as_input_kong;
-            swaps_as_input_split = user_token_in_stats.swaps_as_input_split;
+            swaps_as_input_split = user_token_in_stats.swaps_as_input_split + 1;
             input_volume_e8s_icpswap = user_token_in_stats.input_volume_e8s_icpswap + icpswap_amount_in_e8s;
             input_volume_e8s_kong = user_token_in_stats.input_volume_e8s_kong + kong_amount_in_e8s;
             input_volume_e8s_split = user_token_in_stats.input_volume_e8s_split + icpswap_amount_in_e8s + kong_amount_in_e8s;
@@ -1202,6 +1283,9 @@ actor {
             output_volume_e8s_icpswap = user_token_in_stats.output_volume_e8s_icpswap;
             output_volume_e8s_kong = user_token_in_stats.output_volume_e8s_kong;
             output_volume_e8s_split = user_token_in_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_in_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_in_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_in_stats.savings_as_output_split_e8s;
             total_sends = user_token_in_stats.total_sends;
             total_deposits = user_token_in_stats.total_deposits;
             total_withdrawals = user_token_in_stats.total_withdrawals;
@@ -1216,12 +1300,15 @@ actor {
             input_volume_e8s_icpswap = user_token_out_stats.input_volume_e8s_icpswap;
             input_volume_e8s_kong = user_token_out_stats.input_volume_e8s_kong;
             input_volume_e8s_split = user_token_out_stats.input_volume_e8s_split;
-            swaps_as_output_icpswap = user_token_out_stats.swaps_as_output_icpswap + 1;
+            swaps_as_output_icpswap = user_token_out_stats.swaps_as_output_icpswap;
             swaps_as_output_kong = user_token_out_stats.swaps_as_output_kong;
-            swaps_as_output_split = user_token_out_stats.swaps_as_output_split;
+            swaps_as_output_split = user_token_out_stats.swaps_as_output_split + 1;
             output_volume_e8s_icpswap = user_token_out_stats.output_volume_e8s_icpswap + icpswap_amount_out_e8s;
             output_volume_e8s_kong = user_token_out_stats.output_volume_e8s_kong + kong_amount_out_e8s;
             output_volume_e8s_split = user_token_out_stats.output_volume_e8s_split + icpswap_amount_out_e8s + kong_amount_out_e8s;
+            savings_as_output_icpswap_e8s = user_token_out_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_out_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_out_stats.savings_as_output_split_e8s + savings_out_e8s;
             total_sends = user_token_out_stats.total_sends;
             total_deposits = user_token_out_stats.total_deposits;
             total_withdrawals = user_token_out_stats.total_withdrawals;
@@ -1320,6 +1407,9 @@ actor {
             output_volume_e8s_icpswap = user_token_stats.output_volume_e8s_icpswap;
             output_volume_e8s_kong = user_token_stats.output_volume_e8s_kong;
             output_volume_e8s_split = user_token_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_stats.savings_as_output_split_e8s;
             total_sends = user_token_stats.total_sends + 1;
             total_deposits = user_token_stats.total_deposits;
             total_withdrawals = user_token_stats.total_withdrawals;
@@ -1387,6 +1477,9 @@ actor {
             output_volume_e8s_icpswap = user_token_stats.output_volume_e8s_icpswap;
             output_volume_e8s_kong = user_token_stats.output_volume_e8s_kong;
             output_volume_e8s_split = user_token_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_stats.savings_as_output_split_e8s;
             total_sends = user_token_stats.total_sends;
             total_deposits = user_token_stats.total_deposits + 1;
             total_withdrawals = user_token_stats.total_withdrawals;
@@ -1457,6 +1550,9 @@ actor {
             output_volume_e8s_icpswap = user_token_stats.output_volume_e8s_icpswap;
             output_volume_e8s_kong = user_token_stats.output_volume_e8s_kong;
             output_volume_e8s_split = user_token_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_stats.savings_as_output_split_e8s;
             total_sends = user_token_stats.total_sends;
             total_deposits = user_token_stats.total_deposits;
             total_withdrawals = user_token_stats.total_withdrawals + 1;
@@ -1538,6 +1634,16 @@ actor {
         Iter.toArray(userStats.entries())
     };
 
+    // Get token savings stats
+    public query func get_token_savings_stats(token_id: Text) : async ?TokenSavingsStats {
+        tokenSavingsStats.get(token_id)
+    };
+
+    // Get all token savings stats
+    public query func get_all_token_savings_stats() : async [(Text, TokenSavingsStats)] {
+        Iter.toArray(tokenSavingsStats.entries())
+    };
+
     // Get user-token stats for the caller
     public shared query(msg) func get_my_token_stats() : async [(Text, UserTokenStats)] {
         let user = msg.caller;
@@ -1555,6 +1661,37 @@ actor {
             switch (userTokenStats.get(key)) {
                 case (?stats) {
                     results := Array.append(results, [(tokenId, stats)]);
+                };
+                case null {};
+            };
+        };
+        
+        results
+    };
+
+    // Get user-token savings stats for the caller
+    public shared query(msg) func get_my_token_savings_stats() : async [(Text, TokenSavingsStats)] {
+        let user = msg.caller;
+        var results : [(Text, TokenSavingsStats)] = [];
+        
+        // Get all unique token IDs from the token stats map
+        let tokenIds = Iter.map<(Text, TokenStats), Text>(
+            tokenStats.entries(),
+            func((tokenId, _)) = tokenId
+        );
+
+        // For each token, check if user-token stats exist and calculate savings
+        for (tokenId in tokenIds) {
+            let key = getUserTokenStatsKey(user, tokenId);
+            switch (userTokenStats.get(key)) {
+                case (?stats) {
+                    // Create a TokenSavingsStats record from the user's savings for this token
+                    let savingsStats = {
+                        icpswap_savings_e8s = stats.savings_as_output_icpswap_e8s;
+                        kong_savings_e8s = stats.savings_as_output_kong_e8s;
+                        split_savings_e8s = stats.savings_as_output_split_e8s;
+                    };
+                    results := Array.append(results, [(tokenId, savingsStats)]);
                 };
                 case null {};
             };
@@ -3535,5 +3672,40 @@ actor {
 
         poolMetadata.put(pool_canister_id, metadata);
         #ok()
+    };
+
+    public shared func clear_user_token_savings_stats() : async () {
+        // Iterate through all user-token stats and reset their savings fields
+        for ((key, stats) in userTokenStats.entries()) {
+            userTokenStats.put(key, {
+                swaps_as_input_icpswap = stats.swaps_as_input_icpswap;
+                swaps_as_input_kong = stats.swaps_as_input_kong;
+                swaps_as_input_split = stats.swaps_as_input_split;
+                input_volume_e8s_icpswap = stats.input_volume_e8s_icpswap;
+                input_volume_e8s_kong = stats.input_volume_e8s_kong;
+                input_volume_e8s_split = stats.input_volume_e8s_split;
+                swaps_as_output_icpswap = stats.swaps_as_output_icpswap;
+                swaps_as_output_kong = stats.swaps_as_output_kong;
+                swaps_as_output_split = stats.swaps_as_output_split;
+                output_volume_e8s_icpswap = stats.output_volume_e8s_icpswap;
+                output_volume_e8s_kong = stats.output_volume_e8s_kong;
+                output_volume_e8s_split = stats.output_volume_e8s_split;
+                savings_as_output_icpswap_e8s = 0;  // Reset savings
+                savings_as_output_kong_e8s = 0;     // Reset savings
+                savings_as_output_split_e8s = 0;    // Reset savings
+                total_sends = stats.total_sends;
+                total_deposits = stats.total_deposits;
+                total_withdrawals = stats.total_withdrawals;
+            });
+        };
+
+        // Also clear the global token savings stats
+        for ((tokenId, _) in tokenSavingsStats.entries()) {
+            tokenSavingsStats.put(tokenId, {
+                icpswap_savings_e8s = 0;
+                kong_savings_e8s = 0;
+                split_savings_e8s = 0;
+            });
+        };
     };
 }
