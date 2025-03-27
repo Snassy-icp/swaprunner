@@ -127,6 +127,7 @@ export class TokenService {
   private isInitializing = false;
   private initializationError: Error | null = null;
   private logoLoadingProgressHandlers: Set<LogoLoadingProgressHandler> = new Set();
+  private logosLoaded: boolean = false;
 
   private constructor() {
     TokenService.instanceCount++;
@@ -732,9 +733,12 @@ export class TokenService {
 
   async getTokenLogo(canisterId: string): Promise<string | null> {
     try {
-      const metadata = await this.getMetadata(canisterId);
-      if (metadata.symbol === 'ICP') {
+      if (canisterId === 'ryjl3-tyaaa-aaaaa-aaaba-cai') {
         return '/icp_symbol.svg';
+      }
+
+      if (!this.logosLoaded) {
+        return 'https://wqfao-piaaa-aaaag-qj5ba-cai.raw.icp0.io/' + canisterId;
       }
 
       const cachedLogo = await this.getCachedLogo(canisterId);
@@ -1166,10 +1170,13 @@ export class TokenService {
     let processedPrincipals = new Set<string>();
     let duplicateCount = 0;
 
+    this.logosLoaded = false;
+
     // Check if we've loaded logos recently by getting the persisted time from IndexedDB
     const lastLoadTime = await this.getLastLogoLoadTime();
     if (lastLoadTime > 0 && Date.now() - lastLoadTime < this.LOGO_PAGE_LOAD_INTERVAL) {
       console.log('[TokenService][loadLogosInBackground] Skipping, last load was recent:', new Date(lastLoadTime));
+      this.logosLoaded = true;
       return;
     }
 
@@ -1257,6 +1264,8 @@ export class TokenService {
         // Add a small delay between batches to avoid overwhelming the system
         await new Promise(resolve => setTimeout(resolve, 500));
       }
+
+      this.logosLoaded = true;
 
       const totalTime = (Date.now() - startTime) / 1000;
       console.log(`[TokenService][loadLogosInBackground] Complete in ${totalTime.toFixed(1)}s`);
