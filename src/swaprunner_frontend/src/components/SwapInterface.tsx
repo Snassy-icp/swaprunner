@@ -3224,9 +3224,7 @@ const createSplitSwapDetails = async() => {
     
     try {
       // Get token metadata for fee
-      const metadata = await tokenService.getMetadata(fromToken);
       const walletBalance = await parseTokenAmount(fromTokenBalance, fromToken);
-      const fee = metadata.fee;
 
       // Get pool balances if we have a pool
       let totalBalance = walletBalance;
