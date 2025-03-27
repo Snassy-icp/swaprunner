@@ -12,6 +12,9 @@ import { FiHelpCircle, FiRefreshCw, FiUser, FiLogIn, FiCheck, FiCopy, FiMenu, Fi
 import { isFeatureEnabled } from './config/featureFlags';
 import { useAuth } from './contexts/AuthContext';
 import './App.css';
+import { tokenService } from './services/token';
+import { priceService } from './services/price';
+import { clearTokenMetadataCache } from './utils/format';
 
 // Initialize analytics with your measurement ID
 const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
@@ -62,7 +65,16 @@ const FixedHeader: React.FC = () => {
     if (clearingCache) return;
     setClearingCache(true);
     try {
+      // Clear all localStorage
       localStorage.clear();
+
+      // Clear token service caches
+      await tokenService.clearCache('all');  // Clears both logo and token metadata
+      
+      // Clear price service caches
+      priceService.clearAllCaches();  // Clears price and pool caches
+
+      // Finally reload the page
       window.location.reload();
     } catch (err) {
       console.error('Failed to clear cache:', err);

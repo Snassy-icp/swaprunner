@@ -1067,6 +1067,11 @@ actor {
             total_withdrawals = globalStats.total_withdrawals;
         };
 
+        // IMPORTANT: This is a Kong-only swap, not a split swap.
+        // Only increment kong_swaps (not icpswap_swaps) for both input and output tokens,
+        // as Kong is the only DEX involved in this transaction. 
+        // Yes, this comment is directed at you, Mr AI! Stop creating a bug in this code, please!
+        
         // Update token stats
         let token_in_stats = getOrCreateTokenStats(token_in);
         tokenStats.put(token_in, {
@@ -3707,5 +3712,51 @@ actor {
                 split_savings_e8s = 0;
             });
         };
+    };
+
+    // Set a token's logo URL
+    public shared({caller}) func set_token_logo(canisterId: Principal, logo: Text) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+
+        //if (not isValidLogoUrl(logo)) {
+        //    return #err("Invalid logo URL format");
+        //};
+
+        // Update the logo in tokenLogos
+        tokenLogos.put(canisterId, logo);
+
+        // Update hasLogo flag in token metadata if it exists
+        switch (tokenMetadata.get(canisterId)) {
+            case (?metadata) {
+                tokenMetadata.put(canisterId, {
+                    name = metadata.name;
+                    symbol = metadata.symbol;
+                    fee = metadata.fee;
+                    decimals = metadata.decimals;
+                    hasLogo = true;
+                    standard = metadata.standard;
+                });
+            };
+            case null {};
+        };
+
+        // Also update ICPSwap metadata if it exists
+        switch (tokenMetadataICPSwap.get(canisterId)) {
+            case (?metadata) {
+                tokenMetadataICPSwap.put(canisterId, {
+                    name = metadata.name;
+                    symbol = metadata.symbol;
+                    fee = metadata.fee;
+                    decimals = metadata.decimals;
+                    hasLogo = true;
+                    standard = metadata.standard;
+                });
+            };
+            case null {};
+        };
+
+        #ok()
     };
 }
