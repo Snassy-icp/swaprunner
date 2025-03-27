@@ -69,9 +69,18 @@ export class AccountParser {
    * Converts a comma-separated byte string to Uint8Array
    * Returns null if invalid or exceeds 32 bytes
    * Pads with zeros if less than 32 bytes
+   * Handles trailing commas gracefully
    */
   static parseByteString(input: string): Uint8Array | null {
     try {
+      // Remove trailing comma(s) and any whitespace
+      input = input.trim().replace(/,+$/, '');
+      
+      // Handle empty string case
+      if (!input) {
+        return new Uint8Array(32);
+      }
+
       const bytes = input.split(',').map(b => parseInt(b.trim()));
       if (bytes.some(b => isNaN(b) || b < 0 || b > 255)) return null;
       
