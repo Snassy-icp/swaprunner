@@ -437,27 +437,34 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                   <span>To Account:</span>
                   {parsedAccount?.original ? (
                     <div className="send-modal-confirm-account">
-                      <span className="send-modal-long-account">{parsedAccount.original}</span>
-                      <small>Resolves to:</small>
-                      <span className="send-modal-principal">Principal: {parsedAccount.principal.toString()}</span>
+                      <div className="account-section">
+                        <div className="account-section-label">Long Account Format:</div>
+                        <div className="account-section-value">{parsedAccount.original}</div>
+                      </div>
+                      <div className="account-section">
+                        <div className="account-section-label">Principal:</div>
+                        <div className="account-section-value">{parsedAccount.principal.toString()}</div>
+                      </div>
                       {parsedAccount.subaccount && (
-                        <span className="send-modal-subaccount">
-                          Subaccount: {toHexString(parsedAccount.subaccount.resolved)}
-                        </span>
+                        <div className="account-section">
+                          <div className="account-section-label">Subaccount:</div>
+                          <div className="account-section-value">{toHexString(parsedAccount.subaccount.resolved)}</div>
+                        </div>
                       )}
                     </div>
                   ) : parsedAccount ? (
                     <div className="send-modal-confirm-account">
-                      <span className="send-modal-principal">Principal: {parsedAccount.principal.toString()}</span>
+                      <div className="account-section">
+                        <div className="account-section-label">Principal:</div>
+                        <div className="account-section-value">{parsedAccount.principal.toString()}</div>
+                      </div>
                       {parsedAccount.subaccount && (
-                        <>
-                          <small>With {parsedAccount.subaccount.type} subaccount:</small>
-                          <span className="send-modal-subaccount">
-                            {parsedAccount.subaccount.value}
-                          </span>
-                          <small>Resolves to:</small>
-                          <code>{toHexString(parsedAccount.subaccount.resolved)}</code>
-                        </>
+                        <div className="account-section">
+                          <div className="account-section-label">Subaccount ({parsedAccount.subaccount.type}):</div>
+                          <div className="account-section-value">{parsedAccount.subaccount.value}</div>
+                          <div className="account-section-label">Resolves to:</div>
+                          <div className="account-section-value">{toHexString(parsedAccount.subaccount.resolved)}</div>
+                        </div>
                       )}
                     </div>
                   ) : (
