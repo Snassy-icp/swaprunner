@@ -1510,7 +1510,7 @@ const createSplitSwapDetails = async() => {
 */
   // Modify Kong swap execution to handle withdrawals
   const onConfirmKongSwap = async (): Promise<SwapResult> => {
-    if (!fromToken || !toToken || !fromAmount || !kongQuote.amountOut || !poolId || !kongQuote.request  || !kongQuote.request.depositNeeds) 
+    if (!fromToken || !toToken || !fromAmount || !kongQuote.amountOut || !kongQuote.request  || !kongQuote.request.depositNeeds) 
       return { success: false, error: 'Missing required data' };
 
     try {
@@ -1524,9 +1524,16 @@ const createSplitSwapDetails = async() => {
       const withdrawalNeeds = kongQuote.request.depositNeeds;
       console.log("withdrawalNeeds: ", withdrawalNeeds);
       const actualAmount = withdrawalNeeds?.adjustedAmount || amount_e8s;
+
       if (withdrawalNeeds && (withdrawalNeeds.fromDeposited + withdrawalNeeds.fromUndeposited > BigInt(0))) {
         // Update steps to include withdrawal
         console.log("Withdrawal Needs!");
+
+        if (!poolId) {
+          console.log("No Pool ID, Withdrawal Needed but no pool.");
+          return { success: false, error: 'No Pool ID, Withdrawal Needed but no pool.' };
+        }
+  
         setSteps([
           {
             title: `Withdraw from ICPSwap pool`,
@@ -1561,7 +1568,7 @@ const createSplitSwapDetails = async() => {
         startNextStep();  // Start withdraw step
 
         // First deposit any undeposited amount if needed
-        if (withdrawalNeeds.fromUndeposited > 0) {
+        if (withdrawalNeeds.fromUndeposited > 0 && poolId) {
           const depositResult = await icpSwapExecutionService.depositTokenToPool({
             poolId: poolId.toString(),
             tokenId: fromToken,
@@ -1697,17 +1704,12 @@ const createSplitSwapDetails = async() => {
 
         // Record statistics
         try {
-          console.log("Recording Kong stats");
           const principal = authService.getPrincipal();
-          console.log("Principal: ", principal);
           if (principal) {
-            console.log("ICPSwap output: ", icpswapOutput);
             // Calculate savings using saved quotes - if Kong was chosen, compare with ICPSwap quote
             const kongOutput = swapResult.success ? BigInt(swapResult.amountOut?.toString() || '0') : BigInt(0);
-            console.log("Kong output: ", kongOutput);
             // If Kong gives better output than ICPSwap, savings is the difference, otherwise 0
             const savings = kongOutput > icpswapOutput ? kongOutput - icpswapOutput : BigInt(0);
-            console.log("Savings: ", savings);
             /*await*/ statsService.recordKongSwap(
               principal,
               swapDetails.fromToken.canisterId,
@@ -1716,7 +1718,6 @@ const createSplitSwapDetails = async() => {
               BigInt(swapResult.success ? swapResult.amountOut?.toString() || '0' : '0'),
               BigInt(savings.toString()),
             );
-            console.log("Recorded Kong stats");
           }
         } catch (error) {
           console.error('Failed to record Kong stats:', error);
