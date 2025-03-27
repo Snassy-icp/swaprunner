@@ -145,7 +145,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
   };
 
   const handleSend = async () => {
-    if (!amount || !recipient || !tokenInfo.metadata) return;
+    if (!amount || !parsedAccount || !tokenInfo.metadata) return;
 
     setIsSending(true);
     setError(null);
@@ -155,15 +155,20 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
 
       // Check token standard and use appropriate service
       const isDIP20 = tokenInfo.metadata.standard.toLowerCase().includes('dip20');
+      
+      // For DIP20, we can only use the principal (no subaccount support)
+      // For ICRC1, we can use the full account with subaccount
       const result = isDIP20 
         ? await dip20Service.transfer({
             tokenId,
-            to: recipient,
+            to: parsedAccount.principal.toString(), // DIP20 only supports principal
             amount_e8s: amountE8s.toString()
           })
         : await icrc1Service.transfer({
             tokenId,
-            to: recipient,
+            to: parsedAccount.subaccount 
+              ? AccountParser.encodeLongAccount(parsedAccount) // Use full account string if subaccount present
+              : parsedAccount.principal.toString(), // Just principal if no subaccount
             amount_e8s: amountE8s.toString()
           });
 
@@ -175,9 +180,6 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
       
       // Record statistics
       try {
-        console.log('Debug - amountE8s type:', typeof amountE8s);
-        console.log('Debug - amountE8s value:', amountE8s.toString());
-        console.log('Debug - amountE8s raw:', amountE8s);
         /*await*/ statsService.recordSend(
           authService.getPrincipal()!,
           tokenId,
