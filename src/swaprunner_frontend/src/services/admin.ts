@@ -2,6 +2,7 @@ import { Actor, HttpAgent } from '@dfinity/agent';
 import { Principal } from '@dfinity/principal';
 import { authService } from './auth';
 import { idlFactory } from '../../../declarations/swaprunner_backend/swaprunner_backend.did.js';
+import { backendService } from './backend';
 
 class AdminService {
   private agent: HttpAgent | null = null;
@@ -86,6 +87,19 @@ class AdminService {
     const result = await actor.clear_logo_cache();
     if ('err' in result) {
       throw new Error(result.err);
+    }
+  }
+
+  async setTokenLogo(canisterId: string, logo: string): Promise<void> {
+    try {
+      const actor = await backendService.getActor();
+      const result = await actor.set_token_logo(Principal.fromText(canisterId), logo);
+      if ('err' in result) {
+        throw new Error(result.err);
+      }
+    } catch (error) {
+      console.error('Error setting token logo:', error);
+      throw error;
     }
   }
 }

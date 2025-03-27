@@ -90,6 +90,11 @@ export const AdminTokensPage: React.FC = () => {
     const [metadataRefreshProgress, setMetadataRefreshProgress] = useState<MetadataRefreshProgress | null>(null);
     const [metadataRefreshError, setMetadataRefreshError] = useState<string | null>(null);
     const [isRefreshingMetadata, setIsRefreshingMetadata] = useState(false);
+    const [logoFormData, setLogoFormData] = useState({
+        canisterId: '',
+        logo: ''
+    });
+    const [isSettingLogo, setIsSettingLogo] = useState(false);
     const tokensPerPage = 10;
     const navigate = useNavigate();
 
@@ -629,6 +634,27 @@ export const AdminTokensPage: React.FC = () => {
         }
     };
 
+    const handleSetLogo = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!logoFormData.canisterId || !logoFormData.logo) {
+            setError('Both canister ID and logo URL are required');
+            return;
+        }
+
+        setIsSettingLogo(true);
+        setError(null);
+        try {
+            await adminService.setTokenLogo(logoFormData.canisterId, logoFormData.logo);
+            setSuccessMessage('Logo set successfully');
+            setLogoFormData({ canisterId: '', logo: '' });
+            await loadTokens(); // Refresh the token list
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to set logo');
+        } finally {
+            setIsSettingLogo(false);
+        }
+    };
+
     const MetadataModal: React.FC<TokenMetadataModalProps> = ({ isOpen, onClose, metadata, canisterId }) => {
         if (!isOpen) return null;
 
@@ -1051,6 +1077,41 @@ export const AdminTokensPage: React.FC = () => {
                         </button>
                     </div>
                 </div>
+            </div>
+
+            <div className="admin-section">
+                <h3>Set Token Logo</h3>
+                <form onSubmit={handleSetLogo} className="logo-form">
+                    <div className="form-group">
+                        <label htmlFor="logoCanisterId">Token Canister ID:</label>
+                        <input
+                            id="logoCanisterId"
+                            type="text"
+                            value={logoFormData.canisterId}
+                            onChange={(e) => setLogoFormData(prev => ({ ...prev, canisterId: e.target.value }))}
+                            placeholder="Enter token canister ID"
+                            disabled={isSettingLogo}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="logoUrl">Logo URL:</label>
+                        <input
+                            id="logoUrl"
+                            type="text"
+                            value={logoFormData.logo}
+                            onChange={(e) => setLogoFormData(prev => ({ ...prev, logo: e.target.value }))}
+                            placeholder="Enter logo URL"
+                            disabled={isSettingLogo}
+                        />
+                    </div>
+                    <button 
+                        type="submit" 
+                        disabled={isSettingLogo || !logoFormData.canisterId || !logoFormData.logo}
+                        className="primary-button"
+                    >
+                        {isSettingLogo ? 'Setting Logo...' : 'Set Logo'}
+                    </button>
+                </form>
             </div>
 
             <div className="token-list-section">

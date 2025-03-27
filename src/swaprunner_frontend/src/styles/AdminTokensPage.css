@@ -889,4 +889,57 @@ td:last-child {
 .resume-button:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+}
+
+.logo-form {
+    max-width: 500px;
+    margin: 20px 0;
+    padding: 20px;
+    background-color: var(--background-secondary);
+    border-radius: 8px;
+}
+
+.logo-form .form-group {
+    margin-bottom: 15px;
+}
+
+.logo-form label {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--text-primary);
+}
+
+.logo-form input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--background-primary);
+    color: var(--text-primary);
+}
+
+.logo-form input:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.logo-form button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.logo-form button:hover:not(:disabled) {
+    background-color: var(--primary-color-dark);
+}
+
+.logo-form button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 } 

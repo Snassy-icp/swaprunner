@@ -14,6 +14,8 @@ import Timer "mo:base/Timer";
 import Time "mo:base/Time";
 import Buffer "mo:base/Buffer";
 import Hash "mo:base/Hash";
+import Float "mo:base/Float";
+import Int "mo:base/Int";
 
 import T "./Types";
 
@@ -675,6 +677,26 @@ actor {
         }
     };
 
+    // Helper function to cap savings based on output amount
+    private func capSavings(savings_e8s: Nat, total_output_e8s: Nat) : Nat {
+        let savings_percentage = Float.fromInt(savings_e8s) / Float.fromInt(total_output_e8s) * 100;
+        
+        if (savings_percentage > 5.0) {
+            // Over 5% is considered an outlier - return 0
+            0
+        } else if (savings_percentage > 2.0) {
+            // Cap at 2% of total output
+            let capped_amount = Int.abs(Float.toInt(Float.fromInt(total_output_e8s) * 0.02));
+            switch (Nat.fromText(Int.toText(capped_amount))) {
+                case (?n) n;
+                case null 0;
+            }
+        } else {
+            // Under 2% is fine - keep original savings
+            savings_e8s
+        }
+    };
+
     // Record completed ICPSwap swap
     public shared func record_icpswap_swap(
         user: Principal,
@@ -685,6 +707,9 @@ actor {
         savings_out_e8s: Nat,
         pool_id: Principal,  // Pool ID
     ) : async () {
+        // Cap the savings based on output amount
+        let capped_savings = capSavings(savings_out_e8s, amount_out_e8s);
+
         // Existing global stats update
         globalStats := {
             total_swaps = globalStats.total_swaps + 1;
@@ -731,7 +756,7 @@ actor {
         // Update token savings stats for output token
         let token_out_savings_stats = getOrCreateTokenSavingsStats(token_out);
         tokenSavingsStats.put(token_out, {
-            icpswap_savings_e8s = token_out_savings_stats.icpswap_savings_e8s + savings_out_e8s;
+            icpswap_savings_e8s = token_out_savings_stats.icpswap_savings_e8s + capped_savings;
             kong_savings_e8s = token_out_savings_stats.kong_savings_e8s;
             split_savings_e8s = token_out_savings_stats.split_savings_e8s;
         });
@@ -786,7 +811,7 @@ actor {
             output_volume_e8s_icpswap = user_token_out_stats.output_volume_e8s_icpswap + amount_out_e8s;
             output_volume_e8s_kong = user_token_out_stats.output_volume_e8s_kong;
             output_volume_e8s_split = user_token_out_stats.output_volume_e8s_split;
-            savings_as_output_icpswap_e8s = user_token_out_stats.savings_as_output_icpswap_e8s + savings_out_e8s;
+            savings_as_output_icpswap_e8s = user_token_out_stats.savings_as_output_icpswap_e8s + capped_savings;
             savings_as_output_kong_e8s = user_token_out_stats.savings_as_output_kong_e8s;
             savings_as_output_split_e8s = user_token_out_stats.savings_as_output_split_e8s;
             total_sends = user_token_out_stats.total_sends;
@@ -836,6 +861,9 @@ actor {
         amount_out_e8s: Nat,
         savings_out_e8s: Nat,
     ) : async () {
+        // Cap the savings based on output amount
+        let capped_savings = capSavings(savings_out_e8s, amount_out_e8s);
+
         // Update global stats
         globalStats := {
             total_swaps = globalStats.total_swaps + 1;
@@ -868,6 +896,11 @@ actor {
             withdrawals_volume_e8s = token_in_stats.withdrawals_volume_e8s;
         });
 
+        // IMPORTANT: This is a Kong-only swap, not a split swap.
+        // Only increment kong_swaps (not icpswap_swaps) for both input and output tokens,
+        // as Kong is the only DEX involved in this transaction. 
+        // Yes, this comment is directed at you, Mr AI! Stop creating a bug in this code, please!
+
         let token_out_stats = getOrCreateTokenStats(token_out);
         tokenStats.put(token_out, {
             total_swaps = token_out_stats.total_swaps + 1;
@@ -887,7 +920,7 @@ actor {
         let token_out_savings_stats = getOrCreateTokenSavingsStats(token_out);
         tokenSavingsStats.put(token_out, {
             icpswap_savings_e8s = token_out_savings_stats.icpswap_savings_e8s;
-            kong_savings_e8s = token_out_savings_stats.kong_savings_e8s + savings_out_e8s;
+            kong_savings_e8s = token_out_savings_stats.kong_savings_e8s + capped_savings;
             split_savings_e8s = token_out_savings_stats.split_savings_e8s;
         });
 
@@ -942,7 +975,7 @@ actor {
             output_volume_e8s_kong = user_token_out_stats.output_volume_e8s_kong + amount_out_e8s;
             output_volume_e8s_split = user_token_out_stats.output_volume_e8s_split;
             savings_as_output_icpswap_e8s = user_token_out_stats.savings_as_output_icpswap_e8s;
-            savings_as_output_kong_e8s = user_token_out_stats.savings_as_output_kong_e8s + savings_out_e8s;
+            savings_as_output_kong_e8s = user_token_out_stats.savings_as_output_kong_e8s + capped_savings;
             savings_as_output_split_e8s = user_token_out_stats.savings_as_output_split_e8s;
             total_sends = user_token_out_stats.total_sends;
             total_deposits = user_token_out_stats.total_deposits;
@@ -991,6 +1024,10 @@ actor {
         savings_out_e8s: Nat,
         icpswap_pool_id: Principal,  // Add pool ID
     ) : async () {
+        // Cap the savings based on total output amount
+        let total_output = icpswap_amount_out_e8s + kong_amount_out_e8s;
+        let capped_savings = capSavings(savings_out_e8s, total_output);
+
         // Update global stats
         globalStats := {
             total_swaps = globalStats.total_swaps + 1;
@@ -1038,7 +1075,7 @@ actor {
         tokenSavingsStats.put(token_out, {
             icpswap_savings_e8s = token_out_savings_stats.icpswap_savings_e8s;
             kong_savings_e8s = token_out_savings_stats.kong_savings_e8s;
-            split_savings_e8s = token_out_savings_stats.split_savings_e8s + savings_out_e8s;
+            split_savings_e8s = token_out_savings_stats.split_savings_e8s + capped_savings;
         });
 
         // Update user stats
@@ -1093,7 +1130,7 @@ actor {
             output_volume_e8s_split = user_token_out_stats.output_volume_e8s_split + icpswap_amount_out_e8s + kong_amount_out_e8s;
             savings_as_output_icpswap_e8s = user_token_out_stats.savings_as_output_icpswap_e8s;
             savings_as_output_kong_e8s = user_token_out_stats.savings_as_output_kong_e8s;
-            savings_as_output_split_e8s = user_token_out_stats.savings_as_output_split_e8s + savings_out_e8s;
+            savings_as_output_split_e8s = user_token_out_stats.savings_as_output_split_e8s + capped_savings;
             total_sends = user_token_out_stats.total_sends;
             total_deposits = user_token_out_stats.total_deposits;
             total_withdrawals = user_token_out_stats.total_withdrawals;
