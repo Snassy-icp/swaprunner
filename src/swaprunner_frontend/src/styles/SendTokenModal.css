@@ -218,16 +218,27 @@
 .send-modal-detail-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
+  align-items: flex-start;
+  padding: 12px 0;
   color: #8F96A1;
   font-size: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.send-modal-detail-row:last-child {
+  border-bottom: none;
+}
+
+.send-modal-detail-row > span:first-child {
+  flex-shrink: 0;
+  padding-right: 16px;
 }
 
 .send-modal-detail-row.total {
   margin-top: 8px;
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 2px solid rgba(255, 255, 255, 0.1);
+  border-bottom: none;
   color: #fff;
   font-weight: 500;
 }
@@ -241,9 +252,76 @@
   color: #8F96A1;
 }
 
+.send-modal-confirm-account {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: right;
+  max-width: 100%;
+}
+
+.send-modal-confirm-account .send-modal-long-account {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  word-break: break-all;
+  padding: 8px 12px;
+  background: #1A1D26;
+  border-radius: 6px;
+  color: #fff;
+  line-height: 1.4;
+}
+
+.send-modal-confirm-account small {
+  color: #8F96A1;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.send-modal-confirm-account .send-modal-principal,
+.send-modal-confirm-account .send-modal-subaccount {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  word-break: break-all;
+  color: #fff;
+  background: #1A1D26;
+  padding: 8px 12px;
+  border-radius: 6px;
+  line-height: 1.4;
+}
+
+.send-modal-confirm-account .send-modal-subaccount {
+  margin-top: 4px;
+}
+
+.send-modal-confirm-account .account-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  background: #1A1D26;
+  border-radius: 6px;
+}
+
+.send-modal-confirm-account .account-section-label {
+  color: #8F96A1;
+  font-size: 12px;
+  text-align: left;
+  margin-bottom: 2px;
+}
+
+.send-modal-confirm-account .account-section-value {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  word-break: break-all;
+  color: #fff;
+  text-align: left;
+  line-height: 1.4;
+}
+
 .send-modal-confirm-buttons {
   display: flex;
   gap: 12px;
+  margin-top: 20px;
 }
 
 .send-modal-back,
@@ -356,4 +434,147 @@
 .send-modal-token-symbol.skeleton,
 .send-modal-token-name.skeleton {
   display: none;
+}
+
+.send-modal-subaccount {
+  margin-top: 16px;
+}
+
+.send-modal-subaccount-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #8F96A1;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.send-modal-subaccount-toggle input[type="checkbox"] {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+}
+
+.send-modal-subaccount-inputs {
+  margin-top: 12px;
+  padding: 16px;
+  background: #2A2E3A;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.send-modal-subaccount-type select {
+  width: 100%;
+  padding: 8px 12px;
+  background: #1A1D26;
+  border: 1px solid #363B47;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.send-modal-subaccount-type select:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.send-modal-subaccount-value {
+  width: 100%;
+}
+
+.send-modal-subaccount-value input {
+  width: 100%;
+  padding: 8px 12px;
+  background: #1A1D26;
+  border: 1px solid #363B47;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  font-family: 'Roboto Mono', monospace;
+  box-sizing: border-box;
+}
+
+.send-modal-subaccount-value input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.send-modal-subaccount-preview {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #363B47;
+}
+
+.send-modal-subaccount-preview small {
+  display: block;
+  color: #8F96A1;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.send-modal-subaccount-preview code {
+  display: block;
+  padding: 8px 12px;
+  background: #1A1D26;
+  border-radius: 6px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  color: #fff;
+  word-break: break-all;
+  margin-bottom: 12px;
+  height: 30px;  
+}
+
+.send-modal-encode-button {
+  width: 100%;
+  padding: 8px;
+  background: #3b82f6;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.send-modal-encode-button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.send-modal-encode-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.send-modal-parsed-account {
+  margin-top: 12px;
+  padding: 12px;
+  background: #2A2E3A;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.send-modal-parsed-account small {
+  display: block;
+  color: #8F96A1;
+  margin-bottom: 8px;
+}
+
+.send-modal-parsed-account div {
+  color: #fff;
+  font-family: 'Roboto Mono', monospace;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.send-modal-account-error {
+  margin-top: 8px;
+  color: #ef4444;
+  font-size: 14px;
 } 

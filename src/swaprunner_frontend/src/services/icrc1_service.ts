@@ -13,7 +13,7 @@ export interface ExecutionResult {
 interface ICRC1Actor {
   icrc1_balance_of: (arg: { owner: Principal; subaccount: [] }) => Promise<bigint>;
   icrc1_transfer: (arg: {
-    to: { owner: Principal; subaccount: [] };
+    to: { owner: Principal; subaccount: [] | [number[]] };
     amount: bigint;
     fee: bigint[];
     memo: [];
@@ -75,6 +75,7 @@ export class ICRC1Service {
     tokenId: string;
     to: string;
     amount_e8s: string;
+    subaccount?: Uint8Array;
   }): Promise<ExecutionResult> {
     try {
       console.log('Transfer params:', params);
@@ -87,17 +88,30 @@ export class ICRC1Service {
       // Amount is already in e8s format, just convert to BigInt
       const amountE8 = BigInt(params.amount_e8s);
       console.log('Amount in e8s:', amountE8.toString());
+      console.log('To:', params.to);
+
+      // Parse the principal from the to address
+      const toPrincipal = Principal.fromText(params.to);
+      
+      // Convert subaccount to optional array of numbers if present
+      const subaccount: [] | [number[]] = params.subaccount ? [[...params.subaccount]] : [];
       
       console.log('Executing transfer with:', {
-        to: { owner: Principal.fromText(params.to), subaccount: [] },
+        to: { 
+          owner: toPrincipal, 
+          subaccount
+        },
         amount: amountE8.toString(),
         fee: metadata.fee.toString(),
       });
 
       const result = await tokenActor.icrc1_transfer({
-        to: { owner: Principal.fromText(params.to), subaccount: [] },
+        to: { 
+          owner: toPrincipal,
+          subaccount
+        },
         amount: amountE8,
-        fee: [metadata.fee], // Use bigint fee from metadata
+        fee: [metadata.fee],
         memo: [],
         from_subaccount: [],
         created_at_time: [],

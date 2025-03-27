@@ -10,6 +10,7 @@ https://x.com/swaprunner
 npm install
 cd src/swaprunner_frontend
 npm install @remix-run/router
+npm install @dfinity/ledger-icrc
 cd ../..
 dfx start --clean --background
 dfx deploy
