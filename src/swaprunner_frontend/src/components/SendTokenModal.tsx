@@ -341,7 +341,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
 
                     <div className="send-modal-subaccount-preview">
                         <small>Resolved subaccount:</small>
-                        <code>{parsedAccount?.subaccount?.resolved ? toHexString(parsedAccount.subaccount.resolved) : 'X'}</code>
+                        <code>{parsedAccount?.subaccount?.resolved ? toHexString(parsedAccount.subaccount.resolved) : ''}</code>
                         <button
                           className="send-modal-encode-button"
                           onClick={() => {

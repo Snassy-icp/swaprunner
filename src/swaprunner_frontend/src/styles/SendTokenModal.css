@@ -386,6 +386,8 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .send-modal-subaccount-type select {
@@ -404,6 +406,10 @@
   border-color: #3b82f6;
 }
 
+.send-modal-subaccount-value {
+  width: 100%;
+}
+
 .send-modal-subaccount-value input {
   width: 100%;
   padding: 8px 12px;
@@ -413,6 +419,7 @@
   color: #fff;
   font-size: 14px;
   font-family: 'Roboto Mono', monospace;
+  box-sizing: border-box;
 }
 
 .send-modal-subaccount-value input:focus {
