@@ -489,7 +489,7 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
       
       // Get token metadata for decimals
       const getQuotes = async () => {
-        if (!fromToken || !toToken || !fromAmount || !poolId) {
+        if (!fromToken || !toToken || !fromAmount) {
           clearQuotes();
           return;
         }
@@ -507,11 +507,13 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
           if (fromTokenMetadata.standard.toLowerCase().includes('dip20') || 
               fromTokenMetadata.standard.toLowerCase().includes('icrc2')) {
             // Check ICPSwap allowance
-            icpswapAllowance = await icpSwapExecutionService.checkAllowance({
-              tokenId: fromToken,
-              spender: typeof poolId === 'string' ? Principal.fromText(poolId) : poolId,
-            });
-            console.log('ICPSwap allowance:', icpswapAllowance.toString());
+            if (poolId) {
+              icpswapAllowance = await icpSwapExecutionService.checkAllowance({
+                tokenId: fromToken,
+                spender: typeof poolId === 'string' ? Principal.fromText(poolId) : poolId,
+              });
+              console.log('ICPSwap allowance:', icpswapAllowance.toString());
+            }
 
             // Check Kong allowance 
             kongAllowance = await icpSwapExecutionService.checkAllowance({
@@ -523,93 +525,100 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
 
           // Get wallet balance
           const walletBalance = await icpSwapExecutionService.getBalance(fromToken);
+          let depositedBalance = BigInt(0);
+          let undepositedBalance = BigInt(0);
+          
+          // Only fetch ICPSwap quote if we have a valid pool
+          if (poolId) {
+            // Get pool balances for ICPSwap
+            const [deposited, undeposited] = await Promise.all([
+              icpSwapExecutionService.getDepositedPoolBalance({ poolId: poolId.toString() }),
+              icpSwapExecutionService.getUndepositedPoolBalance({ poolId: poolId.toString(), tokenId: fromToken })
+            ]);
 
-          // Get pool balances
-          const [deposited, undeposited] = await Promise.all([
-            icpSwapExecutionService.getDepositedPoolBalance({ poolId: poolId.toString() }),
-            icpSwapExecutionService.getUndepositedPoolBalance({ poolId: poolId.toString(), tokenId: fromToken })
-          ]);
+            depositedBalance = isToken0(fromToken) ? deposited.balance0_e8s : deposited.balance1_e8s;
+            undepositedBalance = !undeposited.error ? undeposited.balance_e8s : BigInt(0);
 
-          const depositedBalance = isToken0(fromToken) ? deposited.balance0_e8s : deposited.balance1_e8s;
-          const undepositedBalance = !undeposited.error ? undeposited.balance_e8s : BigInt(0);
+            // Calculate ICPSwap's deposit needs
+            const icpswapNeeds = await calculateICPSwapDepositNeeds(amountInE8s, walletBalance.balance_e8s, depositedBalance, undepositedBalance, icpswapAllowance, fromTokenMetadata.standard);
+            
+            let icpswapQuoteAmount = icpswapNeeds?.adjustedAmount || amountInE8s;
 
-          // Calculate ICPSwap's deposit needs once
-          const icpswapNeeds = await calculateICPSwapDepositNeeds(amountInE8s, walletBalance.balance_e8s, depositedBalance, undepositedBalance, icpswapAllowance, fromTokenMetadata.standard);
-          if (!icpswapNeeds) {
-            clearQuotes();
-            return;  
+            // ICPSwap quote
+            const icpSwapParams = {
+              amountIn: icpswapQuoteAmount,
+              tokenIn: fromToken,
+              tokenOut: toToken,
+              fee: DEFAULT_FEE,
+            };
+
+            setQuote({ 
+              loading: true, 
+              amountOut: null, 
+              priceImpact: null, 
+              error: null, 
+              request: { 
+                tokenIn: fromToken, 
+                tokenOut: toToken, 
+                amount_e8s: icpswapQuoteAmount, 
+              },
+              depositNeeds: icpswapNeeds ? {
+                ...icpswapNeeds,
+                originalAmount: amountInE8s,
+                adjustedAmount: icpswapQuoteAmount
+              } : undefined
+            });
+
+            icpSwapService.getQuote(icpSwapParams)
+              .then(async quote => {
+                // Compare against current form values
+                if (fromToken === icpSwapParams.tokenIn && 
+                    toToken === icpSwapParams.tokenOut && 
+                    amountInE8s === parseTokenAmount(fromAmount, fromToken)) {
+                  setQuote({ 
+                    loading: false, 
+                    amountOut: quote.amountOut,
+                    priceImpact: quote.priceImpact,
+                    error: null,
+                    request: { 
+                      tokenIn: fromToken, 
+                      tokenOut: toToken, 
+                      amount_e8s: icpswapQuoteAmount, 
+                    },
+                    depositNeeds: icpswapNeeds ? {
+                      ...icpswapNeeds,
+                      originalAmount: amountInE8s,
+                      adjustedAmount: icpswapQuoteAmount
+                    } : undefined
+                  });
+                }
+              })
+              .catch(error => {
+                setQuote({ 
+                  loading: false, 
+                  amountOut: null, 
+                  priceImpact: null, 
+                  error: error.message, 
+                  request: null 
+                });
+              });
+          } else {
+            // Clear ICPSwap quote if no pool exists
+            setQuote({ 
+              loading: false, 
+              amountOut: null, 
+              priceImpact: null, 
+              error: "No ICPSwap pool available", 
+              request: null 
+            });
           }
 
+          // Kong quote logic - independent of ICPSwap pool
           // Calculate withdrawal needs for Kong quote
           const withdrawalNeeds = await calculatePoolWithdrawalNeeds(amountInE8s, walletBalance.balance_e8s, depositedBalance, undepositedBalance, kongAllowance, fromTokenMetadata.standard);
 
-          let icpswapQuoteAmount = icpswapNeeds?.adjustedAmount || amountInE8s;
-
           // For Kong quote, use the adjusted amount if available
           let kongQuoteAmount = withdrawalNeeds?.adjustedInput || amountInE8s;
-
-          // ICPSwap quote
-          const icpSwapParams = {
-            amountIn: icpswapQuoteAmount,
-            tokenIn: fromToken,
-            tokenOut: toToken,
-            fee: DEFAULT_FEE,
-          };
-
-          setQuote({ 
-            loading: true, 
-            amountOut: null, 
-            priceImpact: null, 
-            error: null, 
-            request: { 
-              tokenIn: fromToken, 
-              tokenOut: toToken, 
-              amount_e8s: icpswapQuoteAmount, 
-            },
-            depositNeeds: {
-              ...icpswapNeeds,
-              originalAmount: amountInE8s,
-              adjustedAmount: icpswapQuoteAmount
-            }
-          });
-
-          icpSwapService.getQuote(icpSwapParams)
-            .then(async quote => {
-              // Compare against current form values
-              if (fromToken === icpSwapParams.tokenIn && 
-                  toToken === icpSwapParams.tokenOut && 
-                  amountInE8s === parseTokenAmount(fromAmount, fromToken)) {
-                setQuote({ 
-                  loading: false, 
-                  amountOut: quote.amountOut,
-                  priceImpact: quote.priceImpact,
-                  error: null,
-                  request: { 
-                    tokenIn: fromToken, 
-                    tokenOut: toToken, 
-                    amount_e8s: icpswapQuoteAmount, 
-                  },
-                  depositNeeds: {
-                    ...icpswapNeeds,
-                    originalAmount: amountInE8s,
-                    adjustedAmount: icpswapQuoteAmount
-                  }
-                });
-              } else {
-                const msg = 'Discarding outdated ICPSwap quote - form values have changed';
-                console.log(msg);
-                setQuote({ loading: false, amountOut: null, priceImpact: null, error: msg, request: null });
-                }
-            })
-            .catch(error => {
-              setQuote({ 
-                loading: false, 
-                amountOut: null, 
-                priceImpact: null, 
-                error: error.message, 
-                request: null 
-              });
-            });
 
           const kongQuoteParams = {
             amountIn: kongQuoteAmount,
@@ -626,9 +635,9 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
               tokenIn: fromToken, 
               tokenOut: toToken, 
               amount_e8s: kongQuoteAmount,
-              depositNeeds: {  // Add deposit needs info for consistency
-                fromDeposited: withdrawalNeeds?.fromDeposited || 0n,
-                fromUndeposited: withdrawalNeeds?.fromUndeposited || 0n,
+              depositNeeds: {
+                fromDeposited: withdrawalNeeds?.fromDeposited || BigInt(0),
+                fromUndeposited: withdrawalNeeds?.fromUndeposited || BigInt(0),
                 fromWallet: kongQuoteAmount,
                 adjustedAmount: kongQuoteAmount,
                 originalAmount: amountInE8s
@@ -653,9 +662,9 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
                     tokenIn: fromToken, 
                     tokenOut: toToken, 
                     amount_e8s: kongQuoteAmount,
-                    depositNeeds: {  // Add deposit needs info for consistency
-                      fromDeposited: withdrawalNeeds?.fromDeposited || 0n,
-                      fromUndeposited: withdrawalNeeds?.fromUndeposited || 0n,
+                    depositNeeds: {
+                      fromDeposited: withdrawalNeeds?.fromDeposited || BigInt(0),
+                      fromUndeposited: withdrawalNeeds?.fromUndeposited || BigInt(0),
                       fromWallet: kongQuoteAmount,
                       adjustedAmount: kongQuoteAmount,
                       originalAmount: amountInE8s
@@ -1501,7 +1510,7 @@ const createSplitSwapDetails = async() => {
 */
   // Modify Kong swap execution to handle withdrawals
   const onConfirmKongSwap = async (): Promise<SwapResult> => {
-    if (!fromToken || !toToken || !fromAmount || !kongQuote.amountOut || !poolId || !kongQuote.request  || !kongQuote.request.depositNeeds) 
+    if (!fromToken || !toToken || !fromAmount || !kongQuote.amountOut || !kongQuote.request  || !kongQuote.request.depositNeeds) 
       return { success: false, error: 'Missing required data' };
 
     try {
@@ -1515,9 +1524,16 @@ const createSplitSwapDetails = async() => {
       const withdrawalNeeds = kongQuote.request.depositNeeds;
       console.log("withdrawalNeeds: ", withdrawalNeeds);
       const actualAmount = withdrawalNeeds?.adjustedAmount || amount_e8s;
+
       if (withdrawalNeeds && (withdrawalNeeds.fromDeposited + withdrawalNeeds.fromUndeposited > BigInt(0))) {
         // Update steps to include withdrawal
         console.log("Withdrawal Needs!");
+
+        if (!poolId) {
+          console.log("No Pool ID, Withdrawal Needed but no pool.");
+          return { success: false, error: 'No Pool ID, Withdrawal Needed but no pool.' };
+        }
+  
         setSteps([
           {
             title: `Withdraw from ICPSwap pool`,
@@ -1552,7 +1568,7 @@ const createSplitSwapDetails = async() => {
         startNextStep();  // Start withdraw step
 
         // First deposit any undeposited amount if needed
-        if (withdrawalNeeds.fromUndeposited > 0) {
+        if (withdrawalNeeds.fromUndeposited > 0 && poolId) {
           const depositResult = await icpSwapExecutionService.depositTokenToPool({
             poolId: poolId.toString(),
             tokenId: fromToken,
@@ -1688,17 +1704,12 @@ const createSplitSwapDetails = async() => {
 
         // Record statistics
         try {
-          console.log("Recording Kong stats");
           const principal = authService.getPrincipal();
-          console.log("Principal: ", principal);
           if (principal) {
-            console.log("ICPSwap output: ", icpswapOutput);
             // Calculate savings using saved quotes - if Kong was chosen, compare with ICPSwap quote
             const kongOutput = swapResult.success ? BigInt(swapResult.amountOut?.toString() || '0') : BigInt(0);
-            console.log("Kong output: ", kongOutput);
             // If Kong gives better output than ICPSwap, savings is the difference, otherwise 0
             const savings = kongOutput > icpswapOutput ? kongOutput - icpswapOutput : BigInt(0);
-            console.log("Savings: ", savings);
             /*await*/ statsService.recordKongSwap(
               principal,
               swapDetails.fromToken.canisterId,
@@ -1707,7 +1718,6 @@ const createSplitSwapDetails = async() => {
               BigInt(swapResult.success ? swapResult.amountOut?.toString() || '0' : '0'),
               BigInt(savings.toString()),
             );
-            console.log("Recorded Kong stats");
           }
         } catch (error) {
           console.error('Failed to record Kong stats:', error);
