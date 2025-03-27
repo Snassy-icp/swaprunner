@@ -3220,18 +3220,23 @@ const createSplitSwapDetails = async() => {
   };
 
   const handleMax = async () => {
-    if (!fromToken || !fromTokenBalance || !poolId || !icpSwapExecutionService) return;
+    if (!fromToken || !fromTokenBalance || !icpSwapExecutionService) return;
     
     try {
       // Get token metadata for fee
       const walletBalance = await parseTokenAmount(fromTokenBalance, fromToken);
-
+      
       // Get pool balances if we have a pool
       let totalBalance = walletBalance;
-      const [deposited, undeposited] = await Promise.all([
-        icpSwapExecutionService.getDepositedPoolBalance({ poolId: poolId.toString() }),
-        icpSwapExecutionService.getUndepositedPoolBalance({ poolId: poolId.toString(), tokenId: fromToken })
-      ]);
+      let deposited = { balance0_e8s: BigInt(0), balance1_e8s: BigInt(0) };
+      let undeposited: { balance_e8s: bigint; error?: string } = { balance_e8s: BigInt(0) };
+
+      if (poolId) {
+        [deposited, undeposited] = await Promise.all([
+          icpSwapExecutionService.getDepositedPoolBalance({ poolId: poolId.toString() }),
+          icpSwapExecutionService.getUndepositedPoolBalance({ poolId: poolId.toString(), tokenId: fromToken })
+        ]);
+      }
 
       // Add deposited balance if it exists
       if (isToken0(fromToken)) {
