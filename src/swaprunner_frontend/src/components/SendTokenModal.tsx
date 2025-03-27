@@ -208,6 +208,14 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
       return;
     }
 
+    // Check if trying to use subaccount with DIP20
+    const isDIP20 = tokenInfo.metadata?.standard.toLowerCase().includes('dip20');
+    if (isDIP20 && parsedAccount.subaccount) {
+      setError('Warning: This token uses the DIP20 standard which does not support subaccounts. The subaccount will be ignored.');
+    } else {
+      setError(null);
+    }
+
     // Validate amount
     const amountBig = parseAmount(amount, tokenInfo.metadata?.decimals);
     if (amountBig <= BigInt(0)) {
@@ -220,7 +228,6 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
       return;
     }
 
-    setError(null);
     setShowConfirmation(true);
   };
 
