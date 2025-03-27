@@ -41,16 +41,22 @@ export class AccountParser {
 
   /**
    * Converts a hex string to Uint8Array
-   * Returns null if invalid hex
+   * Returns null if invalid hex or exceeds 32 bytes
+   * Pads with zeros if less than 32 bytes
    */
   static hexToBytes(hex: string): Uint8Array | null {
     try {
       hex = hex.replace(/^0x/, ''); // Remove 0x prefix if present
-      if (hex.length % 2 !== 0) return null;
       if (!/^[0-9A-Fa-f]*$/.test(hex)) return null;
       
-      const bytes = new Uint8Array(hex.length / 2);
-      for (let i = 0; i < hex.length; i += 2) {
+      // Check if hex string would exceed 32 bytes
+      if (hex.length > 64) return null;
+      
+      // Pad with zeros if less than 32 bytes
+      hex = hex.padEnd(64, '0');
+      
+      const bytes = new Uint8Array(32); // Always create 32-byte array
+      for (let i = 0; i < 64; i += 2) {
         bytes[i/2] = parseInt(hex.slice(i, i + 2), 16);
       }
       return bytes;
@@ -61,13 +67,21 @@ export class AccountParser {
 
   /**
    * Converts a comma-separated byte string to Uint8Array
-   * Returns null if invalid
+   * Returns null if invalid or exceeds 32 bytes
+   * Pads with zeros if less than 32 bytes
    */
   static parseByteString(input: string): Uint8Array | null {
     try {
       const bytes = input.split(',').map(b => parseInt(b.trim()));
       if (bytes.some(b => isNaN(b) || b < 0 || b > 255)) return null;
-      return new Uint8Array(bytes);
+      
+      // Check if input would exceed 32 bytes
+      if (bytes.length > 32) return null;
+      
+      // Create 32-byte array and copy input bytes
+      const result = new Uint8Array(32);
+      result.set(bytes); // Remaining bytes will be 0 by default
+      return result;
     } catch {
       return null;
     }
