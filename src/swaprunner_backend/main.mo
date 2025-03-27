@@ -1,7 +1,7 @@
 import Principal "mo:base/Principal";
 import Array "mo:base/Array";
 import Result "mo:base/Result";
-import IC "mo:base/ExperimentalInternetComputer";
+import Cycles "mo:base/ExperimentalCycles";
 import HashMap "mo:base/HashMap";
 import Text "mo:base/Text";
 import Error "mo:base/Error";
@@ -16,7 +16,7 @@ import Buffer "mo:base/Buffer";
 import Hash "mo:base/Hash";
 import Float "mo:base/Float";
 import Int "mo:base/Int";
-
+import T "Types";
 actor {
     // Constants
     private let ICPSWAP_TOKEN_CANISTER_ID = "k37c6-riaaa-aaaag-qcyza-cai"; // ICPSwap trusted token list canister ID (contains getList() for trusted token list and getLogo() for token logos)
@@ -29,7 +29,7 @@ actor {
     private stable var admins : [Principal] = [];
 
     // Stable storage for token whitelist
-    private stable var tokenMetadataEntries : [(Principal, TokenMetadata)] = [];
+    private stable var tokenMetadataEntries : [(Principal, T.TokenMetadata)] = [];
     private stable var tokenLogoEntries : [(Principal, Text)] = [];
     private stable var userCustomTokenEntries : [(Principal, [Principal])] = [];  // New: Store user's custom tokens
 
@@ -42,49 +42,19 @@ actor {
     // Wallet feature: Stable storage for user wallet tokens
     private stable var userWalletTokenEntries : [(Principal, [Nat16])] = [];
 
-    // Add after other type definitions but before stable storage declarations
-
-    // User-Token statistics type
-    type UserTokenStats = {
-        // Input stats by swap type
-        swaps_as_input_icpswap: Nat;
-        swaps_as_input_kong: Nat;
-        swaps_as_input_split: Nat;
-        input_volume_e8s_icpswap: Nat;  // Volume sent when used as input
-        input_volume_e8s_kong: Nat;
-        input_volume_e8s_split: Nat;
-
-        // Output stats by swap type
-        swaps_as_output_icpswap: Nat;
-        swaps_as_output_kong: Nat;
-        swaps_as_output_split: Nat;
-        output_volume_e8s_icpswap: Nat;  // Volume received when used as output
-        output_volume_e8s_kong: Nat;
-        output_volume_e8s_split: Nat;
-
-        // Savings stats
-        savings_as_output_icpswap_e8s: Nat; // Amount saved when using ICPSwap vs Kong for output
-        savings_as_output_kong_e8s: Nat;    // Amount saved when using Kong vs ICPSwap for output
-        savings_as_output_split_e8s: Nat;   // Amount saved when using split vs best direct for output
-
-        // Other operations (unchanged)
-        total_sends: Nat;
-        total_deposits: Nat;
-        total_withdrawals: Nat;
-    };
 
     // Add with other stable storage declarations
-    private stable var userTokenStatsEntries : [(Text, UserTokenStats)] = [];
-    private stable var tokenSavingsStatsEntries : [(Text, TokenSavingsStats)] = [];
+    private stable var userTokenStatsEntries : [(Text, T.UserTokenStats)] = [];
+    private stable var tokenSavingsStatsEntries : [(Text, T.TokenSavingsStats)] = [];
 
     // Add with other runtime maps
-    private var userTokenStats = HashMap.fromIter<Text, UserTokenStats>(
+    private var userTokenStats = HashMap.fromIter<Text, T.UserTokenStats>(
         userTokenStatsEntries.vals(),
         0,
         Text.equal,
         Text.hash
     );
-    private var tokenSavingsStats = HashMap.fromIter<Text, TokenSavingsStats>(
+    private var tokenSavingsStats = HashMap.fromIter<Text, T.TokenSavingsStats>(
         tokenSavingsStatsEntries.vals(),
         0,
         Text.equal,
@@ -92,7 +62,7 @@ actor {
     );
 
     // Stable storage for statistics
-    private stable var globalStats : GlobalStats = {
+    private stable var globalStats : T.GlobalStats = {
         total_swaps = 0;
         icpswap_swaps = 0;
         kong_swaps = 0;
@@ -101,216 +71,45 @@ actor {
         total_deposits = 0;
         total_withdrawals = 0;
     };
-    private stable var tokenStatsEntries : [(Text, TokenStats)] = [];
-    private stable var userStatsEntries : [(Text, UserStats)] = [];
+    private stable var tokenStatsEntries : [(Text, T.TokenStats)] = [];
+    private stable var userStatsEntries : [(Text, T.UserStats)] = [];
     private stable var userLoginEntries : [(Text, Nat)] = [];  // New: Store login counts
 
     // Stable storage for ICPSwap tokens
-    private stable var tokenMetadataEntriesICPSwap : [(Principal, TokenMetadata)] = [];
+    private stable var tokenMetadataEntriesICPSwap : [(Principal, T.TokenMetadata)] = [];
 
     // Stable storage for custom tokens
-    private stable var customTokenMetadataEntries : [(Principal, TokenMetadata)] = [];
+    private stable var customTokenMetadataEntries : [(Principal, T.TokenMetadata)] = [];
 
     // Stable storage for pool metadata and user pools
-    private stable var poolMetadataEntries : [(Principal, PoolMetadata)] = [];
+    private stable var poolMetadataEntries : [(Principal, T.PoolMetadata)] = [];
     private stable var userPoolEntries : [(Principal, [Nat16])] = [];
 
     // Runtime maps - using HashMap for better performance with Principal keys
-    private var tokenMetadata = HashMap.fromIter<Principal, TokenMetadata>(tokenMetadataEntries.vals(), 10, Principal.equal, Principal.hash);
+    private var tokenMetadata = HashMap.fromIter<Principal, T.TokenMetadata>(tokenMetadataEntries.vals(), 10, Principal.equal, Principal.hash);
     private var tokenLogos = HashMap.fromIter<Principal, Text>(tokenLogoEntries.vals(), 10, Principal.equal, Principal.hash);
     private var userCustomTokens = HashMap.fromIter<Principal, [Principal]>(userCustomTokenEntries.vals(), 10, Principal.equal, Principal.hash);  // New: Runtime map for custom tokens
 
     // Runtime maps for ICPSwap tokens
-    private var tokenMetadataICPSwap = HashMap.fromIter<Principal, TokenMetadata>(tokenMetadataEntriesICPSwap.vals(), 10, Principal.equal, Principal.hash);
+    private var tokenMetadataICPSwap = HashMap.fromIter<Principal, T.TokenMetadata>(tokenMetadataEntriesICPSwap.vals(), 10, Principal.equal, Principal.hash);
 
     // Runtime maps for statistics
-    private var tokenStats = HashMap.fromIter<Text, TokenStats>(tokenStatsEntries.vals(), 0, Text.equal, Text.hash);
-    private var userStats = HashMap.fromIter<Text, UserStats>(userStatsEntries.vals(), 0, Text.equal, Text.hash);
+    private var tokenStats = HashMap.fromIter<Text, T.TokenStats>(tokenStatsEntries.vals(), 0, Text.equal, Text.hash);
+    private var userStats = HashMap.fromIter<Text, T.UserStats>(userStatsEntries.vals(), 0, Text.equal, Text.hash);
     private var userLogins = HashMap.fromIter<Text, Nat>(userLoginEntries.vals(), 0, Text.equal, Text.hash);  // New: Runtime map for logins
 
     // Runtime maps
-    private var customTokenMetadata = HashMap.fromIter<Principal, TokenMetadata>(customTokenMetadataEntries.vals(), 0, Principal.equal, Principal.hash);
+    private var customTokenMetadata = HashMap.fromIter<Principal, T.TokenMetadata>(customTokenMetadataEntries.vals(), 0, Principal.equal, Principal.hash);
 
     // Runtime maps for pools
-    private var poolMetadata = HashMap.fromIter<Principal, PoolMetadata>(poolMetadataEntries.vals(), 0, Principal.equal, Principal.hash);
+    private var poolMetadata = HashMap.fromIter<Principal, T.PoolMetadata>(poolMetadataEntries.vals(), 0, Principal.equal, Principal.hash);
     private var userPools = HashMap.fromIter<Principal, [Nat16]>(userPoolEntries.vals(), 0, Principal.equal, Principal.hash);
 
     // Wallet feature: Runtime map for user wallet tokens
     private var userWalletTokens = HashMap.fromIter<Principal, [Nat16]>(userWalletTokenEntries.vals(), 10, Principal.equal, Principal.hash);
 
-    // Types
-    type TokenMetadata = {
-        name: ?Text;
-        symbol: ?Text;
-        fee: ?Nat;
-        decimals: ?Nat8;
-        hasLogo: Bool;
-        standard: Text;
-    };
 
-    type PoolMetadata = {
-        fee: Nat;
-        key: Text;
-        token0: Token;
-        token1: Token;
-    };
-
-    type Token = {
-        address: Text;
-        standard: Text;
-    };
-
-    type ICPSwapPoolInterface = actor {
-        metadata : shared query () -> async {
-            #ok : {
-                fee: Nat;
-                key: Text;
-                token0: Token;
-                token1: Token;
-                sqrtPriceX96: Nat;
-                tick: Int;
-                liquidity: Nat;
-                maxLiquidityPerTick: Nat;
-                nextPositionId: Nat;
-            };
-            #err : { message: Text };
-        };
-    };
-
-    type FetchMetadataResult = {
-        name: ?Text;
-        symbol: ?Text;
-        fee: ?Nat;
-        decimals: ?Nat8;
-        hasLogo: Bool;
-        foundLogo: ?Text;
-        standard: Text;
-    };
-
-    type AddTokenArgs = {
-        canisterId: Principal;
-        metadata: TokenMetadata;
-        logo: ?Text;
-    };
-
-    // Statistics types
-    type GlobalStats = {
-        total_swaps: Nat;
-        icpswap_swaps: Nat;
-        kong_swaps: Nat;
-        split_swaps: Nat;
-        total_sends: Nat;           // New: Track total successful sends
-        total_deposits: Nat;        // New: Track total successful ICPSwap deposits
-        total_withdrawals: Nat;     // New: Track total successful ICPSwap withdrawals
-    };
-
-    type TokenStats = {
-        total_swaps: Nat;
-        icpswap_swaps: Nat;
-        kong_swaps: Nat;
-        split_swaps: Nat;
-        volume_e8s: Nat;
-        total_sends: Nat;           // New: Track sends for this token
-        sends_volume_e8s: Nat;      // New: Track send volume for this token
-        total_deposits: Nat;        // New: Track deposits for this token
-        deposits_volume_e8s: Nat;   // New: Track deposit volume for this token
-        total_withdrawals: Nat;     // New: Track withdrawals for this token
-        withdrawals_volume_e8s: Nat; // New: Track withdrawal volume for this token
-    };
-
-    // New: Track savings per token
-    type TokenSavingsStats = {
-        icpswap_savings_e8s: Nat;  // Amount saved when using ICPSwap vs Kong
-        kong_savings_e8s: Nat;     // Amount saved when using Kong vs ICPSwap
-        split_savings_e8s: Nat;    // Amount saved when using split vs best direct
-    };
-
-    type UserStats = {
-        total_swaps: Nat;
-        icpswap_swaps: Nat;
-        kong_swaps: Nat;
-        split_swaps: Nat;
-        total_sends: Nat;           // New: Track sends by this user
-        total_deposits: Nat;        // New: Track deposits by this user
-        total_withdrawals: Nat;     // New: Track withdrawals by this user
-    };
-
-    // ICRC-1 interfaces
-    type MetadataValue = {
-        #Text : Text;
-        #Nat : Nat;
-        #Nat8 : Nat8;
-        #Int : Int;
-        #Map : [(Text, MetadataValue)];
-    };
-
-    type ICRC1Metadata = [(Text, MetadataValue)];
-
-    type StandardRecord = {
-        url: Text;
-        name: Text;
-    };
-
-    type ICRC1Interface = actor {
-        icrc1_metadata : shared query () -> async ICRC1Metadata;
-        icrc1_name : shared query () -> async ?Text;
-        icrc1_symbol : shared query () -> async ?Text;
-        icrc1_fee : shared query () -> async ?Nat;
-        icrc1_decimals : shared query () -> async ?Nat8;
-        icrc1_supported_standards : shared query () -> async [StandardRecord];
-    };
-
-    type ICPSwapInterface = actor {
-        getLogo : shared query (Text) -> async {#ok : Text; #err : Text};
-    };
-
-    // Types for ICPSwap List
-    type Config = {
-        name: Text;
-        value: Text;
-    };
-
-    type Media = {
-        link: Text;
-        mediaType: Text;
-    };
-
-    type ICPSwapToken = {
-        canisterId: Text;
-        configs: [Config];
-        decimals: Nat;
-        fee: Nat;
-        introduction: Text;
-        mediaLinks: [Media];
-        name: Text;
-        rank: Nat32;
-        standard: Text;
-        symbol: Text;
-        totalSupply: Nat;
-    };
-
-    type GetListResult = {
-        #ok: [ICPSwapToken];
-        #err: Text;
-    };
-
-    type ICPSwapListInterface = actor {
-        getList : shared query () -> async GetListResult;
-        getLogo : shared query (Text) -> async Result.Result<Text, Text>;
-    };
-
-    // Import progress tracking
-    type ImportProgress = {
-        last_processed: ?Text;
-        total_tokens: Nat;
-        processed_count: Nat;
-        imported_count: Nat;
-        skipped_count: Nat;
-        failed_count: Nat;
-        is_running: Bool;
-    };
-
-    private var importProgress : ImportProgress = {
+    private var importProgress : T.ImportProgress = {
         last_processed = null;
         total_tokens = 0;
         processed_count = 0;
@@ -336,31 +135,13 @@ actor {
 
     private var nextLogoBatchSize: ?Nat = null;
 
-    // Add new type for metadata refresh progress
-    private type MetadataRefreshProgress = {
-        total_tokens: Nat;
-        processed_count: Nat;
-        updated_count: Nat;
-        skipped_count: Nat;
-        failed_count: Nat;
-        is_running: Bool;
-        last_processed: ?Principal;
-    };
-
-    // Add type for metadata discrepancies
-    private type MetadataDiscrepancy = {
-        ledger_id: Principal;
-        old_metadata: TokenMetadata;
-        new_metadata: TokenMetadata;
-        timestamp: Int;
-    };
 
     // Add stable storage for discrepancies
-    private stable var metadataDiscrepancies : [MetadataDiscrepancy] = [];
+    private stable var metadataDiscrepancies : [T.MetadataDiscrepancy] = [];
 
 
     // Add stable variable for metadata refresh progress
-    private stable var metadataRefreshProgress : MetadataRefreshProgress = {
+    private stable var metadataRefreshProgress : T.MetadataRefreshProgress = {
         total_tokens = 0;
         processed_count = 0;
         updated_count = 0;
@@ -500,7 +281,7 @@ actor {
 
 
     // Helper function to extract value from ICRC1Metadata
-    private func extractFromMetadata(metadata: ICRC1Metadata, key: Text) : ?MetadataValue {
+    private func extractFromMetadata(metadata: T.ICRC1Metadata, key: Text) : ?T.MetadataValue {
         for ((k, v) in metadata.vals()) {
             if (k == key) return ?v;
         };
@@ -508,7 +289,7 @@ actor {
     };
 
     // Helper function to extract text value from MetadataValue
-    private func extractText(value: ?MetadataValue) : ?Text {
+    private func extractText(value: ?T.MetadataValue) : ?Text {
         switch(value) {
             case (null) null;
             case (?#Text(t)) ?t;
@@ -517,7 +298,7 @@ actor {
     };
 
     // Helper function to extract nat value from MetadataValue
-    private func extractNat(value: ?MetadataValue) : ?Nat {
+    private func extractNat(value: ?T.MetadataValue) : ?Nat {
         switch(value) {
             case (null) null;
             case (?#Nat(n)) ?n;
@@ -526,7 +307,7 @@ actor {
     };
 
     // Helper function to extract nat8 value from MetadataValue
-    private func extractNat8(value: ?MetadataValue) : ?Nat8 {
+    private func extractNat8(value: ?T.MetadataValue) : ?Nat8 {
         switch(value) {
             case (null) null;
             case (?#Nat8(n)) ?n;
@@ -535,8 +316,8 @@ actor {
     };
 
     // Helper function to fetch missing metadata from token ledger
-    private func fetchMissingMetadata(canisterId: Principal, providedMetadata: TokenMetadata) : async FetchMetadataResult {
-        let tokenActor = actor(Principal.toText(canisterId)) : ICRC1Interface;
+    private func fetchMissingMetadata(canisterId: Principal, providedMetadata: T.TokenMetadata) : async T.FetchMetadataResult {
+        let tokenActor = actor(Principal.toText(canisterId)) : T.ICRC1Interface;
         var name = providedMetadata.name;
         var symbol = providedMetadata.symbol;
         var fee = providedMetadata.fee;
@@ -615,7 +396,7 @@ actor {
 
     // Helper function to fetch logo from ICPSwap
     private func fetchLogo(canisterId: Principal) : async ?Text {
-        let icpSwap = actor(ICPSWAP_TOKEN_CANISTER_ID) : ICPSwapInterface;
+        let icpSwap = actor(ICPSWAP_TOKEN_CANISTER_ID) : T.ICPSwapInterface;
         try {
             let result = await icpSwap.getLogo(Principal.toText(canisterId));
             switch(result) {
@@ -640,7 +421,7 @@ actor {
     // Token Whitelist Methods
 
     // Internal function to add token without admin check
-    private func addTokenInternal(args: AddTokenArgs) : async Result.Result<(), Text> {
+    private func addTokenInternal(args: T.AddTokenArgs) : async Result.Result<(), Text> {
         // Fetch missing metadata from token ledger
         let fetchResult = await fetchMissingMetadata(args.canisterId, args.metadata);
         var metadata = {
@@ -748,7 +529,7 @@ actor {
     };
 
     // Add or update a token in the whitelist
-    public shared({caller}) func add_token(args: AddTokenArgs) : async Result.Result<(), Text> {
+    public shared({caller}) func add_token(args: T.AddTokenArgs) : async Result.Result<(), Text> {
         if (not isAdmin(caller)) {
             return #err("Unauthorized: Caller is not an admin");
         };
@@ -770,7 +551,7 @@ actor {
     };
 
     // Get token metadata
-    public query func get_token_metadata(canisterId: Principal) : async ?TokenMetadata {
+    public query func get_token_metadata(canisterId: Principal) : async ?T.TokenMetadata {
         // First check whitelisted tokens
         let whitelistedMetadata = tokenMetadata.get(canisterId);
         switch (whitelistedMetadata) {
@@ -795,14 +576,14 @@ actor {
     };
 
     // Get all whitelisted tokens
-    public query func get_whitelisted_tokens() : async [(Principal, TokenMetadata)] {
+    public query func get_whitelisted_tokens() : async [(Principal, T.TokenMetadata)] {
         Iter.toArray(tokenMetadata.entries())
     };
 
     // Statistics methods
 
     // Helper function to get or create token stats
-    private func getOrCreateTokenStats(token_id: Text) : TokenStats {
+    private func getOrCreateTokenStats(token_id: Text) : T.TokenStats {
         switch (tokenStats.get(token_id)) {
             case (?stats) { stats };
             case null {
@@ -826,7 +607,7 @@ actor {
     };
 
     // Helper function to get or create user stats
-    private func getOrCreateUserStats(user: Text) : UserStats {
+    private func getOrCreateUserStats(user: Text) : T.UserStats {
         switch (userStats.get(user)) {
             case (?stats) { stats };
             case null {
@@ -850,7 +631,7 @@ actor {
         Principal.toText(user) # "_" # token
     };
 
-    private func getOrCreateUserTokenStats(user: Principal, token: Text) : UserTokenStats {
+    private func getOrCreateUserTokenStats(user: Principal, token: Text) : T.UserTokenStats {
         let key = getUserTokenStatsKey(user, token);
         switch (userTokenStats.get(key)) {
             case (?stats) stats;
@@ -882,7 +663,7 @@ actor {
     };
 
     // Helper function to get or create token savings stats
-    private func getOrCreateTokenSavingsStats(token_id: Text) : TokenSavingsStats {
+    private func getOrCreateTokenSavingsStats(token_id: Text) : T.TokenSavingsStats {
         switch (tokenSavingsStats.get(token_id)) {
             case (?stats) stats;
             case null {
@@ -1655,44 +1436,44 @@ actor {
 
     // Query methods
 
-    public query func get_global_stats() : async GlobalStats {
+    public query func get_global_stats() : async T.GlobalStats {
         globalStats
     };
 
-    public query func get_token_stats(token_id: Text) : async ?TokenStats {
+    public query func get_token_stats(token_id: Text) : async ?T.TokenStats {
         tokenStats.get(token_id)
     };
 
-    public query func get_user_stats(user: Principal) : async ?UserStats {
+    public query func get_user_stats(user: Principal) : async ?T.UserStats {
         userStats.get(Principal.toText(user))
     };
 
-    public query func get_all_token_stats() : async [(Text, TokenStats)] {
+    public query func get_all_token_stats() : async [(Text, T.TokenStats)] {
         Iter.toArray(tokenStats.entries())
     };
 
     // Add method to get all user stats
-    public query func get_all_user_stats() : async [(Text, UserStats)] {
+    public query func get_all_user_stats() : async [(Text, T.UserStats)] {
         Iter.toArray(userStats.entries())
     };
 
     // Get token savings stats
-    public query func get_token_savings_stats(token_id: Text) : async ?TokenSavingsStats {
+    public query func get_token_savings_stats(token_id: Text) : async ?T.TokenSavingsStats {
         tokenSavingsStats.get(token_id)
     };
 
     // Get all token savings stats
-    public query func get_all_token_savings_stats() : async [(Text, TokenSavingsStats)] {
+    public query func get_all_token_savings_stats() : async [(Text, T.TokenSavingsStats)] {
         Iter.toArray(tokenSavingsStats.entries())
     };
 
     // Get user-token stats for the caller
-    public shared query(msg) func get_my_token_stats() : async [(Text, UserTokenStats)] {
+    public shared query(msg) func get_my_token_stats() : async [(Text, T.UserTokenStats)] {
         let user = msg.caller;
-        var results : [(Text, UserTokenStats)] = [];
+        var results : [(Text, T.UserTokenStats)] = [];
         
         // Get all unique token IDs from the token stats map
-        let tokenIds = Iter.map<(Text, TokenStats), Text>(
+        let tokenIds = Iter.map<(Text, T.TokenStats), Text>(
             tokenStats.entries(),
             func((tokenId, _)) = tokenId
         );
@@ -1712,12 +1493,12 @@ actor {
     };
 
     // Get user-token savings stats for the caller
-    public shared query(msg) func get_my_token_savings_stats() : async [(Text, TokenSavingsStats)] {
+    public shared query(msg) func get_my_token_savings_stats() : async [(Text, T.TokenSavingsStats)] {
         let user = msg.caller;
-        var results : [(Text, TokenSavingsStats)] = [];
+        var results : [(Text, T.TokenSavingsStats)] = [];
         
         // Get all unique token IDs from the token stats map
-        let tokenIds = Iter.map<(Text, TokenStats), Text>(
+        let tokenIds = Iter.map<(Text, T.TokenStats), Text>(
             tokenStats.entries(),
             func((tokenId, _)) = tokenId
         );
@@ -1768,14 +1549,8 @@ actor {
         userStats.size()
     };
 
-    // Modify the return type to include logo
-    type RegisterTokenResponse = {
-        metadata: TokenMetadata;
-        logo: ?Text;
-    };
-
     // Custom token management methods
-    public shared({caller}) func register_custom_token(token_canister_id: Principal) : async Result.Result<RegisterTokenResponse, Text> {
+    public shared({caller}) func register_custom_token(token_canister_id: Principal) : async Result.Result<T.RegisterTokenResponse, Text> {
         // Verify caller is authenticated
         if (Principal.isAnonymous(caller)) {
             return #err("Authentication required");
@@ -1840,7 +1615,7 @@ actor {
 
         // If we get here, we need to fetch the metadata from the token canister
         try {
-            let token : ICRC1Interface = actor(Principal.toText(token_canister_id));
+            let token : T.ICRC1Interface = actor(Principal.toText(token_canister_id));
             let metadata = await token.icrc1_metadata();
             
             // Extract metadata values
@@ -1892,7 +1667,7 @@ actor {
                 };
                 case null {
                     try {
-                        let icpswap : ICPSwapInterface = actor(ICPSWAP_TOKEN_CANISTER_ID);
+                        let icpswap : T.ICPSwapInterface = actor(ICPSWAP_TOKEN_CANISTER_ID);
                         switch (await icpswap.getLogo(Principal.toText(token_canister_id))) {
                             case (#ok(logoText)) { 
                                 if (logoText != "" and isValidLogoUrl(logoText)) {
@@ -1908,7 +1683,7 @@ actor {
                 };
             };
 
-            let newMetadata : TokenMetadata = {
+            let newMetadata : T.TokenMetadata = {
                 name = name;
                 symbol = symbol;
                 fee = fee;
@@ -1976,7 +1751,7 @@ actor {
         false
     };
 
-    public query({caller}) func get_custom_tokens() : async [(Principal, TokenMetadata)] {
+    public query({caller}) func get_custom_tokens() : async [(Principal, T.TokenMetadata)] {
         // Return empty array for anonymous callers
         if (Principal.isAnonymous(caller)) {
             return [];
@@ -1986,7 +1761,7 @@ actor {
         switch (userCustomTokens.get(caller)) {
             case (?tokens) {
                 // Map each token to a tuple of (Principal, TokenMetadata)
-                Array.mapFilter<Principal, (Principal, TokenMetadata)>(tokens, func(p) {
+                Array.mapFilter<Principal, (Principal, T.TokenMetadata)>(tokens, func(p) {
                     // First check main whitelist
                     switch (tokenMetadata.get(p)) {
                         case (?metadata) ?(p, metadata);
@@ -2005,19 +1780,19 @@ actor {
     };
 
     // Get popular tokens (ICP + top N most traded whitelisted tokens)
-    public query func get_popular_tokens(n: Nat) : async [(Principal, TokenMetadata)] {
+    public query func get_popular_tokens(n: Nat) : async [(Principal, T.TokenMetadata)] {
         // Get all token stats
         let stats = Iter.toArray(tokenStats.entries());
         
         // Sort tokens by total_swaps
-        let sorted = Array.sort<(Text, TokenStats)>(stats, func(a, b) {
+        let sorted = Array.sort<(Text, T.TokenStats)>(stats, func(a, b) {
             if (a.1.total_swaps > b.1.total_swaps) { #less }
             else if (a.1.total_swaps < b.1.total_swaps) { #greater }
             else { #equal }
         });
 
         // Filter to only include whitelisted tokens and convert to Principal
-        let filtered = Array.mapFilter<(Text, TokenStats), Principal>(sorted, func((id, _)) {
+        let filtered = Array.mapFilter<(Text, T.TokenStats), Principal>(sorted, func((id, _)) {
             let p = Principal.fromText(id);
             switch (tokenMetadata.get(p)) {
                 case (?_) ?p;
@@ -2039,7 +1814,7 @@ actor {
         let topN = Array.subArray<Principal>(remainingTokens, 0, Nat.min(n - 1, remainingTokens.size()));
         
         // Get metadata for top tokens
-        let topTokensWithMetadata = Array.mapFilter<Principal, (Principal, TokenMetadata)>(topN, func(p) {
+        let topTokensWithMetadata = Array.mapFilter<Principal, (Principal, T.TokenMetadata)>(topN, func(p) {
             switch (tokenMetadata.get(p)) {
                 case (?metadata) ?((p, metadata));
                 case (null) switch (tokenMetadataICPSwap.get(p)) {
@@ -2081,7 +1856,7 @@ actor {
     };
 
     // Get current import progress
-    public query func get_import_progress() : async ImportProgress {
+    public query func get_import_progress() : async T.ImportProgress {
         importProgress
     };
 
@@ -2115,7 +1890,7 @@ actor {
         };
 
         // Clear all token metadata and logos
-        tokenMetadata := HashMap.HashMap<Principal, TokenMetadata>(10, Principal.equal, Principal.hash);
+        tokenMetadata := HashMap.HashMap<Principal, T.TokenMetadata>(10, Principal.equal, Principal.hash);
         tokenLogos := HashMap.HashMap<Principal, Text>(10, Principal.equal, Principal.hash);
         
         // Reset stable storage entries
@@ -2143,7 +1918,7 @@ actor {
         };
 
         try {
-            let icpswap = actor(ICPSWAP_TOKEN_CANISTER_ID) : ICPSwapListInterface;
+            let icpswap = actor(ICPSWAP_TOKEN_CANISTER_ID) : T. ICPSwapListInterface;
             let tokenListResult = await icpswap.getList();
             
             switch (tokenListResult) {
@@ -2180,7 +1955,7 @@ actor {
                     // Get the next batch of tokens
                     let remainingTokens = tokenList.size() - startIndex;
                     let batchSize = Nat.min(nextBatchSize, remainingTokens);
-                    let batch = Array.subArray<ICPSwapToken>(tokenList, startIndex, batchSize);
+                    let batch = Array.subArray<T.ICPSwapToken>(tokenList, startIndex, batchSize);
                     
                     Debug.print("Processing " # debug_show(batchSize) # " tokens starting from index " # debug_show(startIndex));
                     
@@ -2353,7 +2128,7 @@ actor {
         };
 
         try {
-            let icpswapList = actor(ICPSWAP_TOKEN_CANISTER_ID) : ICPSwapListInterface;
+            let icpswapList = actor(ICPSWAP_TOKEN_CANISTER_ID) : T.ICPSwapListInterface;
             let result = await icpswapList.getList();
             
             switch(result) {
@@ -2367,7 +2142,7 @@ actor {
                             let canisterId = Principal.fromText(token.canisterId);
                             
                             // Create token metadata - always set hasLogo to false initially
-                            let metadata : TokenMetadata = {
+                            let metadata : T.TokenMetadata = {
                                 name = ?token.name;
                                 symbol = ?token.symbol;
                                 fee = ?token.fee;
@@ -2398,7 +2173,7 @@ actor {
     };
 
     // Query ICPSwap tokens
-    public query func get_icpswap_tokens() : async [(Principal, TokenMetadata)] {
+    public query func get_icpswap_tokens() : async [(Principal, T.TokenMetadata)] {
         Iter.toArray(tokenMetadataICPSwap.entries())
     };
 
@@ -2473,7 +2248,7 @@ actor {
         };
 
         try {
-            let icpswap = actor(ICPSWAP_TOKEN_CANISTER_ID) : ICPSwapListInterface;
+            let icpswap = actor(ICPSWAP_TOKEN_CANISTER_ID) : T.ICPSwapListInterface;
             var processed = 0;
             var lastProcessed: ?Principal = null;
             var currentProgress = logoUpdateProgress;
@@ -2529,7 +2304,7 @@ actor {
                             if (logo != "" and isValidLogoUrl(logo)) {
                                 // Store valid logo and update token
                                 tokenLogos.put(canisterId, logo);
-                                let updatedMetadata : TokenMetadata = {
+                                let updatedMetadata : T.TokenMetadata = {
                                     name = metadata.name;
                                     symbol = metadata.symbol;
                                     fee = metadata.fee;
@@ -2551,7 +2326,7 @@ actor {
                                 // Try fetching logo from token metadata
                                 try {
                                     let tokenActor = actor(Principal.toText(canisterId)) : actor {
-                                        icrc1_metadata : shared query () -> async [(Text, MetadataValue)];
+                                        icrc1_metadata : shared query () -> async [(Text, T.MetadataValue)];
                                     };
                                     let tokenMetadata = await tokenActor.icrc1_metadata();
                                     var foundLogo : ?Text = null;
@@ -2574,7 +2349,7 @@ actor {
                                         case (?logoUrl) {
                                             // Store valid logo from metadata and update token
                                             tokenLogos.put(canisterId, logoUrl);
-                                            let updatedMetadata : TokenMetadata = {
+                                            let updatedMetadata : T.TokenMetadata = {
                                                 name = metadata.name;
                                                 symbol = metadata.symbol;
                                                 fee = metadata.fee;
@@ -2595,7 +2370,7 @@ actor {
                                         };
                                         case null {
                                             // Both ICPSwap and metadata attempts failed
-                                            let updatedMetadata : TokenMetadata = {
+                                            let updatedMetadata : T.TokenMetadata = {
                                                 name = metadata.name;
                                                 symbol = metadata.symbol;
                                                 fee = metadata.fee;
@@ -2617,7 +2392,7 @@ actor {
                                     };
                                 } catch (e) {
                                     // Failed to get logo from both sources
-                                    let updatedMetadata : TokenMetadata = {
+                                    let updatedMetadata : T.TokenMetadata = {
                                         name = metadata.name;
                                         symbol = metadata.symbol;
                                         fee = metadata.fee;
@@ -2642,7 +2417,7 @@ actor {
                             // Try fetching logo from token metadata
                             try {
                                 let tokenActor = actor(Principal.toText(canisterId)) : actor {
-                                    icrc1_metadata : shared query () -> async [(Text, MetadataValue)];
+                                    icrc1_metadata : shared query () -> async [(Text, T.MetadataValue)];
                                 };
                                 let tokenMetadata = await tokenActor.icrc1_metadata();
                                 var foundLogo : ?Text = null;
@@ -2665,7 +2440,7 @@ actor {
                                     case (?logoUrl) {
                                         // Store valid logo from metadata and update token
                                         tokenLogos.put(canisterId, logoUrl);
-                                        let updatedMetadata : TokenMetadata = {
+                                        let updatedMetadata : T.TokenMetadata = {
                                             name = metadata.name;
                                             symbol = metadata.symbol;
                                             fee = metadata.fee;
@@ -2686,7 +2461,7 @@ actor {
                                     };
                                     case null {
                                         // Both ICPSwap and metadata attempts failed
-                                        let updatedMetadata : TokenMetadata = {
+                                        let updatedMetadata : T.TokenMetadata = {
                                             name = metadata.name;
                                             symbol = metadata.symbol;
                                             fee = metadata.fee;
@@ -2708,7 +2483,7 @@ actor {
                                 };
                             } catch (e) {
                                 // Failed to get logo from both sources
-                                let updatedMetadata : TokenMetadata = {
+                                let updatedMetadata : T.TokenMetadata = {
                                     name = metadata.name;
                                     symbol = metadata.symbol;
                                     fee = metadata.fee;
@@ -2802,10 +2577,10 @@ actor {
 
 
     // Get all tokens (custom tokens first, then whitelisted, then ICPSwap)
-    public query func get_all_tokens() : async [(Principal, TokenMetadata)] {
+    public query func get_all_tokens() : async [(Principal, T.TokenMetadata)] {
         // Create a HashMap for deduplication and a Buffer for results
         var tokenSet = HashMap.HashMap<Principal, Bool>(100, Principal.equal, Principal.hash);
-        let resultBuffer = Buffer.Buffer<(Principal, TokenMetadata)>(100);
+        let resultBuffer = Buffer.Buffer<(Principal, T.TokenMetadata)>(100);
 
         // Add whitelisted tokens with their metadata
         for ((principal, metadata) in tokenMetadata.entries()) {
@@ -2827,13 +2602,6 @@ actor {
         Buffer.toArray(resultBuffer)
     };
 
-    // Modify the type definition
-    type PaginatedLogosResponse = {
-        items: [(Principal, ?Text)]; // Only Principal and optional logo URL
-        total: Nat;
-        start_index: Nat;
-    };
-
     // Helper function to estimate size of a logo entry
     private func estimateLogoEntrySize(principal: Principal, logo: ?Text) : Nat {
         let principalSize = 38; // Approximate size of Principal in bytes
@@ -2844,7 +2612,7 @@ actor {
         principalSize + logoSize
     };
 
-    public query func get_paginated_logos(start_index: Nat) : async PaginatedLogosResponse {
+    public query func get_paginated_logos(start_index: Nat) : async T.PaginatedLogosResponse {
         let totalLogos = tokenLogos.size();
         
         // Convert HashMap entries to array for pagination
@@ -2896,7 +2664,7 @@ actor {
         };
 
         // Clear ICPSwap token metadata
-        tokenMetadataICPSwap := HashMap.HashMap<Principal, TokenMetadata>(10, Principal.equal, Principal.hash);
+        tokenMetadataICPSwap := HashMap.HashMap<Principal, T.TokenMetadata>(10, Principal.equal, Principal.hash);
         
         // Reset stable storage entries
         tokenMetadataEntriesICPSwap := [];
@@ -2945,27 +2713,8 @@ actor {
         #ok()
     };
 
-    // DIP20 interface
-    type DIP20Interface = actor {
-        getMetadata : shared query () -> async DIP20Metadata;
-        name : shared query () -> async Text;
-        symbol : shared query () -> async Text;
-        decimals : shared query () -> async Nat8;
-        fee : shared query () -> async Nat;
-    };
-
-    type DIP20Metadata = {
-        logo: Text;
-        name: Text;
-        symbol: Text;
-        decimals: Nat8;
-        totalSupply: Nat;
-        owner: Principal;
-        fee: Nat;
-    };
-
     // Refresh token metadata for a given token
-    public shared({caller}) func refresh_token_metadata(ledger_id: Principal) : async Result.Result<TokenMetadata, Text> {
+    public shared({caller}) func refresh_token_metadata(ledger_id: Principal) : async Result.Result<T.TokenMetadata, Text> {
         Debug.print("Refreshing token metadata for " # Principal.toText(ledger_id));
         if (not isAdmin(caller)) {
             return #err("Unauthorized: Caller is not an admin");
@@ -2974,7 +2723,7 @@ actor {
         await do_refresh_token_metadata(ledger_id);
     };
 
-    private func do_refresh_token_metadata(ledger_id: Principal) : async Result.Result<TokenMetadata, Text> {
+    private func do_refresh_token_metadata(ledger_id: Principal) : async Result.Result<T.TokenMetadata, Text> {
         Debug.print("Actually refreshing token metadata for " # Principal.toText(ledger_id));
         // First determine which map contains this token and get existing metadata
         let (sourceMap, existingMetadata) = switch (tokenMetadata.get(ledger_id)) {
@@ -2990,10 +2739,10 @@ actor {
         try {
             if (Text.contains(Text.toLowercase(existingMetadata.standard), #text("dip20"))) {
                 // DIP20 token, get metadata from DIP20
-                let dip20Actor = actor(Principal.toText(ledger_id)) : DIP20Interface;
+                let dip20Actor = actor(Principal.toText(ledger_id)) : T.DIP20Interface;
                 let dip20Metadata = await dip20Actor.getMetadata();
                 // If we get here, it's a DIP20 token
-                var metadata : TokenMetadata = {
+                var metadata : T.TokenMetadata = {
                     name = ?dip20Metadata.name;
                     symbol = ?dip20Metadata.symbol;
                     fee = ?dip20Metadata.fee;
@@ -3020,7 +2769,7 @@ actor {
                 };
 
 
-                let updatedMetadata : TokenMetadata = {
+                let updatedMetadata : T.TokenMetadata = {
                     name = switch (metadata.name) {
                         case (?n) if (n == "") existingMetadata.name else metadata.name;
                         case null existingMetadata.name;
@@ -3061,7 +2810,7 @@ actor {
                 return #ok(updatedMetadata);                    
             } else {
                 // ICRC1 token, get metadata from ICRC1
-                let icrc1Actor = actor(Principal.toText(ledger_id)) : ICRC1Interface;
+                let icrc1Actor = actor(Principal.toText(ledger_id)) : T.ICRC1Interface;
                 let metadata = await icrc1Actor.icrc1_metadata();
                 
                 // First try to extract all values from metadata
@@ -3133,7 +2882,7 @@ actor {
                     case (null) false;
                 };
 
-                let newMetadata : TokenMetadata = {
+                let newMetadata : T.TokenMetadata = {
                     name = name;
                     symbol = symbol;
                     fee = fee;
@@ -3142,7 +2891,7 @@ actor {
                     standard = standard;
                 };
 
-                let updatedMetadata : TokenMetadata = {
+                let updatedMetadata : T.TokenMetadata = {
                     name = switch (newMetadata.name) {
                         case (?n) if (n == "") existingMetadata.name else newMetadata.name;
                         case null existingMetadata.name;
@@ -3242,12 +2991,12 @@ actor {
     };
 
     // Get current metadata refresh progress
-    public query func get_metadata_refresh_progress() : async MetadataRefreshProgress {
+    public query func get_metadata_refresh_progress() : async T.MetadataRefreshProgress {
         metadataRefreshProgress
     };
 
     // Get metadata discrepancies
-    public query func get_metadata_discrepancies() : async [MetadataDiscrepancy] {
+    public query func get_metadata_discrepancies() : async [T.MetadataDiscrepancy] {
         metadataDiscrepancies
     };
 
@@ -3292,7 +3041,7 @@ actor {
                 return;
             };
 
-            var currentProgress : MetadataRefreshProgress = metadataRefreshProgress;
+            var currentProgress : T.MetadataRefreshProgress = metadataRefreshProgress;
             var processedInBatch : Nat = 0;
             var lastProcessed : ?Principal = null;
             var foundLastProcessed = currentProgress.last_processed == null;
@@ -3598,13 +3347,13 @@ actor {
             case null {
                 // Need to fetch metadata from pool
                 try {
-                    let poolActor : ICPSwapPoolInterface = actor(Principal.toText(pool_canister_id));
+                    let poolActor : T.ICPSwapPoolInterface = actor(Principal.toText(pool_canister_id));
                     let response = await poolActor.metadata();
                     
                     switch (response) {
                         case (#ok(metadata)) {
                             // Store only the fields we need in our pruned PoolMetadata
-                            let prunedMetadata : PoolMetadata = {
+                            let prunedMetadata : T.PoolMetadata = {
                                 fee = metadata.fee;
                                 key = metadata.key;
                                 token0 = metadata.token0;
@@ -3673,7 +3422,7 @@ actor {
 
     public query({caller}) func get_user_pools() : async [{
         canisterId: Principal;
-        metadata: ?PoolMetadata;
+        metadata: ?T.PoolMetadata;
     }] {
         // Verify caller is authenticated
         if (Principal.isAnonymous(caller)) {
@@ -3686,7 +3435,7 @@ actor {
                 // Map pool indexes to principals and metadata
                 Array.mapFilter<Nat16, {
                     canisterId: Principal;
-                    metadata: ?PoolMetadata;
+                    metadata: ?T.PoolMetadata;
                 }>(poolIndexes, func(idx) {
                     switch (indexToPrincipal.get(idx)) {
                         case (?principal) {
@@ -3703,11 +3452,11 @@ actor {
         };
     };
 
-    public query func get_pool_metadata(pool_canister_id: Principal) : async ?PoolMetadata {
+    public query func get_pool_metadata(pool_canister_id: Principal) : async ?T.PoolMetadata {
         poolMetadata.get(pool_canister_id)
     };
 
-    public shared({caller}) func update_pool_metadata(pool_canister_id: Principal, metadata: PoolMetadata) : async Result.Result<(), Text> {
+    public shared({caller}) func update_pool_metadata(pool_canister_id: Principal, metadata: T.PoolMetadata) : async Result.Result<(), Text> {
         if (not isAdmin(caller)) {
             return #err("Unauthorized: Caller is not an admin");
         };
