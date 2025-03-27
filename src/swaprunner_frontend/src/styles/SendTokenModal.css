@@ -450,6 +450,7 @@
   color: #fff;
   word-break: break-all;
   margin-bottom: 12px;
+  height: 30px;  
 }
 
 .send-modal-encode-button {

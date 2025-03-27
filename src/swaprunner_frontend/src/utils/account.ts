@@ -82,7 +82,6 @@ export class AccountParser {
         break;
       case 'bytes':
         resolved = AccountParser.parseByteString(subaccount.value);
-        console.log('Resolved bytes:', resolved);
         break;
       case 'principal':
         try {
