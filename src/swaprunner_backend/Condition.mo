@@ -6,41 +6,13 @@ import Buffer "mo:base/Buffer";
 import Nat "mo:base/Nat";
 import Int "mo:base/Int";
 
-import Types "./Types";
+import T "./Types";
 
 module {
-    // Types for conditions
-    public type Condition = {
-        key: Text;
-        name: Text;
-        description: Text;
-        parameter_specs: [{
-            name: Text;
-            type_: {#Principal; #Nat; #Text};
-            default_value: ?Text;
-        }];
-    };
-
-    public type ConditionUsage = {
-        condition_key: Text;
-        parameters: {
-            #Principal: Principal;
-            #Nat: Nat;
-            #Text: Text;
-        };
-    };
-
-    // Context type (same as in Achievement module)
-    public type Context = {
-        user_stats: TrieMap.TrieMap<Text, Types.UserStats>;
-        user_token_stats: TrieMap.TrieMap<Text, Types.UserTokenStats>;
-        token_stats: TrieMap.TrieMap<Text, Types.TokenStats>;
-        global_stats: Types.GlobalStats;
-    };
 
     // Condition Registry
     // Note: These are non-stable let bindings that will be recreated on init/upgrade
-    private let TRADES_ABOVE_AMOUNT : Condition = {
+    private let TRADES_ABOVE_AMOUNT : T.Condition = {
         key = "trades_above_amount";
         name = "Large Trade Achievement";
         description = "Execute trades above specified amount";
@@ -51,7 +23,7 @@ module {
         }];
     };
 
-    private let TOTAL_TRADES_COUNT : Condition = {
+    private let TOTAL_TRADES_COUNT : T.Condition = {
         key = "total_trades_count";
         name = "Trade Count Achievement";
         description = "Execute a certain number of trades";
@@ -62,7 +34,7 @@ module {
         }];
     };
 
-    private let TOKEN_TRADE_VOLUME : Condition = {
+    private let TOKEN_TRADE_VOLUME : T.Condition = {
         key = "token_trade_volume";
         name = "Token Volume Achievement";
         description = "Trade a certain volume of a specific token";
@@ -79,29 +51,30 @@ module {
             }
         ];
     };
-
+    private let registry : TrieMap.TrieMap<Text, T.Condition> = TrieMap.empty();
     // Registry map
-    private let registry = {
-        var map = TrieMap.TrieMap<Text, Condition>(Text.equal, Text.hash);
-        map.put(TRADES_ABOVE_AMOUNT.key, TRADES_ABOVE_AMOUNT);
-        map.put(TOTAL_TRADES_COUNT.key, TOTAL_TRADES_COUNT);
-        map.put(TOKEN_TRADE_VOLUME.key, TOKEN_TRADE_VOLUME);
-        map;
+    
+    private let registry : TrieMap.TrieMap<Text, Condition> = do {
+        let map = TrieMap.TrieMap<Text, Condition>(Text.equal, Text.hash);
+        ignore map.put(TRADES_ABOVE_AMOUNT.key, TRADES_ABOVE_AMOUNT);
+        ignore map.put(TOTAL_TRADES_COUNT.key, TOTAL_TRADES_COUNT);
+        ignore map.put(TOKEN_TRADE_VOLUME.key, TOKEN_TRADE_VOLUME);
+        map
     };
 
     // Public methods
-    public func get_condition(key: Text) : ?Condition {
+    public func get_condition(key: Text) : ?T.Condition {
         registry.map.get(key);
     };
 
-    public func get_all_conditions() : [Condition] {
+    public func get_all_conditions() : [T.Condition] {
         Buffer.toArray(Buffer.fromIter(registry.map.vals()));
     };
 
     public func evaluate_condition(
-        context: Context,
+        context: T.Context,
         user: Principal,
-        usage: ConditionUsage
+        usage: T.ConditionUsage
     ) : async Bool {
         let condition = switch (registry.map.get(usage.condition_key)) {
             case null return false; // Invalid condition key

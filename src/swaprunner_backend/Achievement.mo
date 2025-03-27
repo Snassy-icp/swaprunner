@@ -7,52 +7,10 @@ import Buffer "mo:base/Buffer";
 import Nat "mo:base/Nat";
 import Int "mo:base/Int";
 
-import Types "./Types";
+import T "./Types";
 import Condition "./Condition";
 
 module {
-    // Types for Achievement module
-    public type Achievement = {
-        id: Text;
-        name: Text;
-        description: Text;
-        logo_url: ?Text;
-        condition_usages: [ConditionUsage];
-        predicate: ?PredicateExpression;
-    };
-
-    public type ConditionUsage = {
-        condition_key: Text;
-        parameters: {
-            #Principal: Principal;
-            #Nat: Nat;
-            #Text: Text;
-        };
-    };
-
-    public type PredicateExpression = {
-        #AND: (PredicateExpression, PredicateExpression);
-        #OR: (PredicateExpression, PredicateExpression);
-        #NOT: PredicateExpression;
-        #REF: Nat; // Index into condition_usages array
-    };
-
-    public type UserAchievement = {
-        user: Principal;
-        achievement_id: Text;
-        discovered_at: Int; // Timestamp
-    };
-
-    // Context type containing all required state from main.mo
-    public type Context = {
-        achievements: TrieMap.TrieMap<Text, Achievement>;
-        user_achievements: TrieMap.TrieMap<Text, [UserAchievement]>; // Key: user principal as text
-        user_stats: TrieMap.TrieMap<Text, Types.UserStats>;
-        user_token_stats: TrieMap.TrieMap<Text, Types.UserTokenStats>;
-        token_stats: TrieMap.TrieMap<Text, Types.TokenStats>;
-        global_stats: Types.GlobalStats;
-    };
-
     // Static methods
     public func scan_for_new_achievements(
         context: Context,
@@ -77,10 +35,10 @@ module {
         };
         
         // Check each achievement
-        for ((id, achievement) in context.achievements.entries()) {
+        label next_achievement for ((id, achievement) in context.achievements.entries()) {
             // Skip if already earned
             if (Array.find<UserAchievement>(existing, func(ua) = ua.achievement_id == id) != null) {
-                continue;
+                continue next_achievement;
             };
             
             // Evaluate achievement conditions
