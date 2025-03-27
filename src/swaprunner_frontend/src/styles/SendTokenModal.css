@@ -359,83 +359,106 @@
 }
 
 .send-modal-subaccount {
-  margin-bottom: 1rem;
+  margin-top: 16px;
 }
 
 .send-modal-subaccount-toggle {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: 8px;
+  color: #8F96A1;
+  font-size: 14px;
   cursor: pointer;
 }
 
 .send-modal-subaccount-toggle input[type="checkbox"] {
   margin: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
 }
 
 .send-modal-subaccount-inputs {
-  background: rgba(0, 0, 0, 0.05);
-  padding: 1rem;
-  border-radius: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.send-modal-subaccount-type {
-  margin-bottom: 0.5rem;
+  margin-top: 12px;
+  padding: 16px;
+  background: #2A2E3A;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .send-modal-subaccount-type select {
   width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 0.25rem;
-  background: white;
+  padding: 8px 12px;
+  background: #1A1D26;
+  border: 1px solid #363B47;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.send-modal-subaccount-type select:focus {
+  outline: none;
+  border-color: #3b82f6;
 }
 
 .send-modal-subaccount-value input {
   width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 0.25rem;
-  font-family: monospace;
+  padding: 8px 12px;
+  background: #1A1D26;
+  border: 1px solid #363B47;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.send-modal-subaccount-value input:focus {
+  outline: none;
+  border-color: #3b82f6;
 }
 
 .send-modal-subaccount-preview {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #363B47;
 }
 
 .send-modal-subaccount-preview small {
   display: block;
-  color: #666;
-  margin-bottom: 0.25rem;
+  color: #8F96A1;
+  font-size: 12px;
+  margin-bottom: 4px;
 }
 
 .send-modal-subaccount-preview code {
   display: block;
-  padding: 0.5rem;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 0.25rem;
-  font-family: monospace;
+  padding: 8px 12px;
+  background: #1A1D26;
+  border-radius: 6px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  color: #fff;
   word-break: break-all;
-  margin-bottom: 0.5rem;
+  margin-bottom: 12px;
 }
 
 .send-modal-encode-button {
   width: 100%;
-  padding: 0.5rem;
-  margin-top: 0.5rem;
-  background: #f0f0f0;
-  border: 1px solid #ccc;
-  border-radius: 0.25rem;
+  padding: 8px;
+  background: #3b82f6;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 14px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: opacity 0.2s;
 }
 
 .send-modal-encode-button:hover:not(:disabled) {
-  background: #e0e0e0;
+  opacity: 0.9;
 }
 
 .send-modal-encode-button:disabled {
@@ -444,58 +467,71 @@
 }
 
 .send-modal-parsed-account {
-  margin-top: 0.5rem;
-  padding: 0.5rem;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 0.25rem;
+  margin-top: 12px;
+  padding: 12px;
+  background: #2A2E3A;
+  border-radius: 8px;
+  font-size: 14px;
 }
 
 .send-modal-parsed-account small {
   display: block;
-  color: #666;
-  margin-bottom: 0.25rem;
+  color: #8F96A1;
+  margin-bottom: 8px;
 }
 
 .send-modal-parsed-account div {
-  font-family: monospace;
+  color: #fff;
+  font-family: 'Roboto Mono', monospace;
   word-break: break-all;
+  line-height: 1.4;
+}
+
+.send-modal-account-error {
+  margin-top: 8px;
+  color: #ef4444;
+  font-size: 14px;
 }
 
 .send-modal-confirm-account {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-}
-
-.send-modal-confirm-account small {
-  color: #666;
+  gap: 4px;
+  text-align: right;
 }
 
 .send-modal-confirm-account .send-modal-long-account {
-  font-family: monospace;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
   word-break: break-all;
-  padding: 0.5rem;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 0.25rem;
+  padding: 8px;
+  background: #1A1D26;
+  border-radius: 6px;
+  color: #fff;
+}
+
+.send-modal-confirm-account small {
+  color: #8F96A1;
+  font-size: 12px;
+  margin-top: 8px;
 }
 
 .send-modal-confirm-account .send-modal-principal,
 .send-modal-confirm-account .send-modal-subaccount {
-  font-family: monospace;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
   word-break: break-all;
+  color: #fff;
 }
 
 .send-modal-confirm-account code {
   display: block;
-  padding: 0.5rem;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 0.25rem;
-  font-family: monospace;
+  padding: 8px;
+  background: #1A1D26;
+  border-radius: 6px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  color: #fff;
   word-break: break-all;
-}
-
-.send-modal-account-error {
-  color: #dc3545;
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
+  margin-top: 4px;
 } 
