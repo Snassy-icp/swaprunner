@@ -12,6 +12,13 @@ import '../styles/SendTokenModal.css';
 import { dip20Service } from '../services/dip20_service';
 import { statsService } from '../services/stats';
 
+// Utility function to convert Uint8Array to hex string
+const toHexString = (bytes: Uint8Array): string => {
+  return Array.from(bytes)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+};
+
 interface SendTokenModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -278,7 +285,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                     <small>Detected long account format. Resolved to:</small>
                     <div>Principal: {parsedAccount.principal.toString()}</div>
                     {parsedAccount.subaccount && (
-                      <div>With subaccount: {Buffer.from(parsedAccount.subaccount.resolved).toString('hex')}</div>
+                      <div>With subaccount: {toHexString(parsedAccount.subaccount.resolved)}</div>
                     )}
                   </div>
                 )}
@@ -336,7 +343,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                     {parsedAccount?.subaccount && (
                       <div className="send-modal-subaccount-preview">
                         <small>Resolved subaccount:</small>
-                        <code>{Buffer.from(parsedAccount.subaccount.resolved).toString('hex')}</code>
+                        <code>{toHexString(parsedAccount.subaccount.resolved)}</code>
                         <button
                           className="send-modal-encode-button"
                           onClick={() => {
@@ -438,7 +445,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                       <span className="send-modal-principal">Principal: {parsedAccount.principal.toString()}</span>
                       {parsedAccount.subaccount && (
                         <span className="send-modal-subaccount">
-                          Subaccount: {Buffer.from(parsedAccount.subaccount.resolved).toString('hex')}
+                          Subaccount: {toHexString(parsedAccount.subaccount.resolved)}
                         </span>
                       )}
                     </div>
@@ -452,7 +459,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                             {parsedAccount.subaccount.value}
                           </span>
                           <small>Resolves to:</small>
-                          <code>{Buffer.from(parsedAccount.subaccount.resolved).toString('hex')}</code>
+                          <code>{toHexString(parsedAccount.subaccount.resolved)}</code>
                         </>
                       )}
                     </div>
