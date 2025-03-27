@@ -173,10 +173,9 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
           })
         : await icrc1Service.transfer({
             tokenId,
-            to: parsedAccount.subaccount 
-              ? AccountParser.encodeLongAccount(parsedAccount) // Use full account string if subaccount present
-              : parsedAccount.principal.toString(), // Just principal if no subaccount
-            amount_e8s: amountE8s.toString()
+            to: parsedAccount.principal.toString(),
+            amount_e8s: amountE8s.toString(),
+            subaccount: parsedAccount.subaccount?.resolved // Pass subaccount if present
           });
 
       if (!result.success) {
@@ -340,10 +339,9 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                       />
                     </div>
 
-                    {parsedAccount?.subaccount && (
-                      <div className="send-modal-subaccount-preview">
+                    <div className="send-modal-subaccount-preview">
                         <small>Resolved subaccount:</small>
-                        <code>{toHexString(parsedAccount.subaccount.resolved)}</code>
+                        <code>{parsedAccount?.subaccount?.resolved ? toHexString(parsedAccount.subaccount.resolved) : 'X'}</code>
                         <button
                           className="send-modal-encode-button"
                           onClick={() => {
@@ -359,7 +357,6 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                           Convert to Long Account String
                         </button>
                       </div>
-                    )}
                   </div>
                 )}
 
