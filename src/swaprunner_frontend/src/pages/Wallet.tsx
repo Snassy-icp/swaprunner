@@ -14,6 +14,7 @@ import '../styles/Wallet.css';
 import { AddSubaccountModal } from '../components/AddSubaccountModal';
 import '../styles/AddSubaccountModal.css';
 import { Principal } from '@dfinity/principal';
+import { bytesToHex, formatBytes, formatPrincipal } from '../utils/subaccounts';
 
 interface NamedSubaccount {
   name: string;
@@ -41,6 +42,7 @@ export const WalletPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showTokenSelect, setShowTokenSelect] = useState(false);
   const [expandedTokens, setExpandedTokens] = useState<Set<string>>(new Set());
+  const [expandedSubaccounts, setExpandedSubaccounts] = useState<Set<string>>(new Set());
   const [showSendModal, setShowSendModal] = useState(false);
   const [selectedTokenForSend, setSelectedTokenForSend] = useState<string | null>(null);
   const [selectedSubaccountForSend, setSelectedSubaccountForSend] = useState<number[] | null>(null);
@@ -305,6 +307,20 @@ export const WalletPage: React.FC = () => {
         next.delete(tokenId);
       } else {
         next.add(tokenId);
+      }
+      return next;
+    });
+  };
+
+  // Add toggle function for subaccounts
+  const toggleSubaccountExpand = (tokenId: string, subaccountName: string) => {
+    const key = `${tokenId}-${subaccountName}`;
+    setExpandedSubaccounts(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
       }
       return next;
     });
@@ -764,39 +780,77 @@ export const WalletPage: React.FC = () => {
                           </div>
                         ) : (
                           <div className="subaccounts-list">
-                            {token.subaccounts.map((subaccount) => (
-                              <div key={subaccount.name} className="subaccount-item">
-                                <div className="subaccount-info">
-                                  <span className="subaccount-name">{subaccount.name}</span>
-                                  <span className="subaccount-created">
-                                    Created {new Date(Number(subaccount.created_at / BigInt(1000000))).toLocaleDateString()}
-                                  </span>
+                            {token.subaccounts.map((subaccount) => {
+                              const isExpanded = expandedSubaccounts.has(`${token.canisterId}-${subaccount.name}`);
+                              return (
+                                <div key={subaccount.name} className={`subaccount-item ${isExpanded ? 'expanded' : ''}`}>
+                                  <div 
+                                    className="subaccount-header"
+                                    onClick={() => toggleSubaccountExpand(token.canisterId, subaccount.name)}
+                                  >
+                                    <div className="subaccount-info">
+                                      <div className="subaccount-title">
+                                        <span className="subaccount-name">{subaccount.name}</span>
+                                        <span className="subaccount-created">
+                                          Created {new Date(Number(subaccount.created_at / BigInt(1000000))).toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                      <div className="subaccount-actions">
+                                        <button
+                                          className="subaccount-action-button send"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenSendModalWithSubaccount(token.canisterId, subaccount.subaccount);
+                                          }}
+                                          title="Send from this subaccount"
+                                        >
+                                          <FiSend />
+                                        </button>
+                                        <button
+                                          className="subaccount-action-button withdraw"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenSendModalWithSubaccount(token.canisterId, subaccount.subaccount);
+                                          }}
+                                          title="Withdraw to main account"
+                                        >
+                                          <FiDownload />
+                                        </button>
+                                        <button
+                                          className="subaccount-action-button remove"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveSubaccount(token.canisterId, subaccount.subaccount);
+                                          }}
+                                          title="Remove subaccount"
+                                        >
+                                          <FiX />
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div className="subaccount-expand">
+                                      {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+                                    </div>
+                                  </div>
+                                  {isExpanded && (
+                                    <div className="subaccount-details">
+                                      <div className="subaccount-format">
+                                        <div className="format-label">Hex:</div>
+                                        <code>{bytesToHex(subaccount.subaccount)}</code>
+                                      </div>
+                                      <div className="subaccount-format">
+                                        <div className="format-label">Bytes:</div>
+                                        <code>{formatBytes(subaccount.subaccount)}</code>
+                                      </div>
+                                      <div className="subaccount-format">
+                                        <div className="format-label">Principal:</div>
+                                        <code>{formatPrincipal(subaccount.subaccount)}</code>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                                <div className="subaccount-actions">
-                                  <button
-                                    className="subaccount-action-button send"
-                                    onClick={() => handleOpenSendModalWithSubaccount(token.canisterId, subaccount.subaccount)}
-                                    title="Send from this subaccount"
-                                  >
-                                    <FiSend />
-                                  </button>
-                                  <button
-                                    className="subaccount-action-button withdraw"
-                                    onClick={() => handleOpenSendModalWithSubaccount(token.canisterId, subaccount.subaccount)}
-                                    title="Withdraw to main account"
-                                  >
-                                    <FiDownload />
-                                  </button>
-                                  <button
-                                    className="subaccount-action-button remove"
-                                    onClick={() => handleRemoveSubaccount(token.canisterId, subaccount.subaccount)}
-                                    title="Remove subaccount"
-                                  >
-                                    <FiX />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
