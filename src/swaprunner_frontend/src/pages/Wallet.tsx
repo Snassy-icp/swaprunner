@@ -58,12 +58,13 @@ export const WalletPage: React.FC = () => {
   const [expandedSubaccounts, setExpandedSubaccounts] = useState<Set<string>>(new Set());
   const [showSendModal, setShowSendModal] = useState(false);
   const [selectedTokenForSend, setSelectedTokenForSend] = useState<string | null>(null);
-  const [selectedSubaccountForSend, setSelectedSubaccountForSend] = useState<number[] | null>(null);
+  const [selectedSubaccountForSend, setSelectedSubaccountForSend] = useState<number[] | undefined>(undefined);
   const [hideEmptyBalances, setHideEmptyBalances] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
   const [showAddSubaccountModal, setShowAddSubaccountModal] = useState(false);
   const [selectedTokenForSubaccount, setSelectedTokenForSubaccount] = useState<string | null>(null);
+  const [hideEmptyTokens, setHideEmptyTokens] = useState(false);
 
   useEffect(() => {
     // Check authentication status on mount
@@ -343,7 +344,7 @@ export const WalletPage: React.FC = () => {
   const handleSendSuccess = () => {
     setShowSendModal(false);
     setSelectedTokenForSend(null);
-    setSelectedSubaccountForSend(null);
+    setSelectedSubaccountForSend(undefined);
     // Reload wallet tokens after successful send
     loadWalletTokens();
   };
@@ -1028,10 +1029,11 @@ export const WalletPage: React.FC = () => {
           onClose={() => {
             setShowSendModal(false);
             setSelectedTokenForSend(null);
-            setSelectedSubaccountForSend(null);
+            setSelectedSubaccountForSend(undefined);
           }}
           tokenId={selectedTokenForSend}
           onSuccess={handleSendSuccess}
+          fromSubaccount={selectedSubaccountForSend}
         />
       )}
       {showAddSubaccountModal && selectedTokenForSubaccount && (

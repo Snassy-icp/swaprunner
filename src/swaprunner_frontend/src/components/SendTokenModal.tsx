@@ -24,6 +24,7 @@ interface SendTokenModalProps {
   onClose: () => void;
   tokenId: string;
   onSuccess: () => void;
+  fromSubaccount?: number[];
 }
 
 export const SendTokenModal: React.FC<SendTokenModalProps> = ({
@@ -31,6 +32,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
   onClose,
   tokenId,
   onSuccess,
+  fromSubaccount,
 }) => {
   const [amount, setAmount] = useState('');
   const [recipient, setRecipient] = useState('');
@@ -64,7 +66,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
         const isDIP20 = metadata.standard.toLowerCase().includes('dip20');
         const balance = isDIP20 
           ? await dip20Service.getBalance(tokenId)
-          : await icrc1Service.getBalance(tokenId);
+          : await icrc1Service.getBalanceWithSubaccount(tokenId, fromSubaccount);
 
         setTokenInfo({
           metadata,
@@ -83,7 +85,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
     if (isOpen) {
       loadTokenInfo();
     }
-  }, [tokenId, isOpen]);
+  }, [tokenId, isOpen, fromSubaccount]);
 
   // Load logo when modal opens
   useEffect(() => {
@@ -175,7 +177,8 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
             tokenId,
             to: parsedAccount.principal.toString(),
             amount_e8s: amountE8s.toString(),
-            subaccount: parsedAccount.subaccount?.resolved // Pass subaccount if present
+            subaccount: parsedAccount.subaccount?.resolved, // Pass subaccount if present
+            from_subaccount: fromSubaccount // Pass the source subaccount if present
           });
 
       if (!result.success) {
