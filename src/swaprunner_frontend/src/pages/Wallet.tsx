@@ -869,6 +869,13 @@ export const WalletPage: React.FC = () => {
                         </button>
                         <button className="expanded-action-button" onClick={(e) => {
                           e.stopPropagation();
+                          handleOpenAddSubaccountModal(token.canisterId);
+                        }}>
+                          <span className="action-symbol"><FiLogIn /></span>
+                          <span className="action-text">Deposit</span>
+                        </button>
+                        <button className="expanded-action-button" onClick={(e) => {
+                          e.stopPropagation();
                           handleSwap(token.canisterId);
                         }}>
                           <span className="action-symbol"><FiRefreshCw /></span>
