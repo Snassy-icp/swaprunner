@@ -836,6 +836,10 @@ export const WalletPage: React.FC = () => {
                                           Remove
                                         </button>
                                       </div>
+                                      <div className="token-metadata-row">
+                                        <span className="metadata-label">Created</span>
+                                        <span className="metadata-value">{new Date(Number(subaccount.created_at / BigInt(1000000))).toLocaleString()}</span>
+                                      </div>
                                       <div className="subaccount-format">
                                         <div className="format-label">Hex:</div>
                                         <code>0x{formatHex(Array.from(subaccount.subaccount))}</code>
