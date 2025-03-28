@@ -715,6 +715,7 @@
   margin-bottom: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-wrap: wrap;
 }
 
 .subaccount-action-button {
@@ -730,6 +731,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 14px;
+  min-width: fit-content;
 }
 
 .subaccount-action-button svg {
