@@ -450,7 +450,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                 onClick={handleProceed}
                 disabled={isSending || !amount || !recipient}
               >
-                Review Send
+                Review {isWithdrawMode ? 'Withdrawal' : 'Send'}
               </button>
             </>
           ) : transactionHash ? (
@@ -550,7 +550,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                   onClick={handleSend}
                   disabled={isSending}
                 >
-                  {isSending ? 'Sending...' : 'Confirm Send'}
+                  {isSending ? (isWithdrawMode ? 'Withdrawing...' : 'Sending...') : (isWithdrawMode ? 'Confirm Withdrawal' : 'Confirm Send')}
                 </button>
               </div>
             </>
