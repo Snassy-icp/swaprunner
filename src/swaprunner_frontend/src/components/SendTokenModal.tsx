@@ -277,7 +277,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
               <div className="subaccount-formats">
                 <div className="format-row">
                   <span className="format-label">Hex:</span>
-                  <code className="source-subaccount">0x{formatHex(fromSubaccount)}</code>
+                  <code className="source-subaccount">0x{formatHex(Array.from(fromSubaccount))}</code>
                 </div>
                 <div className="format-row">
                   <span className="format-label">Bytes:</span>

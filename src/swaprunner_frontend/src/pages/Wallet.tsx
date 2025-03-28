@@ -17,6 +17,7 @@ import { Principal } from '@dfinity/principal';
 import { formatHex, formatBytes, formatPrincipal } from '../utils/subaccounts';
 import { dip20Service } from '../services/dip20_service';
 import { icrc1Service } from '../services/icrc1_service';
+import { AccountParser } from '../utils/account';
 
 const icpSwapExecutionService = new ICPSwapExecutionService();
 
@@ -997,6 +998,17 @@ export const WalletPage: React.FC = () => {
                                       <div className="subaccount-format">
                                         <div className="format-label">Principal:</div>
                                         <code>{formatPrincipal(subaccount.subaccount)}</code>
+                                      </div>
+                                      <div className="subaccount-format">
+                                        <div className="format-label">Extended Address:</div>
+                                        <code>{AccountParser.encodeLongAccount({
+                                          principal: Principal.fromText(token.canisterId),
+                                          subaccount: {
+                                            type: 'bytes',
+                                            value: formatBytes(subaccount.subaccount),
+                                            resolved: new Uint8Array(subaccount.subaccount)
+                                          }
+                                        })}</code>
                                       </div>
                                     </div>
                                   )}
