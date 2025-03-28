@@ -558,17 +558,17 @@
   gap: 6px;
   padding: 6px 12px;
   border-radius: 6px;
-  background: rgba(52, 199, 89, 0.1);
-  border: 1px solid rgba(52, 199, 89, 0.2);
-  color: #34C759;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 14px;
 }
 
 .add-subaccount-button:hover {
-  background: rgba(52, 199, 89, 0.2);
-  border-color: rgba(52, 199, 89, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
 }
 
 .subaccounts-loading {
@@ -829,12 +829,13 @@
 }
 
 .remove-subaccount-section .subaccount-action-button.remove {
-  background: rgba(239, 68, 68, 0.05);
-  border-color: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
 }
 
 .remove-subaccount-section .subaccount-action-button.remove:hover {
   background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
 }
