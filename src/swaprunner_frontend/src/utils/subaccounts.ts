@@ -112,13 +112,12 @@ export function formatPrincipal(bytes: number[]): string {
     // Try to create principal from first 29 bytes
     const principal = Principal.fromUint8Array(new Uint8Array(principalBytes));
     
-    // Check if any trailing bytes are non-zero
-    const hasIndex = indexBytes.some(b => b !== 0);
+    // Convert index bytes to number
+    const index = (indexBytes[0] << 16) | (indexBytes[1] << 8) | indexBytes[2];
     
-    if (hasIndex) {
-      // Format index bytes as hex
-      const indexHex = indexBytes.map(b => b.toString(16).padStart(2, '0')).join('');
-      return `${principal.toText()} (index: 0x${indexHex})`;
+    // Only show index if non-zero
+    if (index > 0) {
+      return `${principal.toText()} (index: ${index})`;
     } else {
       return principal.toText();
     }
