@@ -360,10 +360,20 @@ export const WalletPage: React.FC = () => {
 
   // Add handler for send success
   const handleSendSuccess = () => {
+    // If we were sending from a subaccount, refresh its balance
+    if (selectedTokenForSend && selectedSubaccountForSend && selectedSubaccountName) {
+      const token = tokens[selectedTokenForSend];
+      const subaccount = token.subaccounts.find(s => s.name === selectedSubaccountName);
+      if (subaccount) {
+        loadSubaccountBalance(token, subaccount);
+      }
+    }
+
     setShowSendModal(false);
     setSelectedTokenForSend(null);
     setSelectedSubaccountForSend(undefined);
     setSelectedSubaccountName(undefined);
+    setIsWithdrawMode(false);
     // Reload wallet tokens after successful send
     loadWalletTokens();
   };
