@@ -782,8 +782,6 @@ export const WalletPage: React.FC = () => {
                           <div className="subaccounts-list">
                             {token.subaccounts.map((subaccount) => {
                               const isExpanded = expandedSubaccounts.has(`${token.canisterId}-${subaccount.name}`);
-                              console.log(subaccount);
-                              console.log(formatHex(subaccount.subaccount));
                               return (
                                 <div key={subaccount.name} className={`subaccount-item ${isExpanded ? 'expanded' : ''}`}>
                                   <div className="subaccount-header"
@@ -840,7 +838,7 @@ export const WalletPage: React.FC = () => {
                                       </div>
                                       <div className="subaccount-format">
                                         <div className="format-label">Hex:</div>
-                                        <code>0x{formatHex(subaccount.subaccount)}</code>
+                                        <code>0x{formatHex(Array.from(subaccount.subaccount))}</code>
                                       </div>
                                       <div className="subaccount-format">
                                         <div className="format-label">Bytes:</div>
