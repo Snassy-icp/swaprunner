@@ -15,6 +15,10 @@ import { AddSubaccountModal } from '../components/AddSubaccountModal';
 import '../styles/AddSubaccountModal.css';
 import { Principal } from '@dfinity/principal';
 import { formatHex, formatBytes, formatPrincipal } from '../utils/subaccounts';
+import { dip20Service } from '../services/dip20_service';
+import { icrc1Service } from '../services/icrc1_service';
+
+const icpSwapExecutionService = new ICPSwapExecutionService();
 
 interface NamedSubaccount {
   name: string;
@@ -35,10 +39,19 @@ interface WalletToken {
   isLoadingSubaccounts: boolean;
 }
 
+interface SubaccountBalance {
+  balance_e8s?: bigint;
+  isLoading: boolean;
+  error?: string;
+}
+
+type SubaccountBalances = Record<string, Record<string, SubaccountBalance>>;
+
 export const WalletPage: React.FC = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [tokens, setTokens] = useState<Record<string, WalletToken>>({});
+  const [subaccountBalances, setSubaccountBalances] = useState<SubaccountBalances>({});
   const [isLoading, setIsLoading] = useState(true);
   const [showTokenSelect, setShowTokenSelect] = useState(false);
   const [expandedTokens, setExpandedTokens] = useState<Set<string>>(new Set());
@@ -530,6 +543,75 @@ export const WalletPage: React.FC = () => {
     }
   };
 
+  // Load balance for a subaccount
+  const loadSubaccountBalance = async (token: WalletToken, subaccount: NamedSubaccount) => {
+    const key = `${token.canisterId}-${subaccount.name}`;
+    try {
+      setSubaccountBalances(prev => ({
+        ...prev,
+        [token.canisterId]: {
+          ...(prev[token.canisterId] || {}),
+          [key]: {
+            isLoading: true,
+            balance_e8s: prev[token.canisterId]?.[key]?.balance_e8s
+          }
+        }
+      }));
+
+      const metadata = await tokenService.getMetadata(token.canisterId);
+      const userPrincipal = await authService.getPrincipal();
+
+      if (!userPrincipal) {
+        throw new Error('User not authenticated');
+      }
+
+      // Use icpSwapExecutionService to check balance
+      const result = await icpSwapExecutionService.getUndepositedPoolBalance({
+        poolId: userPrincipal,
+        tokenId: token.canisterId
+      });
+
+      setSubaccountBalances(prev => ({
+        ...prev,
+        [token.canisterId]: {
+          ...(prev[token.canisterId] || {}),
+          [key]: {
+            isLoading: false,
+            balance_e8s: result.balance_e8s,
+            error: result.error
+          }
+        }
+      }));
+    } catch (error: any) {
+      console.error('Error loading subaccount balance:', error);
+      setSubaccountBalances(prev => ({
+        ...prev,
+        [token.canisterId]: {
+          ...(prev[token.canisterId] || {}),
+          [key]: {
+            isLoading: false,
+            error: error?.message || 'Failed to load balance'
+          }
+        }
+      }));
+    }
+  };
+
+  // Load subaccount balances when subaccounts are loaded or expanded
+  useEffect(() => {
+    Object.entries(tokens).forEach(([tokenId, token]) => {
+      if (expandedTokens.has(tokenId)) {
+        token.subaccounts.forEach(subaccount => {
+          const key = `${tokenId}-${subaccount.name}`;
+          const existing = subaccountBalances[tokenId]?.[key];
+          if (!existing || existing.error) {
+            loadSubaccountBalance(token, subaccount);
+          }
+        });
+      }
+    });
+  }, [tokens, expandedTokens]);
+
   return (
     <div className="wallet-page">
       <div className="wallet-box">
@@ -839,6 +921,18 @@ export const WalletPage: React.FC = () => {
                                       <div className="token-metadata-row">
                                         <span className="metadata-label">Created</span>
                                         <span className="metadata-value">{new Date(Number(subaccount.created_at / BigInt(1000000))).toLocaleString()}</span>
+                                      </div>
+                                      <div className="token-metadata-row">
+                                        <span className="metadata-label">Balance</span>
+                                        <span className="metadata-value">
+                                          {subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.isLoading ? (
+                                            <span>Loading...</span>
+                                          ) : subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.error ? (
+                                            <span className="error">{subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.error}</span>
+                                          ) : (
+                                            <span>{formatTokenAmount(subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.balance_e8s || BigInt(0), token.canisterId)}</span>
+                                          )}
+                                        </span>
                                       </div>
                                       <div className="subaccount-format">
                                         <div className="format-label">Hex:</div>
