@@ -411,6 +411,26 @@ export const WalletPage: React.FC = () => {
     }
   };
 
+  // Add helper function to calculate total USD value including subaccounts
+  const calculateTotalUSDValue = (token: WalletToken): number => {
+    const price = token.usdPrice ?? 0;
+
+    // Main account balance
+    let total = Number(token.balance) * price;
+
+    // Add subaccount balances
+    token.subaccounts.forEach(subaccount => {
+      const key = `${token.canisterId}-${subaccount.name}`;
+      const subaccountBalance = subaccountBalances[token.canisterId]?.[key]?.balance_e8s;
+      if (subaccountBalance) {
+        const formattedBalance = Number(formatTokenAmount(subaccountBalance, token.canisterId));
+        total += formattedBalance * price;
+      }
+    });
+
+    return total;
+  };
+
   // Filter tokens based on hideEmptyBalances setting
   const filteredTokens = Object.values(tokens).filter(token => 
     !hideEmptyBalances || (
@@ -652,7 +672,7 @@ export const WalletPage: React.FC = () => {
               <div className="wallet-total">
                 <span className="total-label">Total Value:</span>
                 <span className="total-value">
-                  {formatUSDPrice(Object.values(tokens).reduce((total, token) => total + (token.usdValue || 0), 0))}
+                  {formatUSDPrice(Object.values(tokens).reduce((total, token) => total + calculateTotalUSDValue(token), 0))}
                 </span>
               </div>
               <button 
@@ -738,8 +758,8 @@ export const WalletPage: React.FC = () => {
                         <div className="token-usd-value" title="Total USD value of your holdings">
                           {token.isLoadingUSDPrice ? (
                             <FiLoader className="spinner" />
-                          ) : token.usdValue !== null ? (
-                            `$${token.usdValue.toFixed(2)}`
+                          ) : token.usdPrice !== null ? (
+                            `$${calculateTotalUSDValue(token).toFixed(2)}`
                           ) : (
                             '-'
                           )}
@@ -791,8 +811,8 @@ export const WalletPage: React.FC = () => {
                           <span className="token-usd-value" title="Total USD value of your holdings">
                             {token.isLoadingUSDPrice ? (
                               <FiLoader className="spinner" />
-                            ) : token.usdValue !== null ? (
-                              `$${token.usdValue.toFixed(2)}`
+                            ) : token.usdPrice !== null ? (
+                              `$${calculateTotalUSDValue(token).toFixed(2)}`
                             ) : (
                               '-'
                             )}
