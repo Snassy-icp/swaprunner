@@ -20,6 +20,7 @@
   margin: 0;
   font-size: 20px;
   color: #fff;
+  text-align: left;
 }
 
 .add-subaccount-content {
@@ -33,21 +34,25 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
 }
 
 .form-group label {
   color: #8F96A1;
   font-size: 14px;
+  text-align: left;
 }
 
 .subaccount-name-input,
-.subaccount-value-input {
+.subaccount-value-input,
+.subaccount-type-select {
   width: 100%;
   padding: 12px;
   background: #2A2E3A;
@@ -60,19 +65,13 @@
 }
 
 .subaccount-name-input:focus,
-.subaccount-value-input:focus {
+.subaccount-value-input:focus,
+.subaccount-type-select:focus {
   outline: none;
   border-color: #3b82f6;
 }
 
 .subaccount-type-select {
-  width: 100%;
-  padding: 12px;
-  background: #2A2E3A;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  color: #fff;
-  font-size: 14px;
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
@@ -82,23 +81,20 @@
   padding-right: 40px;
 }
 
-.subaccount-type-select:focus {
-  outline: none;
-  border-color: #3b82f6;
-}
-
 .subaccount-preview {
   background: #2A2E3A;
   border-radius: 8px;
   padding: 12px;
-  height: 144px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .subaccount-preview label {
   display: block;
   color: #8F96A1;
   font-size: 12px;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
+  text-align: left;
 }
 
 .subaccount-preview code {
@@ -108,6 +104,13 @@
   font-size: 12px;
   word-break: break-all;
   line-height: 1.4;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+  background: #1A1D26;
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
 }
 
 .add-subaccount-error {
@@ -116,6 +119,9 @@
   padding: 8px 12px;
   background: rgba(239, 68, 68, 0.1);
   border-radius: 8px;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .add-subaccount-submit {
@@ -175,11 +181,13 @@
 
 .principal-index {
   margin-top: -8px;
+  width: 100%;
 }
 
 .index-inputs {
   display: flex;
   gap: 8px;
+  width: 100%;
 }
 
 .index-type-select {
@@ -197,11 +205,6 @@
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 40px;
-}
-
-.index-type-select:focus {
-  outline: none;
-  border-color: #3b82f6;
 }
 
 .index-value-input {
