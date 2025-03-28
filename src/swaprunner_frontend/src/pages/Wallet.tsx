@@ -784,8 +784,7 @@ export const WalletPage: React.FC = () => {
                               const isExpanded = expandedSubaccounts.has(`${token.canisterId}-${subaccount.name}`);
                               return (
                                 <div key={subaccount.name} className={`subaccount-item ${isExpanded ? 'expanded' : ''}`}>
-                                  <div 
-                                    className="subaccount-header"
+                                  <div className="subaccount-header"
                                     onClick={() => toggleSubaccountExpand(token.canisterId, subaccount.name)}
                                   >
                                     <div className="subaccount-info">
@@ -795,6 +794,13 @@ export const WalletPage: React.FC = () => {
                                           Created {new Date(Number(subaccount.created_at / BigInt(1000000))).toLocaleDateString()}
                                         </span>
                                       </div>
+                                    </div>
+                                    <div className="subaccount-expand">
+                                      {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+                                    </div>
+                                  </div>
+                                  {isExpanded && (
+                                    <div className="subaccount-details">
                                       <div className="subaccount-actions">
                                         <button
                                           className="subaccount-action-button send"
@@ -805,6 +811,7 @@ export const WalletPage: React.FC = () => {
                                           title="Send from this subaccount"
                                         >
                                           <FiSend />
+                                          Send
                                         </button>
                                         <button
                                           className="subaccount-action-button withdraw"
@@ -815,6 +822,7 @@ export const WalletPage: React.FC = () => {
                                           title="Withdraw to main account"
                                         >
                                           <FiDownload />
+                                          Withdraw
                                         </button>
                                         <button
                                           className="subaccount-action-button remove"
@@ -825,18 +833,12 @@ export const WalletPage: React.FC = () => {
                                           title="Remove subaccount"
                                         >
                                           <FiX />
+                                          Remove
                                         </button>
                                       </div>
-                                    </div>
-                                    <div className="subaccount-expand">
-                                      {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
-                                    </div>
-                                  </div>
-                                  {isExpanded && (
-                                    <div className="subaccount-details">
                                       <div className="subaccount-format">
                                         <div className="format-label">Hex:</div>
-                                        <code>{bytesToHex(subaccount.subaccount)}</code>
+                                        <code>0x{bytesToHex(subaccount.subaccount)}</code>
                                       </div>
                                       <div className="subaccount-format">
                                         <div className="format-label">Bytes:</div>
