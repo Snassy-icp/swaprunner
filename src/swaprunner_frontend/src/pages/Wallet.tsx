@@ -389,11 +389,32 @@ export const WalletPage: React.FC = () => {
 
     try {
       updateToken(tokenId, { isLoadingSubaccounts: true });
+
+      // First check if there are funds to withdraw
+      const balance = await icrc1Service.getBalanceWithSubaccount(tokenId, subaccount);
+      const metadata = await tokenService.getMetadata(tokenId);
+      
+      // If balance is greater than fee, withdraw first
+      if (balance.balance_e8s > (metadata.fee || BigInt(0))) {
+        const withdrawResult = await icrc1Service.transfer({
+          tokenId,
+          to: authService.getPrincipal()!.toString(),
+          amount_e8s: (balance.balance_e8s - metadata.fee).toString(),
+          from_subaccount: subaccount
+        });
+
+        if (!withdrawResult.success) {
+          throw new Error(`Failed to withdraw funds: ${withdrawResult.error}`);
+        }
+      }
+
+      // Now remove the subaccount
       const actor = await backendService.getActor();
       await actor.remove_named_subaccount({
-        token_id: tokenId,
+        token_id: Principal.fromText(tokenId),
         subaccount: subaccount
       });
+
       // Reload subaccounts and balance after removal
       await loadTokenSubaccounts(tokenId);
       await loadTokenBalance(tokenId);
