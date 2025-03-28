@@ -1,4 +1,4 @@
-import { FiPlus, FiLoader, FiChevronDown, FiChevronUp, FiRefreshCw, FiCreditCard, FiLogIn, FiSend, FiDownload, FiX, FiCopy } from 'react-icons/fi';
+import { FiPlus, FiLoader, FiChevronDown, FiChevronUp, FiRefreshCw, FiCreditCard, FiLogIn, FiSend, FiDownload, FiX, FiCopy, FiRepeat } from 'react-icons/fi';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TokenSelect } from '../components/TokenSelect';
@@ -952,10 +952,21 @@ export const WalletPage: React.FC = () => {
                                             e.stopPropagation();
                                             handleOpenSendModalWithSubaccount(token.canisterId, subaccount.subaccount, subaccount.name);
                                           }}
-                                          title="Send from this subaccount"
+                                          title="Send to external account"
                                         >
                                           <FiSend />
                                           Send
+                                        </button>
+                                        <button
+                                          className="subaccount-action-button transfer"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenSendModalWithSubaccount(token.canisterId, subaccount.subaccount, subaccount.name);
+                                          }}
+                                          title="Transfer to another subaccount"
+                                        >
+                                          <FiRepeat />
+                                          Transfer
                                         </button>
                                         <button
                                           className="subaccount-action-button withdraw"
