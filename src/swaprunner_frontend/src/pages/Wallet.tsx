@@ -1,4 +1,4 @@
-import { FiPlus, FiLoader, FiChevronDown, FiChevronUp, FiRefreshCw, FiCreditCard, FiLogIn, FiSend, FiDownload, FiX } from 'react-icons/fi';
+import { FiPlus, FiLoader, FiChevronDown, FiChevronUp, FiRefreshCw, FiCreditCard, FiLogIn, FiSend, FiDownload, FiX, FiCopy } from 'react-icons/fi';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TokenSelect } from '../components/TokenSelect';
@@ -988,19 +988,62 @@ export const WalletPage: React.FC = () => {
                                         <span className="metadata-value">{new Date(Number(subaccount.created_at / BigInt(1000000))).toLocaleString()}</span>
                                       </div>
                                       <div className="subaccount-format">
-                                        <div className="format-label">Hex:</div>
+                                        <div className="format-row-header">
+                                          <div className="format-label">Hex:</div>
+                                          <button 
+                                            className="copy-button"
+                                            onClick={() => navigator.clipboard.writeText(`0x${formatHex(Array.from(subaccount.subaccount))}`)}
+                                            title="Copy hex format"
+                                          >
+                                            <FiCopy /> Copy
+                                          </button>
+                                        </div>
                                         <code>0x{formatHex(Array.from(subaccount.subaccount))}</code>
                                       </div>
                                       <div className="subaccount-format">
-                                        <div className="format-label">Bytes:</div>
+                                        <div className="format-row-header">
+                                          <div className="format-label">Bytes:</div>
+                                          <button 
+                                            className="copy-button"
+                                            onClick={() => navigator.clipboard.writeText(formatBytes(subaccount.subaccount))}
+                                            title="Copy byte format"
+                                          >
+                                            <FiCopy /> Copy
+                                          </button>
+                                        </div>
                                         <code>{formatBytes(subaccount.subaccount)}</code>
                                       </div>
                                       <div className="subaccount-format">
-                                        <div className="format-label">Principal:</div>
+                                        <div className="format-row-header">
+                                          <div className="format-label">Principal:</div>
+                                          <button 
+                                            className="copy-button"
+                                            onClick={() => navigator.clipboard.writeText(formatPrincipal(subaccount.subaccount))}
+                                            title="Copy principal format"
+                                          >
+                                            <FiCopy /> Copy
+                                          </button>
+                                        </div>
                                         <code>{formatPrincipal(subaccount.subaccount)}</code>
                                       </div>
                                       <div className="subaccount-format">
-                                        <div className="format-label">Extended Address:</div>
+                                        <div className="format-row-header">
+                                          <div className="format-label">Long Account:</div>
+                                          <button 
+                                            className="copy-button"
+                                            onClick={() => navigator.clipboard.writeText(AccountParser.encodeLongAccount({
+                                              principal: Principal.fromText(token.canisterId),
+                                              subaccount: {
+                                                type: 'bytes',
+                                                value: formatBytes(subaccount.subaccount),
+                                                resolved: new Uint8Array(subaccount.subaccount)
+                                              }
+                                            }))}
+                                            title="Copy long account format"
+                                          >
+                                            <FiCopy /> Copy
+                                          </button>
+                                        </div>
                                         <code>{AccountParser.encodeLongAccount({
                                           principal: Principal.fromText(token.canisterId),
                                           subaccount: {
