@@ -128,6 +128,31 @@ module {
         icrc1_supported_standards : shared query () -> async [StandardRecord];
     };
 
+    public type Account = {
+        owner: Principal;
+        subaccount: ?[Nat8];
+    };
+
+    public type TransferArgs = {
+        from_subaccount: ?[Nat8];
+        to: Account;
+        amount: Nat;
+        fee: ?Nat;
+        memo: ?[Nat8];
+        created_at_time: ?Nat64;
+    };
+
+    public type TransferError = {
+        #BadFee: { expected_fee: Nat };
+        #BadBurn: { min_burn_amount: Nat };
+        #InsufficientFunds: { balance: Nat };
+        #TooOld;
+        #CreatedInFuture: { ledger_time: Nat64 };
+        #Duplicate: { duplicate_of: Nat };
+        #TemporarilyUnavailable;
+        #GenericError: { error_code: Nat; message: Text };
+    };
+
     public type ICPSwapInterface = actor {
         getLogo : shared query (Text) -> async {#ok : Text; #err : Text};
     };
@@ -258,6 +283,35 @@ module {
         totalSupply: Nat;
         owner: Principal;
         fee: Nat;
+    };
+
+    // Named subaccount types
+    public type NamedSubaccount = {
+        name: Text;
+        subaccount: [Nat8];  // 32-byte array
+        created_at: Int;     // Timestamp when created
+    };
+
+    public type UserTokenSubaccounts = {
+        token_id: Principal;
+        subaccounts: [NamedSubaccount];
+    };
+
+    public type AddSubaccountArgs = {
+        token_id: Principal;
+        name: Text;
+        subaccount: [Nat8];
+    };
+
+    public type RemoveSubaccountArgs = {
+        token_id: Principal;
+        subaccount: [Nat8];
+    };
+
+    public type WithdrawSubaccountArgs = {
+        token_id: Principal;
+        subaccount: [Nat8];
+        amount_e8s: ?Nat;  // If null, withdraw entire balance
     };
 
 }

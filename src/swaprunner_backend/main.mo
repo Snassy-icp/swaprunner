@@ -32,6 +32,7 @@ actor {
     private stable var tokenMetadataEntries : [(Principal, T.TokenMetadata)] = [];
     private stable var tokenLogoEntries : [(Principal, Text)] = [];
     private stable var userCustomTokenEntries : [(Principal, [Principal])] = [];  // New: Store user's custom tokens
+    private stable var userTokenSubaccountsEntries : [(Principal, [T.UserTokenSubaccounts])] = [];  // Named subaccounts storage
 
     // User index mapping system
     private stable var nextUserIndex : Nat16 = 0;
@@ -42,26 +43,9 @@ actor {
     // Wallet feature: Stable storage for user wallet tokens
     private stable var userWalletTokenEntries : [(Principal, [Nat16])] = [];
 
-
-    // Add with other stable storage declarations
+    // Stable storage for statistics
     private stable var userTokenStatsEntries : [(Text, T.UserTokenStats)] = [];
     private stable var tokenSavingsStatsEntries : [(Text, T.TokenSavingsStats)] = [];
-
-    // Add with other runtime maps
-    private var userTokenStats = HashMap.fromIter<Text, T.UserTokenStats>(
-        userTokenStatsEntries.vals(),
-        0,
-        Text.equal,
-        Text.hash
-    );
-    private var tokenSavingsStats = HashMap.fromIter<Text, T.TokenSavingsStats>(
-        tokenSavingsStatsEntries.vals(),
-        0,
-        Text.equal,
-        Text.hash
-    );
-
-    // Stable storage for statistics
     private stable var globalStats : T.GlobalStats = {
         total_swaps = 0;
         icpswap_swaps = 0;
@@ -73,7 +57,7 @@ actor {
     };
     private stable var tokenStatsEntries : [(Text, T.TokenStats)] = [];
     private stable var userStatsEntries : [(Text, T.UserStats)] = [];
-    private stable var userLoginEntries : [(Text, Nat)] = [];  // New: Store login counts
+    private stable var userLoginEntries : [(Text, Nat)] = [];  // Store login counts
 
     // Stable storage for ICPSwap tokens
     private stable var tokenMetadataEntriesICPSwap : [(Principal, T.TokenMetadata)] = [];
@@ -85,20 +69,22 @@ actor {
     private stable var poolMetadataEntries : [(Principal, T.PoolMetadata)] = [];
     private stable var userPoolEntries : [(Principal, [Nat16])] = [];
 
-    // Runtime maps - using HashMap for better performance with Principal keys
+    // Runtime maps
     private var tokenMetadata = HashMap.fromIter<Principal, T.TokenMetadata>(tokenMetadataEntries.vals(), 10, Principal.equal, Principal.hash);
     private var tokenLogos = HashMap.fromIter<Principal, Text>(tokenLogoEntries.vals(), 10, Principal.equal, Principal.hash);
-    private var userCustomTokens = HashMap.fromIter<Principal, [Principal]>(userCustomTokenEntries.vals(), 10, Principal.equal, Principal.hash);  // New: Runtime map for custom tokens
+    private var userCustomTokens = HashMap.fromIter<Principal, [Principal]>(userCustomTokenEntries.vals(), 10, Principal.equal, Principal.hash);
+    private var userTokenSubaccounts = HashMap.fromIter<Principal, [T.UserTokenSubaccounts]>(userTokenSubaccountsEntries.vals(), 0, Principal.equal, Principal.hash);
+
+    private var userTokenStats = HashMap.fromIter<Text, T.UserTokenStats>(userTokenStatsEntries.vals(), 0, Text.equal, Text.hash);
+    private var tokenSavingsStats = HashMap.fromIter<Text, T.TokenSavingsStats>(tokenSavingsStatsEntries.vals(), 0, Text.equal, Text.hash);
+    private var tokenStats = HashMap.fromIter<Text, T.TokenStats>(tokenStatsEntries.vals(), 0, Text.equal, Text.hash);
+    private var userStats = HashMap.fromIter<Text, T.UserStats>(userStatsEntries.vals(), 0, Text.equal, Text.hash);
+    private var userLogins = HashMap.fromIter<Text, Nat>(userLoginEntries.vals(), 0, Text.equal, Text.hash);
 
     // Runtime maps for ICPSwap tokens
     private var tokenMetadataICPSwap = HashMap.fromIter<Principal, T.TokenMetadata>(tokenMetadataEntriesICPSwap.vals(), 10, Principal.equal, Principal.hash);
 
-    // Runtime maps for statistics
-    private var tokenStats = HashMap.fromIter<Text, T.TokenStats>(tokenStatsEntries.vals(), 0, Text.equal, Text.hash);
-    private var userStats = HashMap.fromIter<Text, T.UserStats>(userStatsEntries.vals(), 0, Text.equal, Text.hash);
-    private var userLogins = HashMap.fromIter<Text, Nat>(userLoginEntries.vals(), 0, Text.equal, Text.hash);  // New: Runtime map for logins
-
-    // Runtime maps
+    // Runtime maps for custom tokens
     private var customTokenMetadata = HashMap.fromIter<Principal, T.TokenMetadata>(customTokenMetadataEntries.vals(), 0, Principal.equal, Principal.hash);
 
     // Runtime maps for pools
@@ -107,7 +93,6 @@ actor {
 
     // Wallet feature: Runtime map for user wallet tokens
     private var userWalletTokens = HashMap.fromIter<Principal, [Nat16]>(userWalletTokenEntries.vals(), 10, Principal.equal, Principal.hash);
-
 
     private var importProgress : T.ImportProgress = {
         last_processed = null;
@@ -253,6 +238,7 @@ actor {
         userIndexEntries := Iter.toArray(principalToIndex.entries());
         userTokenStatsEntries := Iter.toArray(userTokenStats.entries());
         tokenSavingsStatsEntries := Iter.toArray(tokenSavingsStats.entries());
+        userTokenSubaccountsEntries := Iter.toArray(userTokenSubaccounts.entries());
     };
 
     system func postupgrade() {
@@ -277,8 +263,12 @@ actor {
         };        
 
         userIndexEntries := [];
+        userTokenSubaccountsEntries := []; 
     };
 
+    public query func get_cycle_balance() : async Nat {
+        Cycles.balance()
+    };
 
     // Helper function to extract value from ICRC1Metadata
     private func extractFromMetadata(metadata: T.ICRC1Metadata, key: Text) : ?T.MetadataValue {
@@ -3544,5 +3534,146 @@ actor {
         };
 
         #ok()
+    };
+
+    // Add before system_started()
+    public shared({caller}) func add_named_subaccount(args: T.AddSubaccountArgs) : async Result.Result<(), Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        // Validate subaccount length
+        if (args.subaccount.size() != 32) {
+            return #err("Subaccount must be exactly 32 bytes");
+        };
+
+        // Get user's existing subaccounts for this token
+        let userSubaccounts = switch (userTokenSubaccounts.get(caller)) {
+            case (?subaccounts) subaccounts;
+            case null [];
+        };
+
+        // Find the token's subaccounts
+        var tokenSubaccounts = switch (Array.find<T.UserTokenSubaccounts>(userSubaccounts, func(x) { x.token_id == args.token_id })) {
+            case (?found) found;
+            case null {
+                {
+                    token_id = args.token_id;
+                    subaccounts = [];
+                }
+            };
+        };
+
+        // Check if subaccount already exists
+        let existingSubaccount = Array.find<T.NamedSubaccount>(
+            tokenSubaccounts.subaccounts,
+            func(x) { Array.equal(x.subaccount, args.subaccount, Nat8.equal) }
+        );
+
+        if (existingSubaccount != null) {
+            return #err("Subaccount already exists");
+        };
+
+        // Add new subaccount
+        let newSubaccount : T.NamedSubaccount = {
+            name = args.name;
+            subaccount = args.subaccount;
+            created_at = Time.now();
+        };
+
+        // Update the token's subaccounts
+        tokenSubaccounts := {
+            token_id = args.token_id;
+            subaccounts = Array.append(tokenSubaccounts.subaccounts, [newSubaccount]);
+        };
+
+        // Update user's subaccounts
+        let updatedSubaccounts = Array.map<T.UserTokenSubaccounts, T.UserTokenSubaccounts>(
+            userSubaccounts,
+            func(x) {
+                if (x.token_id == args.token_id) {
+                    tokenSubaccounts
+                } else {
+                    x
+                }
+            }
+        );
+
+        let finalSubaccounts = if (Array.find<T.UserTokenSubaccounts>(userSubaccounts, func(x) { x.token_id == args.token_id }) == null) {
+            Array.append(updatedSubaccounts, [tokenSubaccounts])
+        } else {
+            updatedSubaccounts
+        };
+
+        userTokenSubaccounts.put(caller, finalSubaccounts);
+        #ok()
+    };
+
+    public shared({caller}) func remove_named_subaccount(args: T.RemoveSubaccountArgs) : async Result.Result<(), Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        switch (userTokenSubaccounts.get(caller)) {
+            case (?userSubaccounts) {
+                // Find the token's subaccounts
+                let tokenSubaccountsOpt = Array.find<T.UserTokenSubaccounts>(userSubaccounts, func(x) { x.token_id == args.token_id });
+                switch (tokenSubaccountsOpt) {
+                    case (?tokenSubaccounts) {
+                        // Remove the specified subaccount
+                        let updatedSubaccounts = Array.filter<T.NamedSubaccount>(
+                            tokenSubaccounts.subaccounts,
+                            func(x) { not Array.equal(x.subaccount, args.subaccount, Nat8.equal) }
+                        );
+
+                        if (updatedSubaccounts.size() == tokenSubaccounts.subaccounts.size()) {
+                            return #err("Subaccount not found");
+                        };
+
+                        // Update the token's subaccounts
+                        let updatedTokenSubaccounts = {
+                            token_id = args.token_id;
+                            subaccounts = updatedSubaccounts;
+                        };
+
+                        // Update user's subaccounts
+                        let finalSubaccounts = Array.map<T.UserTokenSubaccounts, T.UserTokenSubaccounts>(
+                            userSubaccounts,
+                            func(x) {
+                                if (x.token_id == args.token_id) {
+                                    updatedTokenSubaccounts
+                                } else {
+                                    x
+                                }
+                            }
+                        );
+
+                        userTokenSubaccounts.put(caller, finalSubaccounts);
+                        #ok()
+                    };
+                    case null #err("Token not found in user's subaccounts");
+                };
+            };
+            case null #err("No subaccounts found for user");
+        };
+    };
+
+
+    public query({caller}) func get_named_subaccounts(token_id: Principal) : async Result.Result<[T.NamedSubaccount], Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        switch (userTokenSubaccounts.get(caller)) {
+            case (?userSubaccounts) {
+                switch (Array.find<T.UserTokenSubaccounts>(userSubaccounts, func(x) { x.token_id == token_id })) {
+                    case (?tokenSubaccounts) {
+                        #ok(tokenSubaccounts.subaccounts)
+                    };
+                    case null #ok([]);
+                };
+            };
+            case null #ok([]);
+        };
     };
 }
