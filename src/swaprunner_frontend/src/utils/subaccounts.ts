@@ -105,8 +105,23 @@ export function formatHex(bytes: number[]): string {
 
 export function formatPrincipal(bytes: number[]): string {
   try {
-    const principal = Principal.fromUint8Array(new Uint8Array(bytes));
-    return principal.toText();
+    // Take first 29 bytes for principal
+    const principalBytes = bytes.slice(0, 29);
+    const indexBytes = bytes.slice(29);
+    
+    // Try to create principal from first 29 bytes
+    const principal = Principal.fromUint8Array(new Uint8Array(principalBytes));
+    
+    // Check if any trailing bytes are non-zero
+    const hasIndex = indexBytes.some(b => b !== 0);
+    
+    if (hasIndex) {
+      // Format index bytes as hex
+      const indexHex = indexBytes.map(b => b.toString(16).padStart(2, '0')).join('');
+      return `${principal.toText()} (index: 0x${indexHex})`;
+    } else {
+      return principal.toText();
+    }
   } catch {
     return 'Invalid principal';
   }
