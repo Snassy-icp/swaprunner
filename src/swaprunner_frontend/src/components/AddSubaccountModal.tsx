@@ -3,6 +3,7 @@ import { FiX } from 'react-icons/fi';
 import { backendService } from '../services/backend';
 import { SubaccountType, validateSubaccountValue, convertToBytes, formatBytes, formatHex, formatPrincipal } from '../utils/subaccounts';
 import '../styles/AddSubaccountModal.css';
+import { Principal } from '@dfinity/principal';
 
 interface AddSubaccountModalProps {
   isOpen: boolean;
@@ -60,7 +61,7 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
 
     try {
       await backendService.add_named_subaccount({
-        token_id: tokenId,
+        token_id: Principal.fromText(tokenId),
         name: name.trim(),
         subaccount: resolvedSubaccount,
       });

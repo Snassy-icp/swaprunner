@@ -112,7 +112,7 @@ export const WalletPage: React.FC = () => {
     }
   };
 
-  // Update loadTokenMetadata to also load subaccounts
+  // Update loadTokenMetadata to not automatically load subaccounts
   const loadTokenMetadata = async (id: string) => {
     const startTime = performance.now();
     try {
@@ -122,8 +122,6 @@ export const WalletPage: React.FC = () => {
         metadata,
         isLoadingMetadata: false 
       });
-      // Load subaccounts after metadata
-      loadTokenSubaccounts(id);
     } catch (error) {
       const endTime = performance.now();
       console.error(`[${new Date().toISOString()}] Error loading metadata for ${id} after ${(endTime - startTime).toFixed(2)}ms:`, error);
@@ -134,12 +132,9 @@ export const WalletPage: React.FC = () => {
           decimals: 8,
           fee: BigInt(0),
           hasLogo: false,
-          logo: '/generic_token.svg',
           standard: 'UNKNOWN'
         },
-        isLoadingMetadata: false,
-        subaccounts: [],
-        isLoadingSubaccounts: false
+        isLoadingMetadata: false
       });
     }
   };
@@ -215,22 +210,49 @@ export const WalletPage: React.FC = () => {
           isLoadingBalance: true,
           isLoadingUSDPrice: false,
           subaccounts: [],
-          isLoadingSubaccounts: false
+          isLoadingSubaccounts: true
         };
         return acc;
       }, {} as Record<string, WalletToken>);
 
       setTokens(initialTokens);
+      setIsLoading(false);
 
-      // Load details for each token
+      // First load essential data (metadata and balances)
       await Promise.all(tokenIds.map(async (id) => {
         await loadTokenMetadata(id);
         await loadTokenBalance(id);
-        await loadTokenSubaccounts(id);
       }));
+
+      // Then load all subaccounts in one call
+      try {
+        const allSubaccounts = await backendService.get_all_named_subaccounts();
+        // Update each token's subaccounts
+        for (const tokenSubaccounts of allSubaccounts) {
+          updateToken(tokenSubaccounts.token_id.toString(), {
+            subaccounts: tokenSubaccounts.subaccounts,
+            isLoadingSubaccounts: false
+          });
+        }
+        // Mark remaining tokens as not loading subaccounts
+        for (const id of tokenIds) {
+          if (!allSubaccounts.some(ts => ts.token_id.toString() === id)) {
+            updateToken(id, {
+              isLoadingSubaccounts: false
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading subaccounts:', error);
+        // Mark all tokens as not loading subaccounts on error
+        for (const id of tokenIds) {
+          updateToken(id, {
+            isLoadingSubaccounts: false
+          });
+        }
+      }
     } catch (error) {
       console.error('Error loading wallet tokens:', error);
-    } finally {
       setIsLoading(false);
     }
   };
