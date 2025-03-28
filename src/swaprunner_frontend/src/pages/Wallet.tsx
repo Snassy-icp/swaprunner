@@ -1031,27 +1031,35 @@ export const WalletPage: React.FC = () => {
                                           <div className="format-label">Extended Address:</div>
                                           <button 
                                             className="copy-button"
-                                            onClick={() => navigator.clipboard.writeText(AccountParser.encodeLongAccount({
-                                              principal: Principal.fromText(token.canisterId),
-                                              subaccount: {
-                                                type: 'bytes',
-                                                value: formatBytes(subaccount.subaccount),
-                                                resolved: new Uint8Array(subaccount.subaccount)
-                                              }
-                                            }))}
-                                            title="Copy axtended address format"
+                                            onClick={() => {
+                                              const userPrincipal = authService.getPrincipal();
+                                              if (!userPrincipal) return;
+                                              navigator.clipboard.writeText(AccountParser.encodeLongAccount({
+                                                principal: userPrincipal,
+                                                subaccount: {
+                                                  type: 'bytes',
+                                                  value: formatBytes(subaccount.subaccount),
+                                                  resolved: new Uint8Array(subaccount.subaccount)
+                                                }
+                                              }));
+                                            }}
+                                            title="Copy extended address format"
                                           >
                                             <FiCopy />
                                           </button>
                                         </div>
-                                        <code>{AccountParser.encodeLongAccount({
-                                          principal: Principal.fromText(token.canisterId),
-                                          subaccount: {
-                                            type: 'bytes',
-                                            value: formatBytes(subaccount.subaccount),
-                                            resolved: new Uint8Array(subaccount.subaccount)
-                                          }
-                                        })}</code>
+                                        <code>{(() => {
+                                          const userPrincipal = authService.getPrincipal();
+                                          if (!userPrincipal) return 'Not authenticated';
+                                          return AccountParser.encodeLongAccount({
+                                            principal: userPrincipal,
+                                            subaccount: {
+                                              type: 'bytes',
+                                              value: formatBytes(subaccount.subaccount),
+                                              resolved: new Uint8Array(subaccount.subaccount)
+                                            }
+                                          });
+                                        })()}</code>
                                       </div>
                                     </div>
                                   )}
