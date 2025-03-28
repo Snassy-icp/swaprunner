@@ -618,4 +618,35 @@
   border-radius: 4px;
   word-break: break-all;
   flex: 1;
+}
+
+.send-modal-subaccount-select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #fff;
+  font-size: 14px;
+  color: #1a202c;
+  margin-top: 8px;
+  transition: all 0.2s;
+}
+
+.send-modal-subaccount-select:hover {
+  border-color: #cbd5e0;
+}
+
+.send-modal-subaccount-select:focus {
+  outline: none;
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+}
+
+.send-modal-subaccount-select:disabled {
+  background-color: #f7fafc;
+  cursor: not-allowed;
+}
+
+.send-modal-subaccount-select option {
+  padding: 8px;
 } 

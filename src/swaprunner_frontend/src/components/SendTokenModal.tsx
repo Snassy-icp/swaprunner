@@ -28,6 +28,8 @@ interface SendTokenModalProps {
   fromSubaccount?: number[];
   fromSubaccountName?: string;
   isWithdrawMode?: boolean;
+  isTransferMode?: boolean;
+  availableSubaccounts?: { name: string; subaccount: number[] }[];
 }
 
 export const SendTokenModal: React.FC<SendTokenModalProps> = ({
@@ -38,6 +40,8 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
   fromSubaccount,
   fromSubaccountName,
   isWithdrawMode,
+  isTransferMode,
+  availableSubaccounts,
 }) => {
   const [amount, setAmount] = useState('');
   const [recipient, setRecipient] = useState('');
@@ -137,14 +141,19 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
   }, [recipient, showSubaccount, subaccountInput.type, subaccountInput.value]);
 
   useEffect(() => {
-    if (isOpen && isWithdrawMode) {
-      // When opening in withdraw mode, set the recipient to the user's principal
-      const userPrincipal = authService.getPrincipal();
-      if (userPrincipal) {
-        setRecipient(userPrincipal.toString());
+    if (isOpen) {
+      if (isWithdrawMode) {
+        // When opening in withdraw mode, set the recipient to the user's principal
+        const userPrincipal = authService.getPrincipal();
+        if (userPrincipal) {
+          setRecipient(userPrincipal.toString());
+        }
+      } else if (isTransferMode) {
+        // Reset recipient when opening in transfer mode
+        setRecipient('');
       }
     }
-  }, [isOpen, isWithdrawMode]);
+  }, [isOpen, isWithdrawMode, isTransferMode]);
 
   const handleMax = () => {
     if (tokenInfo.balance && tokenInfo.metadata?.fee) {
@@ -262,7 +271,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
       <div className="send-modal">
         <div className="send-modal-header">
           <div className="send-modal-title">
-            <h2>{isWithdrawMode ? 'Withdraw' : 'Send'} {tokenInfo.metadata?.symbol || 'Tokens'}</h2>
+            <h2>{isTransferMode ? 'Transfer' : isWithdrawMode ? 'Withdraw' : 'Send'} {tokenInfo.metadata?.symbol || 'Tokens'}</h2>
             {tokenInfo.metadata && (
               <img 
                 src={loadedLogos[tokenId] || '/generic_token.svg'}
@@ -288,7 +297,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
           {fromSubaccount && (
             <div className="send-modal-source">
               <div className="source-label">
-                {isWithdrawMode ? 'Withdrawing' : 'Sending'} from {fromSubaccountName ? `subaccount "${fromSubaccountName}"` : 'subaccount'}:
+                {isTransferMode ? 'Transferring' : isWithdrawMode ? 'Withdrawing' : 'Sending'} from {fromSubaccountName ? `subaccount "${fromSubaccountName}"` : 'subaccount'}:
               </div>
               <div className="subaccount-formats">
                 <div className="format-row">
@@ -309,7 +318,43 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
 
           {!showConfirmation ? (
             <>
-              {!isWithdrawMode && (
+              {isTransferMode ? (
+                <div className="send-modal-recipient">
+                  <label>Transfer to Subaccount</label>
+                  <select
+                    value={recipient}
+                    onChange={(e) => {
+                      const selected = availableSubaccounts?.find(s => s.name === e.target.value);
+                      if (selected) {
+                        // Set the recipient to the principal and subaccount using AccountParser
+                        const userPrincipal = authService.getPrincipal();
+                        if (userPrincipal) {
+                          const account = {
+                            principal: userPrincipal,
+                            subaccount: {
+                              type: 'bytes' as const,
+                              value: formatBytes(selected.subaccount),
+                              resolved: new Uint8Array(selected.subaccount)
+                            }
+                          };
+                          setRecipient(AccountParser.encodeLongAccount(account));
+                        }
+                      }
+                    }}
+                    className="send-modal-subaccount-select"
+                    disabled={isSending}
+                  >
+                    <option value="">Select a subaccount</option>
+                    {availableSubaccounts?.filter(s => 
+                      // Filter out the source subaccount
+                      !fromSubaccount || 
+                      !arraysEqual(s.subaccount, fromSubaccount)
+                    ).map(s => (
+                      <option key={s.name} value={s.name}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : !isWithdrawMode && (
                 <div className="send-modal-recipient">
                   <label>Recipient Principal ID</label>
                   <input
@@ -450,7 +495,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                 onClick={handleProceed}
                 disabled={isSending || !amount || !recipient}
               >
-                Review {isWithdrawMode ? 'Withdrawal' : 'Send'}
+                Review {isTransferMode ? 'Transfer' : isWithdrawMode ? 'Withdrawal' : 'Send'}
               </button>
             </>
           ) : transactionHash ? (
@@ -472,7 +517,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
           ) : (
             <>
               <div className="send-modal-confirm-details">
-                <h3>Confirm Transaction</h3>
+                <h3>Confirm {isTransferMode ? 'Transfer' : isWithdrawMode ? 'Withdrawal' : 'Transaction'}</h3>
                 <div className="send-modal-detail-row">
                   <span>Amount:</span>
                   <span>{amount} {tokenInfo.metadata?.symbol}</span>
@@ -550,7 +595,10 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                   onClick={handleSend}
                   disabled={isSending}
                 >
-                  {isSending ? (isWithdrawMode ? 'Withdrawing...' : 'Sending...') : (isWithdrawMode ? 'Confirm Withdrawal' : 'Confirm Send')}
+                  {isSending ? 
+                    (isTransferMode ? 'Transferring...' : isWithdrawMode ? 'Withdrawing...' : 'Sending...') : 
+                    (isTransferMode ? 'Confirm Transfer' : isWithdrawMode ? 'Confirm Withdrawal' : 'Confirm Send')
+                  }
                 </button>
               </div>
             </>
@@ -559,4 +607,8 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
       </div>
     </div>
   );
-}; 
+};
+
+function arraysEqual(a: number[], b: number[]): boolean {
+  return a.length === b.length && a.every((val, idx) => val === b[idx]);
+} 

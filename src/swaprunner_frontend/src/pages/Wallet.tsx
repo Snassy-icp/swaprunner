@@ -69,6 +69,7 @@ export const WalletPage: React.FC = () => {
   const [selectedTokenForSubaccount, setSelectedTokenForSubaccount] = useState<string | null>(null);
   const [hideEmptyTokens, setHideEmptyTokens] = useState(false);
   const [isWithdrawMode, setIsWithdrawMode] = useState(false);
+  const [isTransferMode, setIsTransferMode] = useState(false);
 
   useEffect(() => {
     // Check authentication status on mount
@@ -374,6 +375,7 @@ export const WalletPage: React.FC = () => {
     setSelectedSubaccountForSend(undefined);
     setSelectedSubaccountName(undefined);
     setIsWithdrawMode(false);
+    setIsTransferMode(false);
     // Reload wallet tokens after successful send
     loadWalletTokens();
   };
@@ -384,12 +386,13 @@ export const WalletPage: React.FC = () => {
     setShowSendModal(true);
   };
 
-  // Add handler for opening send modal with subaccount
-  const handleOpenSendModalWithSubaccount = (tokenId: string, subaccount: number[], subaccountName: string, withdraw: boolean = false) => {
+  // Update handler for opening send modal with subaccount
+  const handleOpenSendModalWithSubaccount = (tokenId: string, subaccount: number[], subaccountName: string, withdraw: boolean = false, transfer: boolean = false) => {
     setSelectedTokenForSend(tokenId);
     setSelectedSubaccountForSend(subaccount);
     setSelectedSubaccountName(subaccountName);
     setIsWithdrawMode(withdraw);
+    setIsTransferMode(transfer);
     setShowSendModal(true);
   };
 
@@ -994,7 +997,7 @@ export const WalletPage: React.FC = () => {
                                           className="subaccount-action-button transfer"
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            handleOpenSendModalWithSubaccount(token.canisterId, subaccount.subaccount, subaccount.name);
+                                            handleOpenSendModalWithSubaccount(token.canisterId, subaccount.subaccount, subaccount.name, false, true);
                                           }}
                                           title="Transfer to another subaccount"
                                         >
@@ -1176,12 +1179,16 @@ export const WalletPage: React.FC = () => {
             setSelectedTokenForSend(null);
             setSelectedSubaccountForSend(undefined);
             setSelectedSubaccountName(undefined);
+            setIsWithdrawMode(false);
+            setIsTransferMode(false);
           }}
           tokenId={selectedTokenForSend}
           onSuccess={handleSendSuccess}
           fromSubaccount={selectedSubaccountForSend}
           fromSubaccountName={selectedSubaccountName}
           isWithdrawMode={isWithdrawMode}
+          isTransferMode={isTransferMode}
+          availableSubaccounts={tokens[selectedTokenForSend]?.subaccounts}
         />
       )}
       {showAddSubaccountModal && selectedTokenForSubaccount && (
