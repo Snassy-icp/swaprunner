@@ -871,7 +871,18 @@ export const WalletPage: React.FC = () => {
                                     <div className="subaccount-info">
                                       <div className="subaccount-title">
                                         <span className="subaccount-name">{subaccount.name}</span>
-                                        <span className="subaccount-created">
+                                        <div className="token-usd-value" title="Total USD value of your holdings">
+                                          {token.isLoadingUSDPrice ? (
+                                            <FiLoader className="spinner" />
+                                          ) : token.usdPrice !== null ? (
+                                            formatUSDPrice(Number(formatTokenAmount(subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.balance_e8s || BigInt(0), token.canisterId)) * token.usdPrice)
+                                          ) : (
+                                            '-'
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="token-balance-row">
+                                        <div className="balance-amount">
                                           {subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.isLoading ? (
                                             <span>Loading...</span>
                                           ) : subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.error ? (
@@ -879,11 +890,17 @@ export const WalletPage: React.FC = () => {
                                           ) : (
                                             <span>{formatTokenAmount(subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.balance_e8s || BigInt(0), token.canisterId)} {token.metadata?.symbol}</span>
                                           )}
-                                        </span>
+                                        </div>
+                                        <button 
+                                          className="token-expand-button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleSubaccountExpand(token.canisterId, subaccount.name);
+                                          }}
+                                        >
+                                          {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+                                        </button>
                                       </div>
-                                    </div>
-                                    <div className="subaccount-expand">
-                                      {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
                                     </div>
                                   </div>
                                   {isExpanded && (

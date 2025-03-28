@@ -622,14 +622,15 @@
 .subaccount-info {
   flex: 1;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .subaccount-title {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
 .subaccount-name {
@@ -638,23 +639,41 @@
   font-weight: 500;
 }
 
-.subaccount-created {
-  color: var(--text-secondary);
-  font-size: 12px;
+.token-balance-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
-.subaccount-expand {
+.balance-amount {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Roboto Mono', monospace;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.token-expand-button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 24px;
   height: 24px;
-  color: var(--text-secondary);
-  transition: transform 0.2s ease;
+  margin-left: 8px;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0.6;
 }
 
-.subaccount-item.expanded .subaccount-expand {
-  transform: rotate(180deg);
+.subaccount-header:hover .token-expand-button {
+  opacity: 1;
 }
 
 .subaccount-details {
