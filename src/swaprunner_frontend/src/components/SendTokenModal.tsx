@@ -8,6 +8,7 @@ import { backendService } from '../services/backend';
 import { authService } from '../services/auth';
 import { formatTokenAmount } from '../utils/format';
 import { AccountParser, ParsedAccount } from '../utils/account';
+import { formatHex, formatBytes, formatPrincipal } from '../utils/subaccounts';
 import '../styles/SendTokenModal.css';
 import { dip20Service } from '../services/dip20_service';
 import { statsService } from '../services/stats';
@@ -270,6 +271,26 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
         </div>
 
         <div className="send-modal-content">
+          {fromSubaccount && (
+            <div className="send-modal-source">
+              <div className="source-label">Sending from subaccount:</div>
+              <div className="subaccount-formats">
+                <div className="format-row">
+                  <span className="format-label">Hex:</span>
+                  <code className="source-subaccount">0x{formatHex(fromSubaccount)}</code>
+                </div>
+                <div className="format-row">
+                  <span className="format-label">Bytes:</span>
+                  <code className="source-subaccount">{formatBytes(fromSubaccount)}</code>
+                </div>
+                <div className="format-row">
+                  <span className="format-label">Principal:</span>
+                  <code className="source-subaccount">{formatPrincipal(fromSubaccount)}</code>
+                </div>
+              </div>
+            </div>
+          )}
+
           {!showConfirmation ? (
             <>
               <div className="send-modal-recipient">
@@ -305,7 +326,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                       }
                     }}
                   />
-                  <span>Advanced: Add Subaccount</span>
+                  <span>Advanced: Send To Subaccount</span>
                 </label>
 
                 {showSubaccount && (
