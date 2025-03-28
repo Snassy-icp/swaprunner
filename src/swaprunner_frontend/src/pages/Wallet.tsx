@@ -1000,16 +1000,6 @@ export const WalletPage: React.FC = () => {
                                           <FiDownload />
                                           Withdraw
                                         </button>
-                                        <button
-                                          className="subaccount-action-button remove"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleRemoveSubaccount(token.canisterId, subaccount.subaccount);
-                                          }}
-                                          title="Remove subaccount"
-                                        >
-                                          <FiX />
-                                        </button>
                                       </div>
                                       <div className="token-metadata-row">
                                         <span className="metadata-label">Subaccount Balance:</span>
@@ -1127,6 +1117,19 @@ export const WalletPage: React.FC = () => {
                                             </div>
                                           </div>
                                         )}
+                                      </div>
+                                      <div className="remove-subaccount-section">
+                                        <button
+                                          className="subaccount-action-button remove"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRemoveSubaccount(token.canisterId, subaccount.subaccount);
+                                          }}
+                                          title="Remove subaccount"
+                                        >
+                                          <FiX />
+                                          Remove Subaccount
+                                        </button>
                                       </div>
                                     </div>
                                   )}
