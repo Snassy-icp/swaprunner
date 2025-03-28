@@ -565,11 +565,11 @@ export const WalletPage: React.FC = () => {
         throw new Error('User not authenticated');
       }
 
-      // Use icpSwapExecutionService to check balance
-      const result = await icpSwapExecutionService.getUndepositedPoolBalance({
-        poolId: userPrincipal,
-        tokenId: token.canisterId
-      });
+      // Use appropriate service based on token standard
+      const isDIP20 = metadata.standard.toLowerCase().includes('dip20');
+      const balance = isDIP20
+        ? await dip20Service.getBalance(token.canisterId)
+        : await icrc1Service.getBalanceWithSubaccount(token.canisterId, Array.from(subaccount.subaccount));
 
       setSubaccountBalances(prev => ({
         ...prev,
@@ -577,8 +577,7 @@ export const WalletPage: React.FC = () => {
           ...(prev[token.canisterId] || {}),
           [key]: {
             isLoading: false,
-            balance_e8s: result.balance_e8s,
-            error: result.error
+            balance_e8s: balance.balance_e8s
           }
         }
       }));
@@ -590,7 +589,7 @@ export const WalletPage: React.FC = () => {
           ...(prev[token.canisterId] || {}),
           [key]: {
             isLoading: false,
-            error: error?.message || 'Failed to load balance'
+            error: error.message || 'Failed to load balance'
           }
         }
       }));

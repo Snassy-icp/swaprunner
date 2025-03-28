@@ -11,7 +11,7 @@ export interface ExecutionResult {
 }
 
 interface ICRC1Actor {
-  icrc1_balance_of: (arg: { owner: Principal; subaccount: [] }) => Promise<bigint>;
+  icrc1_balance_of: (arg: { owner: Principal; subaccount: [] | [number[]] }) => Promise<bigint>;
   icrc1_transfer: (arg: {
     to: { owner: Principal; subaccount: [] | [number[]] };
     amount: bigint;
@@ -52,18 +52,22 @@ export class ICRC1Service {
   }
 
   async getBalance(tokenId: string): Promise<{ balance_e8s: bigint }> {
+    return this.getBalanceWithSubaccount(tokenId);
+  }
+
+  async getBalanceWithSubaccount(tokenId: string, subaccount?: number[]): Promise<{ balance_e8s: bigint }> {
     try {
       const tokenActor = await this.getTokenActor(tokenId);
       const userPrincipal = await authService.getPrincipal();
       if (!userPrincipal) {
         throw new Error('No principal available');
       }
-      
+      console.log('AAAAA Getting balance for subaccount:', subaccount, userPrincipal, tokenId);
       const balance = await tokenActor.icrc1_balance_of({
         owner: userPrincipal,
-        subaccount: []
+        subaccount: subaccount ? [subaccount] : []
       });
-
+      console.log('BBBBB Balance:', balance);
       return { balance_e8s: balance };
     } catch (error: any) {
       console.error('Error getting balance:', error);
