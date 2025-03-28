@@ -1,4 +1,4 @@
-import { FiPlus, FiLoader, FiChevronDown, FiChevronUp, FiRefreshCw, FiCreditCard, FiLogIn } from 'react-icons/fi';
+import { FiPlus, FiLoader, FiChevronDown, FiChevronUp, FiRefreshCw, FiCreditCard, FiLogIn, FiSend, FiDownload, FiX } from 'react-icons/fi';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TokenSelect } from '../components/TokenSelect';
@@ -12,6 +12,12 @@ import { priceService } from '../services/price';
 import { backendService } from '../services/backend';
 import '../styles/Wallet.css';
 
+interface NamedSubaccount {
+  name: string;
+  subaccount: number[];
+  created_at: bigint;
+}
+
 interface WalletToken {
   canisterId: string;
   metadata: TokenMetadata;
@@ -21,6 +27,8 @@ interface WalletToken {
   isLoadingMetadata: boolean;
   isLoadingBalance: boolean;
   isLoadingUSDPrice: boolean;
+  subaccounts: NamedSubaccount[];
+  isLoadingSubaccounts: boolean;
 }
 
 export const WalletPage: React.FC = () => {
@@ -32,9 +40,12 @@ export const WalletPage: React.FC = () => {
   const [expandedTokens, setExpandedTokens] = useState<Set<string>>(new Set());
   const [showSendModal, setShowSendModal] = useState(false);
   const [selectedTokenForSend, setSelectedTokenForSend] = useState<string | null>(null);
+  const [selectedSubaccountForSend, setSelectedSubaccountForSend] = useState<number[] | null>(null);
   const [hideEmptyBalances, setHideEmptyBalances] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState({ current: 0, total: 0 });
+  const [showAddSubaccountModal, setShowAddSubaccountModal] = useState(false);
+  const [selectedTokenForSubaccount, setSelectedTokenForSubaccount] = useState<string | null>(null);
 
   useEffect(() => {
     // Check authentication status on mount
@@ -64,17 +75,36 @@ export const WalletPage: React.FC = () => {
     );
   };
 
-  // Load metadata for a single token
+  // Load subaccounts for a single token
+  const loadTokenSubaccounts = async (id: string) => {
+    try {
+      const actor = await backendService.getActor();
+      const subaccounts = await actor.get_named_subaccounts(id);
+      updateToken(id, {
+        subaccounts,
+        isLoadingSubaccounts: false
+      });
+    } catch (error) {
+      console.error(`Error loading subaccounts for ${id}:`, error);
+      updateToken(id, {
+        subaccounts: [],
+        isLoadingSubaccounts: false
+      });
+    }
+  };
+
+  // Update loadTokenMetadata to also load subaccounts
   const loadTokenMetadata = async (id: string) => {
     const startTime = performance.now();
     try {
       const metadata = await tokenService.getMetadataWithLogo(id);
       const endTime = performance.now();
-      //console.log(`[${new Date().toISOString()}] Loaded metadata for ${id} in ${(endTime - startTime).toFixed(2)}ms`);
       updateToken(id, { 
         metadata,
         isLoadingMetadata: false 
       });
+      // Load subaccounts after metadata
+      loadTokenSubaccounts(id);
     } catch (error) {
       const endTime = performance.now();
       console.error(`[${new Date().toISOString()}] Error loading metadata for ${id} after ${(endTime - startTime).toFixed(2)}ms:`, error);
@@ -88,7 +118,9 @@ export const WalletPage: React.FC = () => {
           logo: '/generic_token.svg',
           standard: 'UNKNOWN'
         },
-        isLoadingMetadata: false
+        isLoadingMetadata: false,
+        subaccounts: [],
+        isLoadingSubaccounts: false
       });
     }
   };
@@ -177,7 +209,9 @@ export const WalletPage: React.FC = () => {
         isLoadingBalance: true,
         usdValue: null,
         usdPrice: null,
-        isLoadingUSDPrice: true
+        isLoadingUSDPrice: true,
+        subaccounts: [],
+        isLoadingSubaccounts: true
       }));
       setWalletTokens(initialTokens);
       setIsLoading(false);
@@ -257,6 +291,7 @@ export const WalletPage: React.FC = () => {
   const handleSendSuccess = () => {
     setShowSendModal(false);
     setSelectedTokenForSend(null);
+    setSelectedSubaccountForSend(null);
     // Reload wallet tokens after successful send
     loadWalletTokens();
   };
@@ -265,6 +300,41 @@ export const WalletPage: React.FC = () => {
   const handleOpenSendModal = (tokenId: string) => {
     setSelectedTokenForSend(tokenId);
     setShowSendModal(true);
+  };
+
+  // Add handler for opening send modal with subaccount
+  const handleOpenSendModalWithSubaccount = (tokenId: string, subaccount: number[]) => {
+    setSelectedTokenForSend(tokenId);
+    setSelectedSubaccountForSend(subaccount);
+    setShowSendModal(true);
+  };
+
+  // Add handler for removing subaccount
+  const handleRemoveSubaccount = async (tokenId: string, subaccount: number[]) => {
+    if (!confirm('Are you sure you want to remove this subaccount? Any remaining funds will be withdrawn to your main account.')) {
+      return;
+    }
+
+    try {
+      updateToken(tokenId, { isLoadingSubaccounts: true });
+      const actor = await backendService.getActor();
+      await actor.remove_named_subaccount({
+        token_id: tokenId,
+        subaccount: subaccount
+      });
+      // Reload subaccounts and balance after removal
+      await loadTokenSubaccounts(tokenId);
+      await loadTokenBalance(tokenId);
+    } catch (error) {
+      console.error('Error removing subaccount:', error);
+      updateToken(tokenId, { isLoadingSubaccounts: false });
+    }
+  };
+
+  // Add handler for opening add subaccount modal
+  const handleOpenAddSubaccountModal = (tokenId: string) => {
+    setSelectedTokenForSubaccount(tokenId);
+    setShowAddSubaccountModal(true);
   };
 
   const handleSwap = (tokenId: string) => {
@@ -362,7 +432,9 @@ export const WalletPage: React.FC = () => {
               usdPrice: null,
               isLoadingMetadata: false,
               isLoadingBalance: false,
-              isLoadingUSDPrice: true
+              isLoadingUSDPrice: true,
+              subaccounts: [],
+              isLoadingSubaccounts: true
             };
             
             setWalletTokens(current => [...current, newToken]);
@@ -635,6 +707,64 @@ export const WalletPage: React.FC = () => {
                         <span className="metadata-label">Canister ID:</span>
                         <span className="metadata-value">{token.canisterId}</span>
                       </div>
+
+                      {/* Subaccounts section */}
+                      <div className="token-subaccounts-section">
+                        <div className="subaccounts-header">
+                          <h4>Named Subaccounts</h4>
+                          <button 
+                            className="add-subaccount-button"
+                            onClick={() => handleOpenAddSubaccountModal(token.canisterId)}
+                          >
+                            <FiPlus /> Add Subaccount
+                          </button>
+                        </div>
+                        {token.isLoadingSubaccounts ? (
+                          <div className="subaccounts-loading">
+                            <FiLoader className="spinner" /> Loading subaccounts...
+                          </div>
+                        ) : token.subaccounts.length === 0 ? (
+                          <div className="no-subaccounts">
+                            No named subaccounts yet
+                          </div>
+                        ) : (
+                          <div className="subaccounts-list">
+                            {token.subaccounts.map((subaccount) => (
+                              <div key={subaccount.name} className="subaccount-item">
+                                <div className="subaccount-info">
+                                  <span className="subaccount-name">{subaccount.name}</span>
+                                  <span className="subaccount-created">
+                                    Created {new Date(Number(subaccount.created_at / BigInt(1000000))).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                <div className="subaccount-actions">
+                                  <button
+                                    className="subaccount-action-button send"
+                                    onClick={() => handleOpenSendModalWithSubaccount(token.canisterId, subaccount.subaccount)}
+                                    title="Send from this subaccount"
+                                  >
+                                    <FiSend />
+                                  </button>
+                                  <button
+                                    className="subaccount-action-button withdraw"
+                                    onClick={() => handleOpenSendModalWithSubaccount(token.canisterId, subaccount.subaccount)}
+                                    title="Withdraw to main account"
+                                  >
+                                    <FiDownload />
+                                  </button>
+                                  <button
+                                    className="subaccount-action-button remove"
+                                    onClick={() => handleRemoveSubaccount(token.canisterId, subaccount.subaccount)}
+                                    title="Remove subaccount"
+                                  >
+                                    <FiX />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -658,6 +788,7 @@ export const WalletPage: React.FC = () => {
           onClose={() => {
             setShowSendModal(false);
             setSelectedTokenForSend(null);
+            setSelectedSubaccountForSend(null);
           }}
           tokenId={selectedTokenForSend}
           onSuccess={handleSendSuccess}
