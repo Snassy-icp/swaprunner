@@ -377,7 +377,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                 </div>
               )}
 
-              {!isWithdrawMode && (
+              {!isWithdrawMode && !isTransferMode && (
                 <div className="send-modal-subaccount">
                   <label className="send-modal-subaccount-toggle">
                     <input
