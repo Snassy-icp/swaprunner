@@ -929,15 +929,24 @@ export const WalletPage: React.FC = () => {
                                       </div>
                                       <div className="token-metadata-row">
                                         <span className="metadata-label">Balance</span>
-                                        <span className="metadata-value">
+                                        <div className="metadata-value">
                                           {subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.isLoading ? (
                                             <span>Loading...</span>
                                           ) : subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.error ? (
                                             <span className="error">{subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.error}</span>
                                           ) : (
-                                            <span>{formatTokenAmount(subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.balance_e8s || BigInt(0), token.canisterId)}</span>
+                                            <>
+                                              <span className="token-usd-value">
+                                                {token.usdPrice !== null ? 
+                                                  formatUSDPrice(Number(formatTokenAmount(subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.balance_e8s || BigInt(0), token.canisterId)) * token.usdPrice) 
+                                                  : '-'
+                                                }
+                                              </span>
+                                              <span className="separator">•</span>
+                                              <span>{formatTokenAmount(subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.balance_e8s || BigInt(0), token.canisterId)} {token.metadata?.symbol}</span>
+                                            </>
                                           )}
-                                        </span>
+                                        </div>
                                       </div>
                                       <div className="subaccount-format">
                                         <div className="format-label">Hex:</div>
