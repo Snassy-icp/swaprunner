@@ -977,7 +977,6 @@ export const WalletPage: React.FC = () => {
                                           title="Remove subaccount"
                                         >
                                           <FiX />
-                                          Remove
                                         </button>
                                       </div>
                                       <div className="token-metadata-row">
