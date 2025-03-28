@@ -27,6 +27,7 @@ interface SendTokenModalProps {
   onSuccess: () => void;
   fromSubaccount?: number[];
   fromSubaccountName?: string;
+  isWithdrawMode?: boolean;
 }
 
 export const SendTokenModal: React.FC<SendTokenModalProps> = ({
@@ -36,6 +37,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
   onSuccess,
   fromSubaccount,
   fromSubaccountName,
+  isWithdrawMode,
 }) => {
   const [amount, setAmount] = useState('');
   const [recipient, setRecipient] = useState('');
@@ -134,9 +136,19 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
     setAccountError(null);
   }, [recipient, showSubaccount, subaccountInput.type, subaccountInput.value]);
 
+  useEffect(() => {
+    if (isOpen && isWithdrawMode) {
+      // When opening in withdraw mode, set the recipient to the user's principal
+      const userPrincipal = authService.getPrincipal();
+      if (userPrincipal) {
+        setRecipient(userPrincipal.toString());
+      }
+    }
+  }, [isOpen, isWithdrawMode]);
+
   const handleMax = () => {
     if (tokenInfo.balance && tokenInfo.metadata?.fee) {
-      // Subtract the fee from the max amount
+      // In withdraw mode, we can use the entire balance minus fee
       const maxAmount = tokenInfo.balance - tokenInfo.metadata.fee;
       if (maxAmount > BigInt(0)) {
         setAmount(formatTokenAmount(maxAmount, tokenId));
@@ -250,7 +262,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
       <div className="send-modal">
         <div className="send-modal-header">
           <div className="send-modal-title">
-            <h2>Send {tokenInfo.metadata?.symbol || 'Tokens'}</h2>
+            <h2>{isWithdrawMode ? 'Withdraw' : 'Send'} {tokenInfo.metadata?.symbol || 'Tokens'}</h2>
             {tokenInfo.metadata && (
               <img 
                 src={loadedLogos[tokenId] || '/generic_token.svg'}
@@ -275,7 +287,9 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
         <div className="send-modal-content">
           {fromSubaccount && (
             <div className="send-modal-source">
-              <div className="source-label">Sending from {fromSubaccountName ? `subaccount "${fromSubaccountName}"` : 'subaccount'}:</div>
+              <div className="source-label">
+                {isWithdrawMode ? 'Withdrawing' : 'Sending'} from {fromSubaccountName ? `subaccount "${fromSubaccountName}"` : 'subaccount'}:
+              </div>
               <div className="subaccount-formats">
                 <div className="format-row">
                   <span className="format-label">Hex:</span>
@@ -295,103 +309,107 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
 
           {!showConfirmation ? (
             <>
-              <div className="send-modal-recipient">
-                <label>Recipient Principal ID</label>
-                <input
-                  type="text"
-                  value={recipient}
-                  onChange={(e) => setRecipient(e.target.value)}
-                  placeholder="Enter Principal ID"
-                  className="send-modal-principal-input"
-                  disabled={isSending}
-                />
-                {parsedAccount?.original && (
-                  <div className="send-modal-parsed-account">
-                    <small>Detected extended address format. Resolved to:</small>
-                    <div>Principal: {parsedAccount.principal.toString()}</div>
-                    {parsedAccount.subaccount && (
-                      <div>With subaccount: {toHexString(parsedAccount.subaccount.resolved)}</div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="send-modal-subaccount">
-                <label className="send-modal-subaccount-toggle">
+              {!isWithdrawMode && (
+                <div className="send-modal-recipient">
+                  <label>Recipient Principal ID</label>
                   <input
-                    type="checkbox"
-                    checked={showSubaccount}
-                    onChange={(e) => {
-                      setShowSubaccount(e.target.checked);
-                      if (!e.target.checked) {
-                        setSubaccountInput({ ...subaccountInput, value: '' });
-                      }
-                    }}
+                    type="text"
+                    value={recipient}
+                    onChange={(e) => setRecipient(e.target.value)}
+                    placeholder="Enter Principal ID"
+                    className="send-modal-principal-input"
+                    disabled={isSending || isWithdrawMode}
                   />
-                  <span>Advanced: Send To Subaccount</span>
-                </label>
-
-                {showSubaccount && (
-                  <div className="send-modal-subaccount-inputs">
-                    <div className="send-modal-subaccount-type">
-                      <select
-                        value={subaccountInput.type}
-                        onChange={(e) => setSubaccountInput({
-                          type: e.target.value as 'hex' | 'bytes' | 'principal',
-                          value: ''  // Clear value when type changes
-                        })}
-                        disabled={isSending}
-                      >
-                        <option value="hex">Hex String</option>
-                        <option value="bytes">Byte Array</option>
-                        <option value="principal">Principal ID</option>
-                      </select>
+                  {parsedAccount?.original && (
+                    <div className="send-modal-parsed-account">
+                      <small>Detected extended address format. Resolved to:</small>
+                      <div>Principal: {parsedAccount.principal.toString()}</div>
+                      {parsedAccount.subaccount && (
+                        <div>With subaccount: {toHexString(parsedAccount.subaccount.resolved)}</div>
+                      )}
                     </div>
+                  )}
+                </div>
+              )}
 
-                    <div className="send-modal-subaccount-value">
-                      <input
-                        type="text"
-                        value={subaccountInput.value}
-                        onChange={(e) => setSubaccountInput({
-                          ...subaccountInput,
-                          value: e.target.value
-                        })}
-                        placeholder={
-                          subaccountInput.type === 'hex' ? "e.g. 0A1B2C3D..." :
-                          subaccountInput.type === 'bytes' ? "e.g. 1,2,3,4..." :
-                          "Enter Principal ID"
+              {!isWithdrawMode && (
+                <div className="send-modal-subaccount">
+                  <label className="send-modal-subaccount-toggle">
+                    <input
+                      type="checkbox"
+                      checked={showSubaccount}
+                      onChange={(e) => {
+                        setShowSubaccount(e.target.checked);
+                        if (!e.target.checked) {
+                          setSubaccountInput({ ...subaccountInput, value: '' });
                         }
-                        disabled={isSending}
-                      />
-                    </div>
+                      }}
+                    />
+                    <span>Advanced: Send To Subaccount</span>
+                  </label>
 
-                    <div className="send-modal-subaccount-preview">
-                        <small>Resolved subaccount:</small>
-                        <code>{parsedAccount?.subaccount?.resolved ? toHexString(parsedAccount.subaccount.resolved) : ''}</code>
-                        <button
-                          className="send-modal-encode-button"
-                          onClick={() => {
-                            if (parsedAccount) {
-                              const longAccount = AccountParser.encodeLongAccount(parsedAccount);
-                              setRecipient(longAccount);
-                              setShowSubaccount(false);
-                              setSubaccountInput({ type: 'hex', value: '' });
-                            }
-                          }}
+                  {showSubaccount && (
+                    <div className="send-modal-subaccount-inputs">
+                      <div className="send-modal-subaccount-type">
+                        <select
+                          value={subaccountInput.type}
+                          onChange={(e) => setSubaccountInput({
+                            type: e.target.value as 'hex' | 'bytes' | 'principal',
+                            value: ''  // Clear value when type changes
+                          })}
                           disabled={isSending}
                         >
-                          Convert to Extended Address String
-                        </button>
+                          <option value="hex">Hex String</option>
+                          <option value="bytes">Byte Array</option>
+                          <option value="principal">Principal ID</option>
+                        </select>
                       </div>
-                  </div>
-                )}
 
-                {accountError && (
-                  <div className="send-modal-account-error">
-                    {accountError}
-                  </div>
-                )}
-              </div>
+                      <div className="send-modal-subaccount-value">
+                        <input
+                          type="text"
+                          value={subaccountInput.value}
+                          onChange={(e) => setSubaccountInput({
+                            ...subaccountInput,
+                            value: e.target.value
+                          })}
+                          placeholder={
+                            subaccountInput.type === 'hex' ? "e.g. 0A1B2C3D..." :
+                            subaccountInput.type === 'bytes' ? "e.g. 1,2,3,4..." :
+                            "Enter Principal ID"
+                          }
+                          disabled={isSending}
+                        />
+                      </div>
+
+                      <div className="send-modal-subaccount-preview">
+                          <small>Resolved subaccount:</small>
+                          <code>{parsedAccount?.subaccount?.resolved ? toHexString(parsedAccount.subaccount.resolved) : ''}</code>
+                          <button
+                            className="send-modal-encode-button"
+                            onClick={() => {
+                              if (parsedAccount) {
+                                const longAccount = AccountParser.encodeLongAccount(parsedAccount);
+                                setRecipient(longAccount);
+                                setShowSubaccount(false);
+                                setSubaccountInput({ type: 'hex', value: '' });
+                              }
+                            }}
+                            disabled={isSending}
+                          >
+                            Convert to Extended Address String
+                          </button>
+                        </div>
+                    </div>
+                  )}
+
+                  {accountError && (
+                    <div className="send-modal-account-error">
+                      {accountError}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="send-modal-amount">
                 <div className="send-modal-amount-row">

@@ -68,6 +68,7 @@ export const WalletPage: React.FC = () => {
   const [showAddSubaccountModal, setShowAddSubaccountModal] = useState(false);
   const [selectedTokenForSubaccount, setSelectedTokenForSubaccount] = useState<string | null>(null);
   const [hideEmptyTokens, setHideEmptyTokens] = useState(false);
+  const [isWithdrawMode, setIsWithdrawMode] = useState(false);
 
   useEffect(() => {
     // Check authentication status on mount
@@ -374,10 +375,11 @@ export const WalletPage: React.FC = () => {
   };
 
   // Add handler for opening send modal with subaccount
-  const handleOpenSendModalWithSubaccount = (tokenId: string, subaccount: number[], subaccountName: string) => {
+  const handleOpenSendModalWithSubaccount = (tokenId: string, subaccount: number[], subaccountName: string, withdraw: boolean = false) => {
     setSelectedTokenForSend(tokenId);
     setSelectedSubaccountForSend(subaccount);
     setSelectedSubaccountName(subaccountName);
+    setIsWithdrawMode(withdraw);
     setShowSendModal(true);
   };
 
@@ -993,7 +995,7 @@ export const WalletPage: React.FC = () => {
                                           className="subaccount-action-button withdraw"
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            handleOpenSendModalWithSubaccount(token.canisterId, subaccount.subaccount, subaccount.name);
+                                            handleOpenSendModalWithSubaccount(token.canisterId, subaccount.subaccount, subaccount.name, true);
                                           }}
                                           title="Withdraw to main account"
                                         >
@@ -1169,6 +1171,7 @@ export const WalletPage: React.FC = () => {
           onSuccess={handleSendSuccess}
           fromSubaccount={selectedSubaccountForSend}
           fromSubaccountName={selectedSubaccountName}
+          isWithdrawMode={isWithdrawMode}
         />
       )}
       {showAddSubaccountModal && selectedTokenForSubaccount && (
