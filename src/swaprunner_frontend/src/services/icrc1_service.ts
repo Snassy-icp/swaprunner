@@ -62,12 +62,14 @@ export class ICRC1Service {
       if (!userPrincipal) {
         throw new Error('No principal available');
       }
-      console.log('AAAAA Getting balance for subaccount:', subaccount, userPrincipal, tokenId);
+
+      const parsedSubaccount: [] | [number[]] = subaccount ? [[...subaccount]] : [];
+      
       const balance = await tokenActor.icrc1_balance_of({
         owner: userPrincipal,
-        subaccount: subaccount ? [subaccount] : []
+        subaccount: parsedSubaccount
       });
-      console.log('BBBBB Balance:', balance);
+      
       return { balance_e8s: balance };
     } catch (error: any) {
       console.error('Error getting balance:', error);
