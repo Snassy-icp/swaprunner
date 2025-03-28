@@ -3,15 +3,19 @@ import { Principal } from '@dfinity/principal';
 export type SubaccountType = 'hex' | 'bytes' | 'principal';
 
 export function isValidHexString(value: string): boolean {
-  // Allow partial hex strings, just validate characters
-  return /^[0-9a-fA-F]*$/.test(value);
+  // Allow partial hex strings, validate characters and max length
+  return /^[0-9a-fA-F]*$/.test(value) && value.length <= 64;
 }
 
 export function isValidByteArray(value: string): boolean {
   try {
+    // Remove trailing comma(s) and whitespace
+    value = value.trim().replace(/,+$/, '');
+    if (!value) return true; // Empty string is valid, will be padded with zeros
+    
     const bytes = value.split(',').map(b => parseInt(b.trim()));
-    // Allow partial arrays, just check each byte is valid
-    return bytes.every(b => !isNaN(b) && b >= 0 && b <= 255);
+    // Check max length and byte validity
+    return bytes.length <= 32 && bytes.every(b => !isNaN(b) && b >= 0 && b <= 255);
   } catch {
     return false;
   }
@@ -52,12 +56,19 @@ export function validateSubaccountValue(type: SubaccountType, value: string): st
   switch (type) {
     case 'hex':
       if (!isValidHexString(value)) {
+        if (value.length > 64) {
+          return 'Hex string too long. Maximum length is 64 characters (32 bytes).';
+        }
         return 'Invalid hex string. Must contain only hex digits (0-9, a-f).';
       }
       break;
     case 'bytes':
       if (!isValidByteArray(value)) {
-        return 'Invalid byte array. Must be 32 comma-separated numbers between 0 and 255.';
+        const bytes = value.trim().replace(/,+$/, '').split(',').filter(b => b.trim());
+        if (bytes.length > 32) {
+          return 'Byte array too long. Maximum length is 32 bytes.';
+        }
+        return 'Invalid byte array. Must be comma-separated numbers between 0 and 255.';
       }
       break;
     case 'principal':
@@ -76,7 +87,7 @@ export function convertToBytes(type: SubaccountType, value: string): number[] {
     case 'hex':
       return hexToBytes(value);
     case 'bytes':
-      return value.split(',').map(b => parseInt(b.trim()));
+      return parseByteString(value);
     case 'principal':
       return principalToBytes(value);
     default:
