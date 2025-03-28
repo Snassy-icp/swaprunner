@@ -786,7 +786,7 @@ export const WalletPage: React.FC = () => {
                         </button>
                       </div>
                       <div className="token-metadata-row">
-                        <span className="metadata-label">Wallet:</span>
+                        <span className="metadata-label">Balance:</span>
                         <div className="metadata-value">
                           <span className="token-usd-value" title="Total USD value of your holdings">
                             {token.isLoadingUSDPrice ? (
@@ -941,11 +941,7 @@ export const WalletPage: React.FC = () => {
                                         </button>
                                       </div>
                                       <div className="token-metadata-row">
-                                        <span className="metadata-label">Created</span>
-                                        <span className="metadata-value">{new Date(Number(subaccount.created_at / BigInt(1000000))).toLocaleString()}</span>
-                                      </div>
-                                      <div className="token-metadata-row">
-                                        <span className="metadata-label">Balance</span>
+                                        <span className="metadata-label">Balance:</span>
                                         <div className="metadata-value">
                                           {subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.isLoading ? (
                                             <span>Loading...</span>
@@ -964,6 +960,10 @@ export const WalletPage: React.FC = () => {
                                             </>
                                           )}
                                         </div>
+                                      </div>
+                                      <div className="token-metadata-row">
+                                        <span className="metadata-label">Created:</span>
+                                        <span className="metadata-value">{new Date(Number(subaccount.created_at / BigInt(1000000))).toLocaleString()}</span>
                                       </div>
                                       <div className="subaccount-format">
                                         <div className="format-label">Hex:</div>
