@@ -872,7 +872,13 @@ export const WalletPage: React.FC = () => {
                                       <div className="subaccount-title">
                                         <span className="subaccount-name">{subaccount.name}</span>
                                         <span className="subaccount-created">
-                                          Created {new Date(Number(subaccount.created_at / BigInt(1000000))).toLocaleDateString()}
+                                          {subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.isLoading ? (
+                                            <span>Loading...</span>
+                                          ) : subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.error ? (
+                                            <span className="error">{subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.error}</span>
+                                          ) : (
+                                            <span>{formatTokenAmount(subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.balance_e8s || BigInt(0), token.canisterId)} {token.metadata?.symbol}</span>
+                                          )}
                                         </span>
                                       </div>
                                     </div>
