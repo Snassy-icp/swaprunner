@@ -11,6 +11,9 @@ import { TokenMetadata } from '../types/token';
 import { priceService } from '../services/price';
 import { backendService } from '../services/backend';
 import '../styles/Wallet.css';
+import { AddSubaccountModal } from '../components/AddSubaccountModal';
+import '../styles/AddSubaccountModal.css';
+import { Principal } from '@dfinity/principal';
 
 interface NamedSubaccount {
   name: string;
@@ -34,7 +37,7 @@ interface WalletToken {
 export const WalletPage: React.FC = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [walletTokens, setWalletTokens] = useState<WalletToken[]>([]);
+  const [tokens, setTokens] = useState<Record<string, WalletToken>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [showTokenSelect, setShowTokenSelect] = useState(false);
   const [expandedTokens, setExpandedTokens] = useState<Set<string>>(new Set());
@@ -66,28 +69,44 @@ export const WalletPage: React.FC = () => {
     canisterId: string,
     updates: Partial<WalletToken>
   ) => {
-    setWalletTokens(current => 
-      current.map(token => 
-        token.canisterId === canisterId 
-          ? { ...token, ...updates }
-          : token
-      )
-    );
+    setTokens(prevTokens => {
+      const token = prevTokens[canisterId];
+      if (!token) return prevTokens;
+
+      return {
+        ...prevTokens,
+        [canisterId]: {
+          ...token,
+          ...updates,
+          // Ensure subaccounts is always an array
+          subaccounts: updates.subaccounts || token.subaccounts || []
+        }
+      };
+    });
   };
 
   // Load subaccounts for a single token
   const loadTokenSubaccounts = async (id: string) => {
     try {
+      updateToken(id, { isLoadingSubaccounts: true });
       const actor = await backendService.getActor();
-      const subaccounts = await actor.get_named_subaccounts(id);
-      updateToken(id, {
-        subaccounts,
-        isLoadingSubaccounts: false
-      });
+      const result = await actor.get_named_subaccounts(Principal.fromText(id));
+      if ('ok' in result) {
+        updateToken(id, {
+          subaccounts: result.ok || [], // Ensure we always have an array
+          isLoadingSubaccounts: false
+        });
+      } else {
+        updateToken(id, {
+          subaccounts: [], // Initialize as empty array on error
+          isLoadingSubaccounts: false
+        });
+        console.error('Error loading subaccounts:', result.err);
+      }
     } catch (error) {
-      console.error(`Error loading subaccounts for ${id}:`, error);
+      console.error('Error loading subaccounts:', error);
       updateToken(id, {
-        subaccounts: [],
+        subaccounts: [], // Initialize as empty array on error
         isLoadingSubaccounts: false
       });
     }
@@ -173,63 +192,45 @@ export const WalletPage: React.FC = () => {
 
   // Load wallet tokens
   const loadWalletTokens = async () => {
-    const startTime = performance.now();
-    console.log(`[${new Date().toISOString()}] Starting to load wallet tokens...`);
-    
     try {
       setIsLoading(true);
+      const tokenIds = await backendService.get_wallet_tokens();
       
-      // Get backend actor
-      const actorStartTime = performance.now();
-      const actor = await backendService.getActor();
-      const actorEndTime = performance.now();
-      console.log(`[${new Date().toISOString()}] Got backend actor in ${(actorEndTime - actorStartTime).toFixed(2)}ms`);
-      
-      // Get token IDs
-      const tokenIdsStartTime = performance.now();
-      const tokenIds = await actor.get_wallet_tokens();
-      const tokenIdsEndTime = performance.now();
-      console.log(`[${new Date().toISOString()}] Got ${tokenIds.length} wallet tokens in ${(tokenIdsEndTime - tokenIdsStartTime).toFixed(2)}ms`);
-      
-      // Initialize tokens immediately with loading states
-      const initStartTime = performance.now();
-      const initialTokens = tokenIds.map((id: string) => ({
-        canisterId: id,
-        metadata: {
-          name: 'Loading...',
-          symbol: '...',
-          decimals: 8,
-          fee: BigInt(0),
-          hasLogo: false,
-          logo: '/generic_token.svg',
-          standard: 'UNKNOWN'
-        },
-        balance: '0',
-        isLoadingMetadata: true,
-        isLoadingBalance: true,
-        usdValue: null,
-        usdPrice: null,
-        isLoadingUSDPrice: true,
-        subaccounts: [],
-        isLoadingSubaccounts: true
+      // Initialize tokens with empty arrays for subaccounts
+      const initialTokens = tokenIds.reduce((acc, id) => {
+        acc[id] = {
+          canisterId: id,
+          metadata: {
+            name: '',
+            symbol: '',
+            fee: BigInt(0),
+            decimals: 8,
+            hasLogo: false,
+            standard: ''
+          },
+          balance: '0',
+          usdValue: null,
+          usdPrice: null,
+          isLoadingMetadata: true,
+          isLoadingBalance: true,
+          isLoadingUSDPrice: false,
+          subaccounts: [],
+          isLoadingSubaccounts: false
+        };
+        return acc;
+      }, {} as Record<string, WalletToken>);
+
+      setTokens(initialTokens);
+
+      // Load details for each token
+      await Promise.all(tokenIds.map(async (id) => {
+        await loadTokenMetadata(id);
+        await loadTokenBalance(id);
+        await loadTokenSubaccounts(id);
       }));
-      setWalletTokens(initialTokens);
-      setIsLoading(false);
-      const initEndTime = performance.now();
-      //console.log(`[${new Date().toISOString()}] Initialized token placeholders in ${(initEndTime - initStartTime).toFixed(2)}ms`);
-
-      // Start loading metadata and balances for each token independently
-      //console.log(`[${new Date().toISOString()}] Starting to load metadata and balances for ${tokenIds.length} tokens...`);
-      tokenIds.forEach((id: string) => {
-        loadTokenMetadata(id);
-        loadTokenBalance(id);
-      });
-
-      const endTime = performance.now();
-      console.log(`[${new Date().toISOString()}] Total initial wallet setup took ${(endTime - startTime).toFixed(2)}ms`);
     } catch (error) {
-      const endTime = performance.now();
-      console.error(`[${new Date().toISOString()}] Error loading wallet tokens after ${(endTime - startTime).toFixed(2)}ms:`, error);
+      console.error('Error loading wallet tokens:', error);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -337,6 +338,18 @@ export const WalletPage: React.FC = () => {
     setShowAddSubaccountModal(true);
   };
 
+  const handleCloseAddSubaccountModal = () => {
+    setShowAddSubaccountModal(false);
+    setSelectedTokenForSubaccount(null);
+  };
+
+  const handleSubaccountAdded = async () => {
+    if (selectedTokenForSubaccount) {
+      await loadTokenSubaccounts(selectedTokenForSubaccount);
+    }
+    handleCloseAddSubaccountModal();
+  };
+
   const handleSwap = (tokenId: string) => {
     if (tokenId === 'ryjl3-tyaaa-aaaaa-aaaba-cai') {
       // For ICP, navigate to swap page with ICP as input and no output selected
@@ -348,7 +361,7 @@ export const WalletPage: React.FC = () => {
   };
 
   // Filter tokens based on hideEmptyBalances setting
-  const filteredTokens = walletTokens.filter(token => 
+  const filteredTokens = Object.values(tokens).filter(token => 
     !hideEmptyBalances || (
       !token.isLoadingBalance && 
       token.balance !== '0' && 
@@ -400,7 +413,7 @@ export const WalletPage: React.FC = () => {
       const allTokens = await tokenService.getAllTokens();
       
       // Filter out tokens already in wallet
-      const walletTokenIds = new Set(walletTokens.map(t => t.canisterId));
+      const walletTokenIds = new Set(Object.keys(tokens));
       const tokensToScan = allTokens.filter(([id]) => !walletTokenIds.has(id.toString()));
       
       setScanProgress({ current: 0, total: tokensToScan.length });
@@ -437,7 +450,7 @@ export const WalletPage: React.FC = () => {
               isLoadingSubaccounts: true
             };
             
-            setWalletTokens(current => [...current, newToken]);
+            setTokens(current => ({ ...current, [canisterId]: newToken }));
             
             // Load USD price in background
             loadTokenUSDPrice(canisterId, balanceResult.balance_e8s);
@@ -501,7 +514,7 @@ export const WalletPage: React.FC = () => {
             <h3>Loading Your Wallet</h3>
             <p>Please wait while we fetch your tokens...</p>
           </div>
-        ) : walletTokens.length === 0 ? (
+        ) : Object.keys(tokens).length === 0 ? (
           <div className="wallet-empty-state">
             <FiCreditCard className="empty-icon" />
             <h3>Your wallet is empty</h3>
@@ -520,7 +533,7 @@ export const WalletPage: React.FC = () => {
               <div className="wallet-total">
                 <span className="total-label">Total Value:</span>
                 <span className="total-value">
-                  {formatUSDPrice(walletTokens.reduce((total, token) => total + (token.usdValue || 0), 0))}
+                  {formatUSDPrice(Object.values(tokens).reduce((total, token) => total + (token.usdValue || 0), 0))}
                 </span>
               </div>
               <button 
@@ -792,6 +805,14 @@ export const WalletPage: React.FC = () => {
           }}
           tokenId={selectedTokenForSend}
           onSuccess={handleSendSuccess}
+        />
+      )}
+      {showAddSubaccountModal && selectedTokenForSubaccount && (
+        <AddSubaccountModal
+          isOpen={showAddSubaccountModal}
+          onClose={handleCloseAddSubaccountModal}
+          tokenId={selectedTokenForSubaccount}
+          onSuccess={handleSubaccountAdded}
         />
       )}
     </div>

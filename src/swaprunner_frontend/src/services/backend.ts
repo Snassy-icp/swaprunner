@@ -89,6 +89,15 @@ class BackendService {
     const actor = await this.getActor();
     return await actor.remove_wallet_token(tokenId);
   }
+
+  async add_named_subaccount(args: {
+    token_id: string;
+    name: string;
+    subaccount: number[];
+  }): Promise<void> {
+    const actor = await this.getActor();
+    await actor.add_named_subaccount(args);
+  }
 }
 
 export const backendService = new BackendService(); 
