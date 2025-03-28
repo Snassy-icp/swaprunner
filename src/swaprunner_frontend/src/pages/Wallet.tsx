@@ -806,13 +806,13 @@ export const WalletPage: React.FC = () => {
                         </button>
                       </div>
                       <div className="token-metadata-row">
-                        <span className="metadata-label">Balance:</span>
+                        <span className="metadata-label">Main Balance:</span>
                         <div className="metadata-value">
-                          <span className="token-usd-value" title="Total USD value of your holdings">
+                          <span className="token-usd-value" title="Main account USD value">
                             {token.isLoadingUSDPrice ? (
                               <FiLoader className="spinner" />
                             ) : token.usdPrice !== null ? (
-                              `$${calculateTotalUSDValue(token).toFixed(2)}`
+                              `$${(Number(token.balance) * token.usdPrice).toFixed(2)}`
                             ) : (
                               '-'
                             )}
@@ -961,7 +961,7 @@ export const WalletPage: React.FC = () => {
                                         </button>
                                       </div>
                                       <div className="token-metadata-row">
-                                        <span className="metadata-label">Balance:</span>
+                                        <span className="metadata-label">Subaccount Balance:</span>
                                         <div className="metadata-value">
                                           {subaccountBalances[token.canisterId]?.[`${token.canisterId}-${subaccount.name}`]?.isLoading ? (
                                             <span>Loading...</span>
