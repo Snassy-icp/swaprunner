@@ -305,7 +305,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                 />
                 {parsedAccount?.original && (
                   <div className="send-modal-parsed-account">
-                    <small>Detected long account format. Resolved to:</small>
+                    <small>Detected extended address format. Resolved to:</small>
                     <div>Principal: {parsedAccount.principal.toString()}</div>
                     {parsedAccount.subaccount && (
                       <div>With subaccount: {toHexString(parsedAccount.subaccount.resolved)}</div>
@@ -378,7 +378,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                           }}
                           disabled={isSending}
                         >
-                          Convert to Long Account String
+                          Convert to Extended Address String
                         </button>
                       </div>
                   </div>
@@ -462,7 +462,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                   {parsedAccount?.original ? (
                     <div className="send-modal-confirm-account">
                       <div className="account-section">
-                        <div className="account-section-label">Long Account Format:</div>
+                        <div className="account-section-label">Extended Address Format:</div>
                         <div className="account-section-value">{parsedAccount.original}</div>
                       </div>
                       <div className="account-section">

@@ -995,7 +995,7 @@ export const WalletPage: React.FC = () => {
                                             onClick={() => navigator.clipboard.writeText(`0x${formatHex(Array.from(subaccount.subaccount))}`)}
                                             title="Copy hex format"
                                           >
-                                            <FiCopy /> Copy
+                                            <FiCopy />
                                           </button>
                                         </div>
                                         <code>0x{formatHex(Array.from(subaccount.subaccount))}</code>
@@ -1008,7 +1008,7 @@ export const WalletPage: React.FC = () => {
                                             onClick={() => navigator.clipboard.writeText(formatBytes(subaccount.subaccount))}
                                             title="Copy byte format"
                                           >
-                                            <FiCopy /> Copy
+                                            <FiCopy />
                                           </button>
                                         </div>
                                         <code>{formatBytes(subaccount.subaccount)}</code>
@@ -1021,14 +1021,14 @@ export const WalletPage: React.FC = () => {
                                             onClick={() => navigator.clipboard.writeText(formatPrincipal(subaccount.subaccount))}
                                             title="Copy principal format"
                                           >
-                                            <FiCopy /> Copy
+                                            <FiCopy />
                                           </button>
                                         </div>
                                         <code>{formatPrincipal(subaccount.subaccount)}</code>
                                       </div>
                                       <div className="subaccount-format">
                                         <div className="format-row-header">
-                                          <div className="format-label">Long Account:</div>
+                                          <div className="format-label">Extended Address:</div>
                                           <button 
                                             className="copy-button"
                                             onClick={() => navigator.clipboard.writeText(AccountParser.encodeLongAccount({
@@ -1039,9 +1039,9 @@ export const WalletPage: React.FC = () => {
                                                 resolved: new Uint8Array(subaccount.subaccount)
                                               }
                                             }))}
-                                            title="Copy long account format"
+                                            title="Copy axtended address format"
                                           >
-                                            <FiCopy /> Copy
+                                            <FiCopy />
                                           </button>
                                         </div>
                                         <code>{AccountParser.encodeLongAccount({
