@@ -361,12 +361,26 @@ export const WalletPage: React.FC = () => {
 
   // Add handler for send success
   const handleSendSuccess = () => {
-    // If we were sending from a subaccount, refresh its balance
-    if (selectedTokenForSend && selectedSubaccountForSend && selectedSubaccountName) {
+    if (selectedTokenForSend) {
       const token = tokens[selectedTokenForSend];
-      const subaccount = token.subaccounts.find(s => s.name === selectedSubaccountName);
-      if (subaccount) {
-        loadSubaccountBalance(token, subaccount);
+
+      // Refresh source subaccount balance if sending from a subaccount
+      if (selectedSubaccountForSend && selectedSubaccountName) {
+        const sourceSubaccount = token.subaccounts.find(s => s.name === selectedSubaccountName);
+        if (sourceSubaccount) {
+          loadSubaccountBalance(token, sourceSubaccount);
+        }
+      }
+
+      // In transfer mode, refresh target subaccount balance
+      if (isTransferMode) {
+        const targetSubaccount = token.subaccounts.find(s => 
+          !selectedSubaccountForSend || // Don't refresh if it's the same subaccount
+          !arraysEqual(s.subaccount, selectedSubaccountForSend)
+        );
+        if (targetSubaccount) {
+          loadSubaccountBalance(token, targetSubaccount);
+        }
       }
     }
 
@@ -1201,4 +1215,8 @@ export const WalletPage: React.FC = () => {
       )}
     </div>
   );
-}; 
+};
+
+function arraysEqual(a: number[], b: number[]): boolean {
+  return a.length === b.length && a.every((val, idx) => val === b[idx]);
+} 
