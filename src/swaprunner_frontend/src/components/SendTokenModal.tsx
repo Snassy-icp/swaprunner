@@ -26,6 +26,7 @@ interface SendTokenModalProps {
   tokenId: string;
   onSuccess: () => void;
   fromSubaccount?: number[];
+  fromSubaccountName?: string;
 }
 
 export const SendTokenModal: React.FC<SendTokenModalProps> = ({
@@ -34,6 +35,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
   tokenId,
   onSuccess,
   fromSubaccount,
+  fromSubaccountName,
 }) => {
   const [amount, setAmount] = useState('');
   const [recipient, setRecipient] = useState('');
@@ -273,7 +275,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
         <div className="send-modal-content">
           {fromSubaccount && (
             <div className="send-modal-source">
-              <div className="source-label">Sending from subaccount:</div>
+              <div className="source-label">Sending from {fromSubaccountName ? `subaccount "${fromSubaccountName}"` : 'subaccount'}:</div>
               <div className="subaccount-formats">
                 <div className="format-row">
                   <span className="format-label">Hex:</span>
