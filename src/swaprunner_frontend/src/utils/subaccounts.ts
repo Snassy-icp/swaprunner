@@ -3,13 +3,15 @@ import { Principal } from '@dfinity/principal';
 export type SubaccountType = 'hex' | 'bytes' | 'principal';
 
 export function isValidHexString(value: string): boolean {
-  return /^[0-9a-fA-F]{64}$/.test(value);
+  // Allow partial hex strings, just validate characters
+  return /^[0-9a-fA-F]*$/.test(value);
 }
 
 export function isValidByteArray(value: string): boolean {
   try {
     const bytes = value.split(',').map(b => parseInt(b.trim()));
-    return bytes.length === 32 && bytes.every(b => b >= 0 && b <= 255);
+    // Allow partial arrays, just check each byte is valid
+    return bytes.every(b => !isNaN(b) && b >= 0 && b <= 255);
   } catch {
     return false;
   }
@@ -25,11 +27,14 @@ export function isValidPrincipal(value: string): boolean {
 }
 
 export function hexToBytes(hex: string): number[] {
-  const bytes = [];
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes.push(parseInt(hex.substr(i, 2), 16));
+  // Pad hex string to 64 characters (32 bytes)
+  hex = hex.padEnd(64, '0');
+  
+  const bytes = new Uint8Array(32);
+  for (let i = 0; i < 64; i += 2) {
+    bytes[i/2] = parseInt(hex.slice(i, i + 2) || '00', 16);
   }
-  return bytes;
+  return Array.from(bytes);
 }
 
 export function bytesToHex(bytes: number[]): string {
@@ -47,7 +52,7 @@ export function validateSubaccountValue(type: SubaccountType, value: string): st
   switch (type) {
     case 'hex':
       if (!isValidHexString(value)) {
-        return 'Invalid hex string. Must be 64 characters long and contain only hex digits (0-9, a-f).';
+        return 'Invalid hex string. Must contain only hex digits (0-9, a-f).';
       }
       break;
     case 'bytes':
@@ -93,5 +98,29 @@ export function formatPrincipal(bytes: number[]): string {
     return principal.toText();
   } catch {
     return 'Invalid principal';
+  }
+}
+
+export function parseByteString(input: string): number[] {
+  try {
+    // Remove trailing comma(s) and any whitespace
+    input = input.trim().replace(/,+$/, '');
+    
+    // Handle empty string case
+    if (!input) {
+      return Array(32).fill(0);
+    }
+
+    const bytes = input.split(',').map(b => parseInt(b.trim()));
+    if (bytes.some(b => isNaN(b) || b < 0 || b > 255)) {
+      throw new Error('Invalid byte values');
+    }
+    
+    // Create 32-byte array and copy input bytes
+    const result = new Uint8Array(32);
+    result.set(bytes); // Remaining bytes will be 0 by default
+    return Array.from(result);
+  } catch (error) {
+    throw new Error('Failed to parse byte string');
   }
 } 
