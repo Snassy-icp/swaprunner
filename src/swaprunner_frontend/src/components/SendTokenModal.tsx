@@ -320,9 +320,9 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
 
           {!showConfirmation ? (
             <>
-              {isTransferMode ? (
+              {isTransferMode || isDepositMode ? (
                 <div className="send-modal-recipient">
-                  <label>Transfer to Subaccount</label>
+                  <label>{isTransferMode ? 'Transfer to Subaccount' : 'Deposit to Subaccount'}</label>
                   <select
                     value={recipient}
                     onChange={(e) => {
