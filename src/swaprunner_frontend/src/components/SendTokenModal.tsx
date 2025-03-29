@@ -310,7 +310,22 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                 <div className="send-modal-recipient">
                   <label>{isTransferMode ? 'Transfer to Subaccount' : 'Deposit to Subaccount'}</label>
                   <select
-                    value={recipient}
+                    value={(() => {
+                      // Find the subaccount name that matches the current recipient
+                      if (!recipient || !availableSubaccounts) return '';
+                      const userPrincipal = authService.getPrincipal();
+                      if (!userPrincipal) return '';
+                      
+                      // Parse the current recipient
+                      const parsed = AccountParser.parseAccount(recipient);
+                      if (!parsed?.subaccount?.resolved) return '';
+                      
+                      // Find matching subaccount
+                      const match = availableSubaccounts.find(s => 
+                        arraysEqual(Array.from(parsed.subaccount!.resolved), s.subaccount)
+                      );
+                      return match?.name || '';
+                    })()}
                     onChange={(e) => {
                       const selected = availableSubaccounts?.find(s => s.name === e.target.value);
                       if (selected) {
@@ -327,6 +342,8 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                           };
                           setRecipient(AccountParser.encodeLongAccount(account));
                         }
+                      } else {
+                        setRecipient('');
                       }
                     }}
                     className="send-modal-subaccount-select"
@@ -512,7 +529,23 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                 </div>
                 <div className="send-modal-detail-row">
                   <span>To Account:</span>
-                  {parsedAccount?.original ? (
+                  {isWithdrawMode ? (
+                    <span className="send-modal-principal">Main Account</span>
+                  ) : (isTransferMode || isDepositMode) && parsedAccount?.subaccount?.resolved ? (
+                    <div className="send-modal-confirm-account">
+                      {(() => {
+                        // Find the subaccount name that matches
+                        const match = availableSubaccounts?.find(s => 
+                          arraysEqual(Array.from(parsedAccount.subaccount!.resolved), s.subaccount)
+                        );
+                        return match?.name ? (
+                          <div className="account-section">
+                            <div className="account-section-value">Subaccount "{match.name}"</div>
+                          </div>
+                        ) : null;
+                      })()}
+                    </div>
+                  ) : parsedAccount?.original ? (
                     <div className="send-modal-confirm-account">
                       <div className="account-section">
                         <div className="account-section-label">Extended Address Format:</div>
