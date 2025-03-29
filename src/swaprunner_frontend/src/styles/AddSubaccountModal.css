@@ -266,11 +266,14 @@
 
 .advanced-content {
   margin-top: 16px;
+  margin-left: -16px;
+  margin-right: -16px;
   padding: 16px;
   background: #2A2E3A;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: 100%;
+  width: calc(100% + 32px);
+  box-sizing: border-box;
 } 
