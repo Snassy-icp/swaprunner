@@ -14,7 +14,7 @@ import '../styles/Wallet.css';
 import { AddSubaccountModal } from '../components/AddSubaccountModal';
 import '../styles/AddSubaccountModal.css';
 import { Principal } from '@dfinity/principal';
-import { formatHex, formatBytes, formatPrincipal } from '../utils/subaccounts';
+import { formatHex, formatBytes, formatPrincipal, formatText, formatNumber } from '../utils/subaccounts';
 import { dip20Service } from '../services/dip20_service';
 import { icrc1Service } from '../services/icrc1_service';
 import { AccountParser } from '../utils/account';
@@ -1119,6 +1119,36 @@ export const WalletPage: React.FC = () => {
                                         </div>
                                         {expandedFormats.has(`${token.canisterId}-${subaccount.name}-formats`) && (
                                           <div className="formats-content">
+                                            {formatText(subaccount.subaccount) && (
+                                              <div className="subaccount-format">
+                                                <div className="format-row-header">
+                                                  <div className="format-label">Text:</div>
+                                                  <button 
+                                                    className="copy-button"
+                                                    onClick={() => navigator.clipboard.writeText(formatText(subaccount.subaccount)!)}
+                                                    title="Copy text format"
+                                                  >
+                                                    <FiCopy />
+                                                  </button>
+                                                </div>
+                                                <code>{formatText(subaccount.subaccount)}</code>
+                                              </div>
+                                            )}
+                                            {formatNumber(subaccount.subaccount) && (
+                                              <div className="subaccount-format">
+                                                <div className="format-row-header">
+                                                  <div className="format-label">Number:</div>
+                                                  <button 
+                                                    className="copy-button"
+                                                    onClick={() => navigator.clipboard.writeText(formatNumber(subaccount.subaccount)!)}
+                                                    title="Copy number format"
+                                                  >
+                                                    <FiCopy />
+                                                  </button>
+                                                </div>
+                                                <code>{formatNumber(subaccount.subaccount)}</code>
+                                              </div>
+                                            )}
                                             <div className="subaccount-format">
                                               <div className="format-row-header">
                                                 <div className="format-label">Hex:</div>
