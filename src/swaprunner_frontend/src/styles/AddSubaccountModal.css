@@ -59,7 +59,7 @@
   width: 100%;
   padding: 12px;
   background: #2A2E3A;
-  border: 1px solid transparent;
+  border: 1px solid #363B47;
   border-radius: 8px;
   color: #fff;
   font-size: 14px;
@@ -85,9 +85,9 @@
 }
 
 .subaccount-preview {
-  background: #2A2E3A;
+  background: #1A1D26;
   border-radius: 8px;
-  padding: 12px;
+  padding: 16px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -110,7 +110,7 @@
   text-align: left;
   width: 100%;
   box-sizing: border-box;
-  background: #1A1D26;
+  background: #2A2E3A;
   padding: 8px;
   border-radius: 4px;
   margin-bottom: 8px;
@@ -266,14 +266,13 @@
 
 .advanced-content {
   margin-top: 16px;
-  margin-left: -16px;
-  margin-right: -16px;
   padding: 16px;
   background: #2A2E3A;
+  border: 1px solid #363B47;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: calc(100% + 32px);
+  width: 100%;
   box-sizing: border-box;
 } 
