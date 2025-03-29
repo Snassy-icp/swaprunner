@@ -190,7 +190,7 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resolvedSubaccount || !name.trim()) return;
+    if (!name.trim()) return;
 
     setIsSubmitting(true);
     setError(null);
@@ -206,8 +206,31 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
         return;
       }
 
+      let finalSubaccount = resolvedSubaccount;
+      
+      // If no subaccount is resolved (empty value), find first available number
+      if (!finalSubaccount) {
+        // Get all used numbers
+        const usedNumbers = new Set<number>();
+        existingSubaccounts.forEach(subaccount => {
+          const num = formatNumber(subaccount.subaccount);
+          if (num) {
+            usedNumbers.add(parseInt(num));
+          }
+        });
+
+        // Find first available number starting from 1
+        let nextNumber = 1;
+        while (usedNumbers.has(nextNumber)) {
+          nextNumber++;
+        }
+
+        // Convert to bytes
+        finalSubaccount = convertToBytes('number', nextNumber.toString());
+      }
+
       // Check for duplicate subaccount bytes
-      if (existingSubaccounts.some(s => arraysEqual(s.subaccount, resolvedSubaccount))) {
+      if (existingSubaccounts.some(s => arraysEqual(s.subaccount, finalSubaccount))) {
         setError('This subaccount already exists under a different name');
         setIsSubmitting(false);
         return;
@@ -216,7 +239,7 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
       await backendService.add_named_subaccount({
         token_id: Principal.fromText(tokenId),
         name: name.trim(),
-        subaccount: resolvedSubaccount,
+        subaccount: finalSubaccount,
       });
       onSuccess();
     } catch (err) {
@@ -368,7 +391,7 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
             <button
               type="submit"
               className="add-subaccount-submit"
-              disabled={!resolvedSubaccount || !name.trim() || isSubmitting}
+              disabled={!name.trim() || isSubmitting || (Boolean(value.trim()) && !resolvedSubaccount)}
             >
               {isSubmitting ? 'Adding...' : 'Add Subaccount'}
             </button>
