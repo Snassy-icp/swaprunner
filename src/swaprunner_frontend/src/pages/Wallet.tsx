@@ -443,17 +443,40 @@ export const WalletPage: React.FC = () => {
     if (!subaccountToRemove) return;
 
     try {
+      updateToken(subaccountToRemove.tokenId, { isLoadingSubaccounts: true });
+
+      // First check if there are funds to withdraw
+      const balance = await icrc1Service.getBalanceWithSubaccount(subaccountToRemove.tokenId, subaccountToRemove.subaccount);
+      const metadata = await tokenService.getMetadata(subaccountToRemove.tokenId);
+      
+      // If balance is greater than fee, withdraw first
+      if (balance.balance_e8s > (metadata.fee || BigInt(0))) {
+        const withdrawResult = await icrc1Service.transfer({
+          tokenId: subaccountToRemove.tokenId,
+          to: authService.getPrincipal()!.toString(),
+          amount_e8s: (balance.balance_e8s - metadata.fee).toString(),
+          from_subaccount: subaccountToRemove.subaccount
+        });
+
+        if (!withdrawResult.success) {
+          throw new Error(`Failed to withdraw funds: ${withdrawResult.error}`);
+        }
+      }
+
+      // Now remove the subaccount
       const actor = await backendService.getActor();
       await actor.remove_named_subaccount({
         token_id: Principal.fromText(subaccountToRemove.tokenId),
-        subaccount: subaccountToRemove.subaccount,
+        subaccount: subaccountToRemove.subaccount
       });
 
-      // Refresh the token's subaccounts
+      // Reload subaccounts and balance after removal
       await loadTokenSubaccounts(subaccountToRemove.tokenId);
-    } catch (err) {
-      console.error('Failed to remove subaccount:', err);
-    }
+      await loadTokenBalance(subaccountToRemove.tokenId);
+    } catch (error) {
+      console.error('Error removing subaccount:', error);
+      updateToken(subaccountToRemove.tokenId, { isLoadingSubaccounts: false });
+    }  
   };
 
   // Add handler for opening add subaccount modal
