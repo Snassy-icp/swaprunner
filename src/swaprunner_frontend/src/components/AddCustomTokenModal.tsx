@@ -72,7 +72,7 @@ export const AddCustomTokenModal: React.FC<AddCustomTokenModalProps> = ({
       console.log('[AddCustomTokenModal] Set loading state to false');
       
       console.log('[AddCustomTokenModal] Calling onSuccess with canisterId and response:', canisterId, result.ok);
-      onSuccess(canisterId, result.ok.metadata, result.ok.logo);
+      onSuccess(canisterId, result.ok.metadata, result.ok.logo ?? null);
       console.log('[AddCustomTokenModal] onSuccess callback completed');
       return;
 
