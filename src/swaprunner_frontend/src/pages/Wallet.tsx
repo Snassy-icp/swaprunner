@@ -18,6 +18,7 @@ import { formatHex, formatBytes, formatPrincipal, formatText, formatNumber } fro
 import { dip20Service } from '../services/dip20_service';
 import { icrc1Service } from '../services/icrc1_service';
 import { AccountParser } from '../utils/account';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 
 const icpSwapExecutionService = new ICPSwapExecutionService();
 
@@ -71,6 +72,8 @@ export const WalletPage: React.FC = () => {
   const [isWithdrawMode, setIsWithdrawMode] = useState(false);
   const [isTransferMode, setIsTransferMode] = useState(false);
   const [isDepositMode, setIsDepositMode] = useState(false);
+  const [showRemoveConfirmation, setShowRemoveConfirmation] = useState(false);
+  const [subaccountToRemove, setSubaccountToRemove] = useState<{ tokenId: string; subaccount: number[] } | null>(null);
 
   useEffect(() => {
     // Check authentication status on mount
@@ -430,46 +433,26 @@ export const WalletPage: React.FC = () => {
     setShowSendModal(true);
   };
 
-  // Add handler for removing subaccount
+  // Update the handleRemoveSubaccount function
   const handleRemoveSubaccount = async (tokenId: string, subaccount: number[]) => {
-    if (!confirm('Are you sure you want to remove this subaccount? Any remaining funds will be withdrawn to your main account.')) {
-      return;
-    }
+    setSubaccountToRemove({ tokenId, subaccount });
+    setShowRemoveConfirmation(true);
+  };
+
+  const confirmRemoveSubaccount = async () => {
+    if (!subaccountToRemove) return;
 
     try {
-      updateToken(tokenId, { isLoadingSubaccounts: true });
-
-      // First check if there are funds to withdraw
-      const balance = await icrc1Service.getBalanceWithSubaccount(tokenId, subaccount);
-      const metadata = await tokenService.getMetadata(tokenId);
-      
-      // If balance is greater than fee, withdraw first
-      if (balance.balance_e8s > (metadata.fee || BigInt(0))) {
-        const withdrawResult = await icrc1Service.transfer({
-          tokenId,
-          to: authService.getPrincipal()!.toString(),
-          amount_e8s: (balance.balance_e8s - metadata.fee).toString(),
-          from_subaccount: subaccount
-        });
-
-        if (!withdrawResult.success) {
-          throw new Error(`Failed to withdraw funds: ${withdrawResult.error}`);
-        }
-      }
-
-      // Now remove the subaccount
       const actor = await backendService.getActor();
       await actor.remove_named_subaccount({
-        token_id: Principal.fromText(tokenId),
-        subaccount: subaccount
+        token_id: Principal.fromText(subaccountToRemove.tokenId),
+        subaccount: subaccountToRemove.subaccount,
       });
 
-      // Reload subaccounts and balance after removal
-      await loadTokenSubaccounts(tokenId);
-      await loadTokenBalance(tokenId);
-    } catch (error) {
-      console.error('Error removing subaccount:', error);
-      updateToken(tokenId, { isLoadingSubaccounts: false });
+      // Refresh the token's subaccounts
+      await loadTokenSubaccounts(subaccountToRemove.tokenId);
+    } catch (err) {
+      console.error('Failed to remove subaccount:', err);
     }
   };
 
@@ -962,7 +945,7 @@ export const WalletPage: React.FC = () => {
                       {/* Subaccounts section */}
                       <div className="token-subaccounts-section">
                         <div className="subaccounts-header">
-                          <h4>Named Subaccounts</h4>
+                          <h4>Subaccounts</h4>
                           <button 
                             className="add-subaccount-button"
                             onClick={() => handleOpenAddSubaccountModal(token.canisterId)}
@@ -976,7 +959,7 @@ export const WalletPage: React.FC = () => {
                           </div>
                         ) : token.subaccounts.length === 0 ? (
                           <div className="no-subaccounts">
-                            No named subaccounts yet
+                            No subaccounts added yet
                           </div>
                         ) : (
                           <div className="subaccounts-list">
@@ -1276,6 +1259,15 @@ export const WalletPage: React.FC = () => {
           onSuccess={handleSubaccountAdded}
         />
       )}
+      <ConfirmationModal
+        isOpen={showRemoveConfirmation}
+        onClose={() => setShowRemoveConfirmation(false)}
+        onConfirm={confirmRemoveSubaccount}
+        title="Remove Subaccount"
+        message="Are you sure you want to remove this subaccount? This action cannot be undone. Any remaining funds will be automatically withdrawn to the main account."
+        confirmText="Remove"
+        isDanger={true}
+      />
     </div>
   );
 };
