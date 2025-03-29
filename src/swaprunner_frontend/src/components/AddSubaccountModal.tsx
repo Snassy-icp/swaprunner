@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
 import { backendService } from '../services/backend';
-import { SubaccountType, validateSubaccountValue, convertToBytes, formatBytes, formatHex, formatPrincipal } from '../utils/subaccounts';
+import { SubaccountType, validateSubaccountValue, convertToBytes, formatBytes, formatHex, formatPrincipal, formatText, formatNumber } from '../utils/subaccounts';
 import '../styles/AddSubaccountModal.css';
 import { Principal } from '@dfinity/principal';
 
@@ -214,6 +214,8 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
                   setIndexValue('');
                 }}
               >
+                <option value="text">Text</option>
+                <option value="number">Number</option>
                 <option value="hex">Hex String</option>
                 <option value="bytes">Byte Array</option>
                 <option value="principal">Principal ID</option>
@@ -233,7 +235,11 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
                     ? 'Hex string (e.g., 0000...)'
                     : type === 'bytes'
                     ? 'Comma-separated bytes (e.g., 0, 0, ...)'
-                    : 'Principal ID'
+                    : type === 'text'
+                    ? 'Enter text (max 32 characters)'
+                    : type === 'number'
+                    ? 'Enter a positive number'
+                    : 'Enter Principal ID'
                 }
                 required
               />
@@ -278,6 +284,12 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
                 <code>Hex: {formatHex(resolvedSubaccount)}</code>
                 <code>Bytes: {formatBytes(resolvedSubaccount)}</code>
                 <code>Principal: {formatPrincipal(resolvedSubaccount)}</code>
+                {formatText(resolvedSubaccount) && (
+                  <code>Text: {formatText(resolvedSubaccount)}</code>
+                )}
+                {formatNumber(resolvedSubaccount) && (
+                  <code>Number: {formatNumber(resolvedSubaccount)}</code>
+                )}
               </div>
             )}
 
