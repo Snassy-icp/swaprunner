@@ -1069,6 +1069,41 @@ export const WalletPage: React.FC = () => {
                                         <span className="metadata-label">Created:</span>
                                         <span className="metadata-value">{new Date(Number(subaccount.created_at / BigInt(1000000))).toLocaleString()}</span>
                                       </div>
+                                      <div className="format-row-header">
+                                        <div className="format-label">Extended Address:</div>
+                                        <button 
+                                          className="copy-button"
+                                          onClick={() => {
+                                            const userPrincipal = authService.getPrincipal();
+                                            if (!userPrincipal) return;
+                                            navigator.clipboard.writeText(AccountParser.encodeLongAccount({
+                                              principal: userPrincipal,
+                                              subaccount: {
+                                                type: 'bytes',
+                                                value: formatBytes(subaccount.subaccount),
+                                                resolved: new Uint8Array(subaccount.subaccount)
+                                              }
+                                            }));
+                                          }}
+                                          title="Copy extended address format"
+                                        >
+                                          <FiCopy />
+                                        </button>
+                                      </div>                     
+                                      <div className="subaccount-format">
+                                        <code>{(() => {
+                                          const userPrincipal = authService.getPrincipal();
+                                          if (!userPrincipal) return 'Not authenticated';
+                                          return AccountParser.encodeLongAccount({
+                                            principal: userPrincipal,
+                                            subaccount: {
+                                              type: 'bytes',
+                                              value: formatBytes(subaccount.subaccount),
+                                              resolved: new Uint8Array(subaccount.subaccount)
+                                            }
+                                          });
+                                        })()}</code>
+                                      </div>
                                       <div className="formats-section">
                                         <div 
                                           className="formats-header"
@@ -1122,41 +1157,6 @@ export const WalletPage: React.FC = () => {
                                                 </button>
                                               </div>
                                               <code>{formatPrincipal(subaccount.subaccount)}</code>
-                                            </div>
-                                            <div className="subaccount-format">
-                                              <div className="format-row-header">
-                                                <div className="format-label">Extended Address:</div>
-                                                <button 
-                                                  className="copy-button"
-                                                  onClick={() => {
-                                                    const userPrincipal = authService.getPrincipal();
-                                                    if (!userPrincipal) return;
-                                                    navigator.clipboard.writeText(AccountParser.encodeLongAccount({
-                                                      principal: userPrincipal,
-                                                      subaccount: {
-                                                        type: 'bytes',
-                                                        value: formatBytes(subaccount.subaccount),
-                                                        resolved: new Uint8Array(subaccount.subaccount)
-                                                      }
-                                                    }));
-                                                  }}
-                                                  title="Copy extended address format"
-                                                >
-                                                  <FiCopy />
-                                                </button>
-                                              </div>
-                                              <code>{(() => {
-                                                const userPrincipal = authService.getPrincipal();
-                                                if (!userPrincipal) return 'Not authenticated';
-                                                return AccountParser.encodeLongAccount({
-                                                  principal: userPrincipal,
-                                                  subaccount: {
-                                                    type: 'bytes',
-                                                    value: formatBytes(subaccount.subaccount),
-                                                    resolved: new Uint8Array(subaccount.subaccount)
-                                                  }
-                                                });
-                                              })()}</code>
                                             </div>
                                           </div>
                                         )}
