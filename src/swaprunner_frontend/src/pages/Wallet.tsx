@@ -870,13 +870,15 @@ export const WalletPage: React.FC = () => {
                           <span className="action-symbol"><FiSend /></span>
                           <span className="action-text">Send</span>
                         </button>
-                        <button className="expanded-action-button" onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenSendModal(token.canisterId, true);
-                        }}>
-                          <span className="action-symbol"><FiLogIn /></span>
-                          <span className="action-text">Deposit</span>
-                        </button>
+                        {token.subaccounts.length > 0 && (
+                          <button className="expanded-action-button" onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenSendModal(token.canisterId, true);
+                          }}>
+                            <span className="action-symbol"><FiLogIn /></span>
+                            <span className="action-text">Deposit</span>
+                          </button>
+                        )}
                         <button className="expanded-action-button" onClick={(e) => {
                           e.stopPropagation();
                           handleSwap(token.canisterId);
@@ -1028,17 +1030,19 @@ export const WalletPage: React.FC = () => {
                                           <FiDownload />
                                           Withdraw
                                         </button>
-                                        <button
-                                          className="subaccount-action-button transfer"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleOpenSendModalWithSubaccount(token.canisterId, subaccount.subaccount, subaccount.name, false, true);
-                                          }}
-                                          title="Transfer to another subaccount"
-                                        >
-                                          <FiRepeat />
-                                          Transfer
-                                        </button>
+                                        {token.subaccounts.length > 1 && (
+                                          <button
+                                            className="subaccount-action-button transfer"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleOpenSendModalWithSubaccount(token.canisterId, subaccount.subaccount, subaccount.name, false, true);
+                                            }}
+                                            title="Transfer to another subaccount"
+                                          >
+                                            <FiRepeat />
+                                            Transfer
+                                          </button>
+                                        )}
                                       </div>
                                       <div className="token-metadata-row">
                                         <span className="metadata-label">Subaccount Balance:</span>
