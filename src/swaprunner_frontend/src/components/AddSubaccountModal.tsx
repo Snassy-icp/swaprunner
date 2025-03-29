@@ -21,7 +21,7 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
   onSuccess,
 }) => {
   const [name, setName] = useState('');
-  const [type, setType] = useState<SubaccountType>('hex');
+  const [type, setType] = useState<SubaccountType>('number');
   const [value, setValue] = useState('');
   const [indexType, setIndexType] = useState<IndexType>('number');
   const [indexValue, setIndexValue] = useState('');
@@ -39,6 +39,46 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
       setResolvedSubaccount(null);
     }
   }, [isOpen]);
+
+  // Find first available number when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const findFirstAvailableNumber = async () => {
+        try {
+          const existingSubaccounts = await backendService.get_named_subaccounts(tokenId);
+          
+          // Get all used numbers
+          const usedNumbers = new Set<number>();
+          existingSubaccounts.forEach(subaccount => {
+            const num = formatNumber(subaccount.subaccount);
+            if (num) {
+              usedNumbers.add(parseInt(num));
+            }
+          });
+
+          // Find first available number starting from 1
+          let nextNumber = 1;
+          while (usedNumbers.has(nextNumber)) {
+            nextNumber++;
+          }
+
+          // Set the value
+          setValue(nextNumber.toString());
+        } catch (error) {
+          console.error('Error finding first available number:', error);
+          setValue('1'); // Default to 1 if error
+        }
+      };
+
+      setName('');
+      setType('number');
+      setIndexValue('');
+      setError(null);
+      setIsSubmitting(false);
+      setResolvedSubaccount(null);
+      findFirstAvailableNumber();
+    }
+  }, [isOpen, tokenId]);
 
   const parseIndex = (type: IndexType, value: string): number[] | null => {
     try {
@@ -210,12 +250,12 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
                 value={type}
                 onChange={(e) => {
                   setType(e.target.value as SubaccountType);
-                  setValue('');
+                  setValue(e.target.value === 'number' ? value : '');
                   setIndexValue('');
                 }}
               >
-                <option value="text">Text</option>
                 <option value="number">Number</option>
+                <option value="text">Text</option>
                 <option value="hex">Hex String</option>
                 <option value="bytes">Byte Array</option>
                 <option value="principal">Principal ID</option>
