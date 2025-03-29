@@ -530,3 +530,312 @@
   display: inline;
   white-space: nowrap;
 }
+
+/* Subaccounts section */
+.token-subaccounts-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.subaccounts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.subaccounts-header h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.add-subaccount-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.add-subaccount-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.subaccounts-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+}
+
+.no-subaccounts {
+  color: var(--text-secondary);
+  font-size: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.subaccounts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.subaccount-item {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  overflow: hidden;
+}
+
+.subaccount-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.subaccount-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.subaccount-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.subaccount-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.subaccount-name {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.token-balance-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.balance-amount {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Roboto Mono', monospace;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.token-expand-button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-left: 8px;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.subaccount-header:hover .token-expand-button {
+  opacity: 1;
+}
+
+.subaccount-details {
+  padding: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.formats-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.formats-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.formats-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.formats-content {
+  margin-top: 12px;
+}
+
+.subaccount-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-wrap: wrap;
+}
+
+.subaccount-action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  min-width: fit-content;
+}
+
+.subaccount-action-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.subaccount-action-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.subaccount-action-button.send:hover {
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.subaccount-action-button.transfer:hover {
+  color: #9333ea;
+  border-color: rgba(147, 51, 234, 0.3);
+  background: rgba(147, 51, 234, 0.1);
+}
+
+.subaccount-action-button.withdraw:hover {
+  color: #34C759;
+  border-color: rgba(52, 199, 89, 0.3);
+  background: rgba(52, 199, 89, 0.1);
+}
+
+.subaccount-action-button.remove:hover {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.subaccount-format {
+  margin-top: 12px;
+}
+
+.subaccount-format:first-child {
+  margin-top: 0;
+}
+
+.format-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.subaccount-format code {
+  display: block;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+  word-break: break-all;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.format-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.copy-button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.copy-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.remove-subaccount-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.remove-subaccount-section .subaccount-action-button.remove {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+}
+
+.remove-subaccount-section .subaccount-action-button.remove:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
