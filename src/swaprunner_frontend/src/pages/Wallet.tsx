@@ -365,23 +365,42 @@ export const WalletPage: React.FC = () => {
     if (selectedTokenForSend) {
       const token = tokens[selectedTokenForSend];
 
-      // Refresh source subaccount balance if sending from a subaccount
-      if (selectedSubaccountForSend && selectedSubaccountName) {
-        const sourceSubaccount = token.subaccounts.find(s => s.name === selectedSubaccountName);
-        if (sourceSubaccount) {
-          loadSubaccountBalance(token, sourceSubaccount);
+      if (isWithdrawMode) {
+        // Refresh main account and source subaccount
+        loadTokenBalance(selectedTokenForSend);
+        if (selectedSubaccountForSend && selectedSubaccountName) {
+          const sourceSubaccount = token.subaccounts.find(s => s.name === selectedSubaccountName);
+          if (sourceSubaccount) {
+            loadSubaccountBalance(token, sourceSubaccount);
+          }
+        }
+      } 
+      else if (isTransferMode) {
+        // Refresh source and target subaccounts only
+        if (selectedSubaccountForSend && selectedSubaccountName) {
+          // Refresh source subaccount
+          const sourceSubaccount = token.subaccounts.find(s => s.name === selectedSubaccountName);
+          if (sourceSubaccount) {
+            loadSubaccountBalance(token, sourceSubaccount);
+          }
+          // Refresh target subaccount (recipient)
+          token.subaccounts.forEach(subaccount => {
+            if (!arraysEqual(subaccount.subaccount, selectedSubaccountForSend)) {
+              loadSubaccountBalance(token, subaccount);
+            }
+          });
         }
       }
-
-      // In transfer or deposit mode, refresh target subaccount balance
-      if (isTransferMode || isDepositMode) {
-        // Get the recipient subaccount from the modal's availableSubaccounts prop
+      else if (isDepositMode) {
+        // Refresh main account and target subaccount
+        loadTokenBalance(selectedTokenForSend);
         token.subaccounts.forEach(subaccount => {
-          // Skip the source subaccount in transfer mode
-          if (!isTransferMode || !selectedSubaccountForSend || !arraysEqual(subaccount.subaccount, selectedSubaccountForSend)) {
-            loadSubaccountBalance(token, subaccount);
-          }
+          loadSubaccountBalance(token, subaccount);
         });
+      }
+      else {
+        // Regular send: refresh main account only
+        loadTokenBalance(selectedTokenForSend);
       }
     }
 
@@ -392,8 +411,6 @@ export const WalletPage: React.FC = () => {
     setIsWithdrawMode(false);
     setIsTransferMode(false);
     setIsDepositMode(false);
-    // Reload wallet tokens after successful send
-    loadWalletTokens();
   };
 
   // Add handler for opening send modal
