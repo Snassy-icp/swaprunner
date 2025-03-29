@@ -373,15 +373,15 @@ export const WalletPage: React.FC = () => {
         }
       }
 
-      // In transfer mode, refresh target subaccount balance
-      if (isTransferMode) {
-        const targetSubaccount = token.subaccounts.find(s => 
-          !selectedSubaccountForSend || // Don't refresh if it's the same subaccount
-          !arraysEqual(s.subaccount, selectedSubaccountForSend)
-        );
-        if (targetSubaccount) {
-          loadSubaccountBalance(token, targetSubaccount);
-        }
+      // In transfer or deposit mode, refresh target subaccount balance
+      if (isTransferMode || isDepositMode) {
+        // Get the recipient subaccount from the modal's availableSubaccounts prop
+        token.subaccounts.forEach(subaccount => {
+          // Skip the source subaccount in transfer mode
+          if (!isTransferMode || !selectedSubaccountForSend || !arraysEqual(subaccount.subaccount, selectedSubaccountForSend)) {
+            loadSubaccountBalance(token, subaccount);
+          }
+        });
       }
     }
 
