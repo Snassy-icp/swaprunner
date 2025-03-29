@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiX } from 'react-icons/fi';
+import { FiX, FiChevronDown } from 'react-icons/fi';
 import { backendService } from '../services/backend';
 import { SubaccountType, validateSubaccountValue, convertToBytes, formatBytes, formatHex, formatPrincipal, formatText, formatNumber } from '../utils/subaccounts';
 import '../styles/AddSubaccountModal.css';
@@ -28,6 +28,7 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resolvedSubaccount, setResolvedSubaccount] = useState<number[] | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -37,6 +38,7 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
       setError(null);
       setIsSubmitting(false);
       setResolvedSubaccount(null);
+      setShowAdvanced(false);
     }
   }, [isOpen]);
 
@@ -76,6 +78,7 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
       setError(null);
       setIsSubmitting(false);
       setResolvedSubaccount(null);
+      setShowAdvanced(false);
       findFirstAvailableNumber();
     }
   }, [isOpen, tokenId]);
@@ -242,96 +245,116 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="subaccount-type">Type</label>
-              <select
-                id="subaccount-type"
-                className="subaccount-type-select"
-                value={type}
-                onChange={(e) => {
-                  setType(e.target.value as SubaccountType);
-                  setValue(e.target.value === 'number' ? value : '');
-                  setIndexValue('');
-                }}
+            <div className="advanced-section">
+              <button
+                type="button"
+                className="advanced-toggle"
+                onClick={() => setShowAdvanced(!showAdvanced)}
               >
-                <option value="number">Number</option>
-                <option value="text">Text</option>
-                <option value="hex">Hex String</option>
-                <option value="bytes">Byte Array</option>
-                <option value="principal">Principal ID</option>
-              </select>
-            </div>
+                <FiChevronDown 
+                  style={{ 
+                    transform: showAdvanced ? 'rotate(-180deg)' : 'none',
+                    transition: 'transform 0.2s ease'
+                  }} 
+                />
+                Advanced Options
+              </button>
+              
+              {showAdvanced && (
+                <div className="advanced-content">
+                  <div className="form-group">
+                    <label htmlFor="subaccount-type">Type</label>
+                    <select
+                      id="subaccount-type"
+                      className="subaccount-type-select"
+                      value={type}
+                      onChange={(e) => {
+                        setType(e.target.value as SubaccountType);
+                        setValue(e.target.value === 'number' ? value : '');
+                        setIndexValue('');
+                      }}
+                    >
+                      <option value="number">Number</option>
+                      <option value="text">Text</option>
+                      <option value="hex">Hex String</option>
+                      <option value="bytes">Byte Array</option>
+                      <option value="principal">Principal ID</option>
+                    </select>
+                  </div>
 
-            <div className="form-group">
-              <label htmlFor="subaccount-value">Value</label>
-              <input
-                id="subaccount-value"
-                type="text"
-                className="subaccount-value-input"
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                placeholder={
-                  type === 'hex'
-                    ? 'Hex string (e.g., 0000...)'
-                    : type === 'bytes'
-                    ? 'Comma-separated bytes (e.g., 0, 0, ...)'
-                    : type === 'text'
-                    ? 'Enter text (max 32 characters)'
-                    : type === 'number'
-                    ? 'Enter a positive number'
-                    : 'Enter Principal ID'
-                }
-                required
-              />
-            </div>
+                  <div className="form-group">
+                    <label htmlFor="subaccount-value">Value</label>
+                    <input
+                      id="subaccount-value"
+                      type="text"
+                      className="subaccount-value-input"
+                      value={value}
+                      onChange={(e) => setValue(e.target.value)}
+                      placeholder={
+                        type === 'hex'
+                          ? 'Hex string (e.g., 0000...)'
+                          : type === 'bytes'
+                          ? 'Comma-separated bytes (e.g., 0, 0, ...)'
+                          : type === 'text'
+                          ? 'Enter text (max 32 characters)'
+                          : type === 'number'
+                          ? 'Enter a positive number'
+                          : 'Enter Principal ID'
+                      }
+                      required
+                    />
+                  </div>
 
-            {type === 'principal' && (
-              <div className="form-group principal-index">
-                <label>Index (Optional)</label>
-                <div className="index-inputs">
-                  <select
-                    className="index-type-select"
-                    value={indexType}
-                    onChange={(e) => {
-                      setIndexType(e.target.value as IndexType);
-                      setIndexValue('');
-                    }}
-                  >
-                    <option value="number">Number</option>
-                    <option value="hex">Hex</option>
-                    <option value="bytes">Bytes</option>
-                  </select>
-                  <input
-                    type="text"
-                    className="index-value-input"
-                    value={indexValue}
-                    onChange={(e) => setIndexValue(e.target.value)}
-                    placeholder={
-                      indexType === 'number'
-                        ? '0-16777215'
-                        : indexType === 'hex'
-                        ? '0x000000'
-                        : '0, 0, 0'
-                    }
-                  />
+                  {type === 'principal' && (
+                    <div className="form-group principal-index">
+                      <label>Index (Optional)</label>
+                      <div className="index-inputs">
+                        <select
+                          className="index-type-select"
+                          value={indexType}
+                          onChange={(e) => {
+                            setIndexType(e.target.value as IndexType);
+                            setIndexValue('');
+                          }}
+                        >
+                          <option value="number">Number</option>
+                          <option value="hex">Hex</option>
+                          <option value="bytes">Bytes</option>
+                        </select>
+                        <input
+                          type="text"
+                          className="index-value-input"
+                          value={indexValue}
+                          onChange={(e) => setIndexValue(e.target.value)}
+                          placeholder={
+                            indexType === 'number'
+                              ? '0-16777215'
+                              : indexType === 'hex'
+                              ? '0x000000'
+                              : '0, 0, 0'
+                          }
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {resolvedSubaccount && (
+                    <div className="subaccount-preview">
+                      <label>Preview</label>
+                      {formatText(resolvedSubaccount) && (
+                        <code>Text: {formatText(resolvedSubaccount)}</code>
+                      )}
+                      {formatNumber(resolvedSubaccount) && (
+                        <code>Number: {formatNumber(resolvedSubaccount)}</code>
+                      )}
+                      <code>Hex: {formatHex(resolvedSubaccount)}</code>
+                      <code>Bytes: {formatBytes(resolvedSubaccount)}</code>
+                      <code>Principal: {formatPrincipal(resolvedSubaccount)}</code>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-
-            {resolvedSubaccount && (
-              <div className="subaccount-preview">
-                <label>Preview</label>
-                {formatText(resolvedSubaccount) && (
-                  <code>Text: {formatText(resolvedSubaccount)}</code>
-                )}
-                {formatNumber(resolvedSubaccount) && (
-                  <code>Number: {formatNumber(resolvedSubaccount)}</code>
-                )}
-                <code>Hex: {formatHex(resolvedSubaccount)}</code>
-                <code>Bytes: {formatBytes(resolvedSubaccount)}</code>
-                <code>Principal: {formatPrincipal(resolvedSubaccount)}</code>
-              </div>
-            )}
+              )}
+            </div>
 
             {error && <div className="add-subaccount-error">{error}</div>}
 

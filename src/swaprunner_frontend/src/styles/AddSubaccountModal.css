@@ -227,4 +227,39 @@
 .index-value-input:focus {
   outline: none;
   border-color: #3b82f6;
+}
+
+.advanced-section {
+  margin-top: 16px;
+  border-top: 1px solid #363B47;
+  padding-top: 16px;
+}
+
+.advanced-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #8F96A1;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px;
+  width: 100%;
+  text-align: left;
+  transition: color 0.2s ease;
+}
+
+.advanced-toggle:hover {
+  color: #fff;
+}
+
+.advanced-content {
+  margin-top: 16px;
+  padding: 16px;
+  background: #2A2E3A;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 } 
