@@ -299,21 +299,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
           {fromSubaccount && (
             <div className="send-modal-source">
               <div className="source-label">
-                {isTransferMode ? 'Transferring' : isWithdrawMode ? 'Withdrawing' : 'Sending'} from {fromSubaccountName ? `subaccount "${fromSubaccountName}"` : 'subaccount'}:
-              </div>
-              <div className="subaccount-formats">
-                <div className="format-row">
-                  <span className="format-label">Hex:</span>
-                  <code className="source-subaccount">0x{formatHex(Array.from(fromSubaccount))}</code>
-                </div>
-                <div className="format-row">
-                  <span className="format-label">Bytes:</span>
-                  <code className="source-subaccount">{formatBytes(fromSubaccount)}</code>
-                </div>
-                <div className="format-row">
-                  <span className="format-label">Principal:</span>
-                  <code className="source-subaccount">{formatPrincipal(fromSubaccount)}</code>
-                </div>
+                {isTransferMode ? 'Transferring' : isWithdrawMode ? 'Withdrawing' : 'Sending'} from {fromSubaccountName ? `subaccount "${fromSubaccountName}"` : 'subaccount'}
               </div>
             </div>
           )}
