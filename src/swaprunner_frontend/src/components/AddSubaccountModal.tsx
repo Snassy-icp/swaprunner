@@ -281,13 +281,13 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
                 className="advanced-toggle"
                 onClick={() => setShowAdvanced(!showAdvanced)}
               >
+                <span>Advanced Options</span>
                 <FiChevronDown 
                   style={{ 
                     transform: showAdvanced ? 'rotate(-180deg)' : 'none',
                     transition: 'transform 0.2s ease'
                   }} 
                 />
-                Advanced Options
               </button>
               
               {showAdvanced && (
