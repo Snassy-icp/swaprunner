@@ -160,8 +160,15 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
         setResolvedSubaccount(Array.from(fullBytes));
         setError(null);
       } else {
+        // Don't show validation errors if the value is empty
+        if (!value.trim()) {
+          setResolvedSubaccount(null);
+          setError(null);
+          return;
+        }
+
         const validationError = validateSubaccountValue(type, value);
-        if (!validationError && value) {
+        if (!validationError) {
           const bytes = convertToBytes(type, value);
           setResolvedSubaccount(bytes);
           setError(null);

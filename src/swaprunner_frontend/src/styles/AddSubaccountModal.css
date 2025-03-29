@@ -238,7 +238,7 @@
 .advanced-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
   background: none;
   border: none;
   color: #8F96A1;
@@ -252,6 +252,10 @@
 
 .advanced-toggle:hover {
   color: #fff;
+}
+
+.advanced-toggle svg {
+  margin-left: auto;
 }
 
 .advanced-content {
