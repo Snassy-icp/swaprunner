@@ -141,6 +141,14 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
     setError(null);
 
     try {
+      // First check if a subaccount with this name already exists
+      const existingSubaccounts = await backendService.get_named_subaccounts(tokenId);
+      if (existingSubaccounts.some(s => s.name.toLowerCase() === name.trim().toLowerCase())) {
+        setError('A subaccount with this name already exists');
+        setIsSubmitting(false);
+        return;
+      }
+
       await backendService.add_named_subaccount({
         token_id: Principal.fromText(tokenId),
         name: name.trim(),
