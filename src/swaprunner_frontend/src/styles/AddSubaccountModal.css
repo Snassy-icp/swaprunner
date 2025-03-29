@@ -7,6 +7,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: 24px;
+  box-sizing: border-box;
 }
 
 .add-subaccount-header {
@@ -28,6 +29,7 @@
   flex-direction: column;
   gap: 20px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .add-subaccount-form {
@@ -35,6 +37,7 @@
   flex-direction: column;
   gap: 16px;
   width: 100%;
+  max-width: 420px;
 }
 
 .form-group {
@@ -188,10 +191,11 @@
   display: flex;
   gap: 8px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .index-type-select {
-  width: 120px;
+  flex: 0 0 120px;
   padding: 12px;
   background: #2A2E3A;
   border: 1px solid transparent;
@@ -205,6 +209,7 @@
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 40px;
+  box-sizing: border-box;
 }
 
 .index-value-input {

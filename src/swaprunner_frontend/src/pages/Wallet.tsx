@@ -1018,17 +1018,6 @@ export const WalletPage: React.FC = () => {
                                           Send
                                         </button>
                                         <button
-                                          className="subaccount-action-button transfer"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleOpenSendModalWithSubaccount(token.canisterId, subaccount.subaccount, subaccount.name, false, true);
-                                          }}
-                                          title="Transfer to another subaccount"
-                                        >
-                                          <FiRepeat />
-                                          Transfer
-                                        </button>
-                                        <button
                                           className="subaccount-action-button withdraw"
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -1038,6 +1027,17 @@ export const WalletPage: React.FC = () => {
                                         >
                                           <FiDownload />
                                           Withdraw
+                                        </button>
+                                        <button
+                                          className="subaccount-action-button transfer"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenSendModalWithSubaccount(token.canisterId, subaccount.subaccount, subaccount.name, false, true);
+                                          }}
+                                          title="Transfer to another subaccount"
+                                        >
+                                          <FiRepeat />
+                                          Transfer
                                         </button>
                                       </div>
                                       <div className="token-metadata-row">
