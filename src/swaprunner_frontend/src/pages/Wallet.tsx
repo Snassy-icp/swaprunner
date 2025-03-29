@@ -70,6 +70,7 @@ export const WalletPage: React.FC = () => {
   const [hideEmptyTokens, setHideEmptyTokens] = useState(false);
   const [isWithdrawMode, setIsWithdrawMode] = useState(false);
   const [isTransferMode, setIsTransferMode] = useState(false);
+  const [isDepositMode, setIsDepositMode] = useState(false);
 
   useEffect(() => {
     // Check authentication status on mount
@@ -390,14 +391,16 @@ export const WalletPage: React.FC = () => {
     setSelectedSubaccountName(undefined);
     setIsWithdrawMode(false);
     setIsTransferMode(false);
+    setIsDepositMode(false);
     // Reload wallet tokens after successful send
     loadWalletTokens();
   };
 
   // Add handler for opening send modal
-  const handleOpenSendModal = (tokenId: string) => {
+  const handleOpenSendModal = (tokenId: string, deposit: boolean = false) => {
     setSelectedTokenForSend(tokenId);
     setShowSendModal(true);
+    setIsDepositMode(deposit);
   };
 
   // Update handler for opening send modal with subaccount
@@ -864,7 +867,7 @@ export const WalletPage: React.FC = () => {
                           e.stopPropagation();
                           handleOpenSendModal(token.canisterId);
                         }}>
-                          <span className="action-symbol">⤤</span>
+                          <span className="action-symbol"><FiSend /></span>
                           <span className="action-text">Send</span>
                         </button>
                         <button className="expanded-action-button" onClick={(e) => {
@@ -1202,6 +1205,7 @@ export const WalletPage: React.FC = () => {
             setSelectedSubaccountName(undefined);
             setIsWithdrawMode(false);
             setIsTransferMode(false);
+            setIsDepositMode(false);
           }}
           tokenId={selectedTokenForSend}
           onSuccess={handleSendSuccess}
@@ -1209,6 +1213,7 @@ export const WalletPage: React.FC = () => {
           fromSubaccountName={selectedSubaccountName}
           isWithdrawMode={isWithdrawMode}
           isTransferMode={isTransferMode}
+          isDepositMode={isDepositMode}
           availableSubaccounts={tokens[selectedTokenForSend]?.subaccounts}
         />
       )}

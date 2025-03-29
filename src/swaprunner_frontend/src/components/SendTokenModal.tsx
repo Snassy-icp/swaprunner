@@ -29,6 +29,7 @@ interface SendTokenModalProps {
   fromSubaccountName?: string;
   isWithdrawMode?: boolean;
   isTransferMode?: boolean;
+  isDepositMode?: boolean;
   availableSubaccounts?: { name: string; subaccount: number[] }[];
 }
 
@@ -41,6 +42,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
   fromSubaccountName,
   isWithdrawMode,
   isTransferMode,
+  isDepositMode,
   availableSubaccounts,
 }) => {
   const [amount, setAmount] = useState('');
@@ -271,7 +273,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
       <div className="send-modal">
         <div className="send-modal-header">
           <div className="send-modal-title">
-            <h2>{isTransferMode ? 'Transfer' : isWithdrawMode ? 'Withdraw' : 'Send'} {tokenInfo.metadata?.symbol || 'Tokens'}</h2>
+            <h2>{isTransferMode ? 'Transfer' : isWithdrawMode ? 'Withdraw' : isDepositMode ? 'Deposit' : 'Send'} {tokenInfo.metadata?.symbol || 'Tokens'}</h2>
             {tokenInfo.metadata && (
               <img 
                 src={loadedLogos[tokenId] || '/generic_token.svg'}
@@ -495,7 +497,7 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                 onClick={handleProceed}
                 disabled={isSending || !amount || !recipient}
               >
-                Review {isTransferMode ? 'Transfer' : isWithdrawMode ? 'Withdrawal' : 'Send'}
+                Review {isTransferMode ? 'Transfer' : isWithdrawMode ? 'Withdrawal' : isDepositMode ? 'Deposit' : 'Send'}
               </button>
             </>
           ) : transactionHash ? (
@@ -596,8 +598,8 @@ export const SendTokenModal: React.FC<SendTokenModalProps> = ({
                   disabled={isSending}
                 >
                   {isSending ? 
-                    (isTransferMode ? 'Transferring...' : isWithdrawMode ? 'Withdrawing...' : 'Sending...') : 
-                    (isTransferMode ? 'Confirm Transfer' : isWithdrawMode ? 'Confirm Withdrawal' : 'Confirm Send')
+                    (isTransferMode ? 'Transferring...' : isWithdrawMode ? 'Withdrawing...' : isDepositMode ? 'Depositing...' : 'Sending...') : 
+                    (isTransferMode ? 'Confirm Transfer' : isWithdrawMode ? 'Confirm Withdrawal' : isDepositMode ? 'Confirm Deposit' : 'Confirm Send')
                   }
                 </button>
               </div>
