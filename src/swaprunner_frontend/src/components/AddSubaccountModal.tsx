@@ -281,15 +281,15 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
             {resolvedSubaccount && (
               <div className="subaccount-preview">
                 <label>Preview</label>
-                <code>Hex: {formatHex(resolvedSubaccount)}</code>
-                <code>Bytes: {formatBytes(resolvedSubaccount)}</code>
-                <code>Principal: {formatPrincipal(resolvedSubaccount)}</code>
                 {formatText(resolvedSubaccount) && (
                   <code>Text: {formatText(resolvedSubaccount)}</code>
                 )}
                 {formatNumber(resolvedSubaccount) && (
                   <code>Number: {formatNumber(resolvedSubaccount)}</code>
                 )}
+                <code>Hex: {formatHex(resolvedSubaccount)}</code>
+                <code>Bytes: {formatBytes(resolvedSubaccount)}</code>
+                <code>Principal: {formatPrincipal(resolvedSubaccount)}</code>
               </div>
             )}
 

@@ -70,8 +70,11 @@ export function textToBytes(text: string): number[] {
 
 export function bytesToText(bytes: number[]): string | null {
   try {
-    // Remove trailing zeros
-    const nonZeroBytes = bytes.slice(0, bytes.findIndex(b => b === 0) + 1);
+    // Find the first zero byte or use the full length if no zeros
+    const endIndex = bytes.findIndex(b => b === 0);
+    const nonZeroBytes = endIndex === -1 ? bytes : bytes.slice(0, endIndex);
+    
+    // If we have no non-zero bytes, return null
     if (nonZeroBytes.length === 0) return null;
     
     // Try to decode as text
@@ -116,13 +119,8 @@ export function bytesToNumber(bytes: number[]): string | null {
       num = (num << BigInt(8)) | BigInt(byte);
     }
     
-    // Only return as number if it's non-zero and all leading bytes are zero
-    // Find first non-zero byte
-    const firstNonZero = bytes.findIndex(b => b !== 0);
-    if (firstNonZero === -1 || firstNonZero > 24) { // Allow numbers that fit in last 8 bytes
-      return num === BigInt(0) ? null : num.toString();
-    }
-    return null;
+    // Return the number if it's non-zero
+    return num === BigInt(0) ? null : num.toString();
   } catch {
     return null;
   }
