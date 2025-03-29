@@ -133,6 +133,11 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
     }
   }, [type, value, indexType, indexValue]);
 
+  // Add helper function at the top level
+  function arraysEqual(a: number[], b: number[]): boolean {
+    return a.length === b.length && a.every((val, idx) => val === b[idx]);
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resolvedSubaccount || !name.trim()) return;
@@ -141,10 +146,19 @@ export const AddSubaccountModal: React.FC<AddSubaccountModalProps> = ({
     setError(null);
 
     try {
-      // First check if a subaccount with this name already exists
+      // First check if a subaccount with this name or bytes already exists
       const existingSubaccounts = await backendService.get_named_subaccounts(tokenId);
+      
+      // Check for duplicate name
       if (existingSubaccounts.some(s => s.name.toLowerCase() === name.trim().toLowerCase())) {
         setError('A subaccount with this name already exists');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Check for duplicate subaccount bytes
+      if (existingSubaccounts.some(s => arraysEqual(s.subaccount, resolvedSubaccount))) {
+        setError('This subaccount already exists under a different name');
         setIsSubmitting(false);
         return;
       }
