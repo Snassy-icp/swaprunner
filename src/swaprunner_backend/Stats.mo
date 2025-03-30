@@ -540,6 +540,126 @@ module {
         return new_global_stats;
     };
 
+   // Record completed withdrawal
+    public func record_withdrawal(
+        user: Principal,
+        token: Text,  // Canister ID
+        amount_e8s: Nat,
+        statsContext: T.StatsContext
+    ) : async T.GlobalStats {
+        // Update global stats
+        let new_global_stats = {
+            total_swaps = statsContext.globalStats.total_swaps;
+            icpswap_swaps = statsContext.globalStats.icpswap_swaps;
+            kong_swaps = statsContext.globalStats.kong_swaps;
+            split_swaps = statsContext.globalStats.split_swaps;
+            total_sends = statsContext.globalStats.total_sends;
+            total_deposits = statsContext.globalStats.total_deposits;
+            total_withdrawals = statsContext.globalStats.total_withdrawals + 1;
+        };
+
+        // Update token stats
+        let token_stats = getOrCreateTokenStats(token, statsContext);
+        statsContext.tokenStats.put(token, {
+            total_swaps = token_stats.total_swaps;
+            icpswap_swaps = token_stats.icpswap_swaps;
+            kong_swaps = token_stats.kong_swaps;
+            split_swaps = token_stats.split_swaps;
+            volume_e8s = token_stats.volume_e8s;
+            total_sends = token_stats.total_sends;
+            sends_volume_e8s = token_stats.sends_volume_e8s;
+            total_deposits = token_stats.total_deposits;
+            deposits_volume_e8s = token_stats.deposits_volume_e8s;
+            total_withdrawals = token_stats.total_withdrawals + 1;
+            withdrawals_volume_e8s = token_stats.withdrawals_volume_e8s + amount_e8s;
+        });
+
+        // Update user stats
+        let user_stats = getOrCreateUserStats(Principal.toText(user), statsContext);
+        statsContext.userStats.put(Principal.toText(user), {
+            total_swaps = user_stats.total_swaps;
+            icpswap_swaps = user_stats.icpswap_swaps;
+            kong_swaps = user_stats.kong_swaps;
+            split_swaps = user_stats.split_swaps;
+            total_sends = user_stats.total_sends;
+            total_deposits = user_stats.total_deposits;
+            total_withdrawals = user_stats.total_withdrawals + 1;
+        });
+
+        // Update user-token stats for the sent token
+        let user_token_stats = getOrCreateUserTokenStats(user, token, statsContext);
+        statsContext.userTokenStats.put(getUserTokenStatsKey(user, token), {
+            swaps_as_input_icpswap = user_token_stats.swaps_as_input_icpswap;
+            swaps_as_input_kong = user_token_stats.swaps_as_input_kong;
+            swaps_as_input_split = user_token_stats.swaps_as_input_split;
+            input_volume_e8s_icpswap = user_token_stats.input_volume_e8s_icpswap;
+            input_volume_e8s_kong = user_token_stats.input_volume_e8s_kong;
+            input_volume_e8s_split = user_token_stats.input_volume_e8s_split;
+            swaps_as_output_icpswap = user_token_stats.swaps_as_output_icpswap;
+            swaps_as_output_kong = user_token_stats.swaps_as_output_kong;
+            swaps_as_output_split = user_token_stats.swaps_as_output_split;
+            output_volume_e8s_icpswap = user_token_stats.output_volume_e8s_icpswap;
+            output_volume_e8s_kong = user_token_stats.output_volume_e8s_kong;
+            output_volume_e8s_split = user_token_stats.output_volume_e8s_split;
+            savings_as_output_icpswap_e8s = user_token_stats.savings_as_output_icpswap_e8s;
+            savings_as_output_kong_e8s = user_token_stats.savings_as_output_kong_e8s;
+            savings_as_output_split_e8s = user_token_stats.savings_as_output_split_e8s;
+            total_sends = user_token_stats.total_sends;
+            total_deposits = user_token_stats.total_deposits;
+            total_withdrawals = user_token_stats.total_withdrawals + 1;
+        });
+
+        return new_global_stats;
+    };
+
+    // Record completed transfer
+    public func record_transfer(
+        user: Principal,
+        token: Text,  // Canister ID
+        amount_e8s: Nat,
+        statsContext: T.StatsContext
+    ) : async T.GlobalStats {
+        // Update global stats
+        let new_global_stats = {
+            total_swaps = statsContext.globalStats.total_swaps;
+            icpswap_swaps = statsContext.globalStats.icpswap_swaps;
+            kong_swaps = statsContext.globalStats.kong_swaps;
+            split_swaps = statsContext.globalStats.split_swaps;
+            total_sends = statsContext.globalStats.total_sends + 1;
+            total_deposits = statsContext.globalStats.total_deposits;
+            total_withdrawals = statsContext.globalStats.total_withdrawals;
+        };
+
+        // Update token stats
+        let token_stats = getOrCreateTokenStats(token, statsContext);
+        statsContext.tokenStats.put(token, {
+            total_swaps = token_stats.total_swaps;
+            icpswap_swaps = token_stats.icpswap_swaps;
+            kong_swaps = token_stats.kong_swaps;
+            split_swaps = token_stats.split_swaps;
+            volume_e8s = token_stats.volume_e8s;
+            total_sends = token_stats.total_sends + 1;
+            sends_volume_e8s = token_stats.sends_volume_e8s + amount_e8s;
+            total_deposits = token_stats.total_deposits;
+            deposits_volume_e8s = token_stats.deposits_volume_e8s;
+            total_withdrawals = token_stats.total_withdrawals;
+            withdrawals_volume_e8s = token_stats.withdrawals_volume_e8s;
+        });
+
+        // Update user stats
+        let user_stats = getOrCreateUserStats(Principal.toText(user), statsContext);
+        statsContext.userStats.put(Principal.toText(user), {
+            total_swaps = user_stats.total_swaps;
+            icpswap_swaps = user_stats.icpswap_swaps;
+            kong_swaps = user_stats.kong_swaps;
+            split_swaps = user_stats.split_swaps;
+            total_sends = user_stats.total_sends + 1;
+            total_deposits = user_stats.total_deposits;
+            total_withdrawals = user_stats.total_withdrawals;
+        });
+
+        return new_global_stats;
+    };
 
     // Helper function to get or create token stats
     private func getOrCreateTokenStats(token_id: Text, statsContext: T.StatsContext) : T.TokenStats {
