@@ -22,6 +22,7 @@ import T "Types";
 import Stats "./Stats";
 import Condition "./Condition";
 import Achievement "./Achievement";
+import Allocation "./Allocation";
 
 actor {
     // Constants
@@ -172,6 +173,14 @@ actor {
     private stable var serverBalanceEntries : [(Nat16, Nat)] = [];  // Format: token_index -> amount
     private var serverBalances = HashMap.fromIter<Nat16, Nat>(serverBalanceEntries.vals(), 0, Nat16.equal, func(n: Nat16) : Hash.Hash { Nat32.fromNat(Nat16.toNat(n)) });
 
+  // Allocation Management
+    private stable var allocationEntries : [(Text, T.Allocation)] = [];
+    private stable var allocationStatusEntries : [(Text, T.AllocationStatus)] = [];
+    private stable var allocationClaimEntries : [(Text, T.AllocationClaim)] = [];
+    private var allocations = HashMap.fromIter<Text, T.Allocation>(allocationEntries.vals(), 0, Text.equal, Text.hash);
+    private var allocation_statuses = HashMap.fromIter<Text, T.AllocationStatus>(allocationStatusEntries.vals(), 0, Text.equal, Text.hash);
+    private var allocation_claims = HashMap.fromIter<Text, T.AllocationClaim>(allocationClaimEntries.vals(), 0, Text.equal, Text.hash);
+
     // Helper function to get next allocation ID
     private func getNextAllocationId() : Nat {
         let id = nextAllocationId;
@@ -285,6 +294,9 @@ actor {
         userBalanceEntries := Iter.toArray(userBalances.entries());
         allocationBalanceEntries := Iter.toArray(allocationBalances.entries());
         serverBalanceEntries := Iter.toArray(serverBalances.entries());
+        allocationEntries := Iter.toArray(allocations.entries());
+        allocationStatusEntries := Iter.toArray(allocation_statuses.entries());
+        allocationClaimEntries := Iter.toArray(allocation_claims.entries());
     };
 
     system func postupgrade() {
@@ -315,6 +327,9 @@ actor {
         userBalanceEntries := [];
         allocationBalanceEntries := [];
         serverBalanceEntries := [];
+        allocationEntries := [];
+        allocationStatusEntries := [];
+        allocationClaimEntries := [];
     };
 
     public query func get_cycle_balance() : async Nat {
@@ -3415,6 +3430,218 @@ actor {
                 };
             };
         };
+    };
+
+    // Create a new allocation
+    public shared({caller}) func create_allocation(args: T.CreateAllocationArgs) : async Result.Result<T.Allocation, Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        // Verify token is whitelisted
+        if (not isWhitelisted(args.token_canister_id)) {
+            return #err("Token is not whitelisted");
+        };
+
+        let allocation_id = Nat.toText(getNextAllocationId());
+        
+        switch(Allocation.create_allocation(
+            caller,
+            args,
+            achievementRegistry,
+            allocations,
+            allocation_id,
+        )) {
+            case (#ok(allocation)) {
+                allocations.put(allocation_id, allocation);
+                allocation_statuses.put(allocation_id, #Draft);
+                #ok(allocation)
+            };
+            case (#err(msg)) #err(msg);
+        }
+    };
+
+    // Fund an allocation
+    public shared({caller}) func fund_allocation(allocation_id: Text) : async Result.Result<(), Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        switch(Allocation.fund_allocation(
+            caller,
+            allocation_id,
+            allocations,
+            allocation_statuses,
+        )) {
+            case (#ok(_)) {
+                // Get allocation and token index
+                let allocation = switch (allocations.get(allocation_id)) {
+                    case null return #err("Allocation not found");
+                    case (?a) a;
+                };
+
+                let token_index = switch (getUserIndex(allocation.token.canister_id)) {
+                    case null return #err("Token not found");
+                    case (?idx) idx;
+                };
+
+                // Verify server has enough balance
+                if (getServerBalance(token_index) < allocation.token.total_amount_e8s) {
+                    return #err("Insufficient server balance");
+                };
+
+                // Move tokens from server balance to allocation balance
+                if (not subtractFromServerBalance(token_index, allocation.token.total_amount_e8s)) {
+                    return #err("Failed to subtract from server balance");
+                };
+
+                let allocation_id_nat = switch (Nat.fromText(allocation_id)) {
+                    case null return #err("Invalid allocation ID");
+                    case (?n) n;
+                };
+                addToAllocationBalance(allocation_id_nat, token_index, allocation.token.total_amount_e8s);
+
+                // Update status
+                allocation_statuses.put(allocation_id, #Funded);
+                #ok(())
+            };
+            case (#err(msg)) #err(msg);
+        }
+    };
+
+    // Activate an allocation
+    public shared({caller}) func activate_allocation(allocation_id: Text) : async Result.Result<(), Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        switch(Allocation.activate_allocation(
+            caller,
+            allocation_id,
+            allocations,
+            allocation_statuses,
+        )) {
+            case (#ok(_)) {
+                allocation_statuses.put(allocation_id, #Active);
+                #ok(())
+            };
+            case (#err(msg)) #err(msg);
+        }
+    };
+
+    // Claim from an allocation
+    public shared({caller}) func claim_allocation(allocation_id: Text) : async Result.Result<(), Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        switch(Allocation.process_claim(
+            caller,
+            allocation_id,
+            allocations,
+            allocation_statuses,
+            allocation_claims,
+            userAchievements,
+        )) {
+            case (#ok(claim_amount)) {
+                // Get allocation and token index
+                let allocation = switch (allocations.get(allocation_id)) {
+                    case null return #err("Allocation not found");
+                    case (?a) a;
+                };
+
+                let token_index = switch (getUserIndex(allocation.token.canister_id)) {
+                    case null return #err("Token not found");
+                    case (?idx) idx;
+                };
+
+                let allocation_id_nat = switch (Nat.fromText(allocation_id)) {
+                    case null return #err("Invalid allocation ID");
+                    case (?n) n;
+                };
+
+                // Verify allocation has enough balance
+                if (getAllocationBalance(allocation_id_nat, token_index) < claim_amount) {
+                    return #err("Insufficient allocation balance");
+                };
+
+                // Move tokens from allocation balance to user balance
+                if (not subtractFromAllocationBalance(allocation_id_nat, token_index, claim_amount)) {
+                    return #err("Failed to subtract from allocation balance");
+                };
+                addToUserBalance(caller, token_index, claim_amount);
+
+                // Record the claim
+                let claim : T.AllocationClaim = {
+                    allocation_id = allocation_id;
+                    user = caller;
+                    amount_e8s = claim_amount;
+                    claimed_at = Time.now();
+                };
+                allocation_claims.put(Allocation.get_claim_key(caller, allocation_id), claim);
+
+                // Check if allocation is now depleted
+                if (getAllocationBalance(allocation_id_nat, token_index) == 0) {
+                    allocation_statuses.put(allocation_id, #Depleted);
+                };
+
+                #ok(())
+            };
+            case (#err(msg)) #err(msg);
+        }
+    };
+
+    // Query allocation details
+    public query func get_allocation(allocation_id: Text) : async Result.Result<{
+        allocation: T.Allocation;
+        status: T.AllocationStatus;
+    }, Text> {
+        let allocation = switch (allocations.get(allocation_id)) {
+            case null return #err("Allocation not found");
+            case (?a) a;
+        };
+
+        let status = switch (allocation_statuses.get(allocation_id)) {
+            case null return #err("Allocation status not found");
+            case (?s) s;
+        };
+
+        #ok({
+            allocation = allocation;
+            status = status;
+        })
+    };
+
+    // Query all allocations for an achievement
+    public query func get_achievement_allocations(achievement_id: Text) : async [{
+        allocation: T.Allocation;
+        status: T.AllocationStatus;
+    }] {
+        let results = Buffer.Buffer<{
+            allocation: T.Allocation;
+            status: T.AllocationStatus;
+        }>(0);
+
+        for ((id, allocation) in allocations.entries()) {
+            if (allocation.achievement_id == achievement_id) {
+                switch (allocation_statuses.get(id)) {
+                    case (?status) {
+                        results.add({
+                            allocation = allocation;
+                            status = status;
+                        });
+                    };
+                    case null {};
+                };
+            };
+        };
+
+        Buffer.toArray(results)
+    };
+
+    // Query user's claims for an allocation
+    public query func get_user_claim(allocation_id: Text, user: Principal) : async ?T.AllocationClaim {
+        allocation_claims.get(Allocation.get_claim_key(user, allocation_id))
     };
 
 }
