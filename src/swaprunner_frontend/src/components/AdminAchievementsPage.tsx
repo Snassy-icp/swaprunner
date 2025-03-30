@@ -3,11 +3,21 @@ import { Principal } from '@dfinity/principal';
 import { backendService } from '../services/backend';
 import '../styles/AdminAchievementsPage.css';
 
+// Frontend types (used in our React components)
 type ParameterType = 'Principal' | 'Nat' | 'Text';
+
+// Backend types (matching Motoko variants)
+type BackendParameterType = {
+    Principal: null;
+} | {
+    Nat: null;
+} | {
+    Text: null;
+};
 
 interface ParameterSpec {
     name: string;
-    type_: ParameterType;
+    type_: BackendParameterType;
     default_value?: string;
 }
 
@@ -43,6 +53,61 @@ interface Condition {
     parameter_specs: ParameterSpec[];
 }
 
+// Helper function to extract frontend type from backend variant
+function getTypeFromVariant(typeVariant: BackendParameterType): ParameterType {
+    // Check if typeVariant is a direct variant object
+    if (typeVariant && typeof typeVariant === 'object') {
+        if ('Principal' in typeVariant) return 'Principal';
+        if ('Nat' in typeVariant) return 'Nat';
+        if ('Text' in typeVariant) return 'Text';
+    }
+    
+    // Handle the case where typeVariant might be a direct string or have a type property
+    if (typeVariant && typeof typeVariant === 'object' && 'type_' in typeVariant) {
+        const type = (typeVariant as any).type_;
+        if (type === '#Principal') return 'Principal';
+        if (type === '#Nat') return 'Nat';
+        if (type === '#Text') return 'Text';
+    }
+    
+    console.error('Invalid type variant:', typeVariant);
+    return 'Text'; // Default fallback
+}
+
+// Helper function to create a parameter with proper type
+function createParameter(name: string, typeVariant: BackendParameterType | any, value: string): Parameter {
+    console.log('Creating parameter:', { name, typeVariant, value });
+    
+    let type_: ParameterType;
+    
+    // Handle direct variant objects
+    if (typeVariant && typeof typeVariant === 'object') {
+        type_ = getTypeFromVariant(typeVariant);
+    } else {
+        // Default to Text if we can't determine the type
+        type_ = 'Text';
+    }
+    
+    console.log('Parameter created with type:', type_);
+    return {
+        name,
+        type_,
+        value
+    };
+}
+
+// Helper function to create a backend parameter type
+function createBackendType(type: ParameterType): BackendParameterType {
+    switch (type) {
+        case 'Principal':
+            return { Principal: null };
+        case 'Nat':
+            return { Nat: null };
+        case 'Text':
+            return { Text: null };
+    }
+}
+
 function ConditionUsageEditor({ 
     usage, 
     conditions,
@@ -54,22 +119,34 @@ function ConditionUsageEditor({
     onChange: (usage: ConditionUsage) => void;
     onRemove: () => void;
 }) {
+    console.log('ConditionUsageEditor - Initial usage:', usage);
+    console.log('ConditionUsageEditor - Available conditions:', conditions);
+    
     const selectedCondition = conditions.find(c => c.key === usage.condition_key);
+    console.log('ConditionUsageEditor - Selected condition:', selectedCondition);
 
     // Initialize parameters if they don't exist or if they're missing type information
     React.useEffect(() => {
         if (selectedCondition) {
+            console.log('ConditionUsageEditor - useEffect - Creating parameters for condition:', selectedCondition.key);
             const newParameters = selectedCondition.parameter_specs.map((spec, index) => {
                 const existingParam = usage.parameters[index];
-                return {
-                    name: spec.name,
-                    type_: spec.type_,
-                    value: existingParam?.value || spec.default_value || ''
-                };
+                console.log('ConditionUsageEditor - useEffect - Processing spec:', spec);
+                console.log('ConditionUsageEditor - useEffect - Existing param:', existingParam);
+                
+                return createParameter(
+                    spec.name,
+                    spec.type_,
+                    existingParam?.value || spec.default_value || ''
+                );
             });
+
+            console.log('ConditionUsageEditor - useEffect - New parameters:', newParameters);
+            console.log('ConditionUsageEditor - useEffect - Current parameters:', usage.parameters);
 
             // Only update if parameters have changed
             if (JSON.stringify(newParameters) !== JSON.stringify(usage.parameters)) {
+                console.log('ConditionUsageEditor - useEffect - Parameters changed, updating');
                 onChange({
                     condition_key: usage.condition_key,
                     parameters: newParameters
@@ -79,12 +156,15 @@ function ConditionUsageEditor({
     }, [selectedCondition, usage.condition_key]);
 
     const handleParameterChange = (spec: ParameterSpec, index: number, value: string) => {
+        console.log('handleParameterChange - Spec:', spec);
+        console.log('handleParameterChange - Index:', index);
+        console.log('handleParameterChange - New value:', value);
+        console.log('handleParameterChange - Current parameters:', usage.parameters);
+        
         const newParameters = [...usage.parameters];
-        newParameters[index] = {
-            name: spec.name,
-            type_: spec.type_,
-            value: value
-        };
+        newParameters[index] = createParameter(spec.name, spec.type_, value);
+        
+        console.log('handleParameterChange - Updated parameters:', newParameters);
         
         onChange({
             condition_key: usage.condition_key,
@@ -99,15 +179,21 @@ function ConditionUsageEditor({
                 <select 
                     value={usage.condition_key}
                     onChange={(e) => {
+                        console.log('Condition select - Selected value:', e.target.value);
                         const newCondition = conditions.find(c => c.key === e.target.value);
+                        console.log('Condition select - Found condition:', newCondition);
                         if (!newCondition) return;
                         
-                        const parameters = newCondition.parameter_specs.map(spec => ({
-                            name: spec.name,
-                            type_: spec.type_,
-                            value: spec.default_value || ''
-                        }));
+                        const parameters = newCondition.parameter_specs.map(spec => {
+                            console.log('Condition select - Processing spec:', spec);
+                            return createParameter(
+                                spec.name,
+                                spec.type_,
+                                spec.default_value || ''
+                            );
+                        });
                         
+                        console.log('Condition select - Final parameters:', parameters);
                         onChange({
                             condition_key: e.target.value,
                             parameters
@@ -126,16 +212,19 @@ function ConditionUsageEditor({
             {selectedCondition && (
                 <div className="parameters-editor">
                     {selectedCondition.parameter_specs.map((spec, index) => {
-                        const param = usage.parameters[index] || {
-                            name: spec.name,
-                            type_: spec.type_,
-                            value: spec.default_value || ''
-                        };
+                        console.log('Parameter input - Processing spec:', spec);
+                        console.log('Parameter input - Current parameters:', usage.parameters);
+                        const param = usage.parameters[index] || createParameter(
+                            spec.name,
+                            spec.type_,
+                            spec.default_value || ''
+                        );
+                        console.log('Parameter input - Using param:', param);
                         return (
                             <div key={spec.name} className="parameter-input">
                                 <label>{spec.name}:</label>
                                 <input
-                                    type={spec.type_ === 'Nat' ? 'number' : 'text'}
+                                    type={param.type_ === 'Nat' ? 'number' : 'text'}
                                     value={param.value}
                                     onChange={(e) => handleParameterChange(spec, index, e.target.value)}
                                 />
@@ -282,45 +371,48 @@ function PredicateEditor({
     );
 }
 
-function transformToBackendParameter(param: Parameter): any {
+function transformToBackendParameter(param: Parameter): BackendParameterType {
+    console.log('transformToBackendParameter - Input param:', param);
+    
     if (!param.value) {
         console.error(`Empty value for parameter ${param.name} of type ${param.type_}`);
         switch (param.type_) {
             case 'Nat':
-                return { Nat: BigInt(0) };
+                return { Nat: null };
             case 'Principal':
-                return { Principal: Principal.fromText('aaaaa-aa') };
+                return { Principal: null };
             case 'Text':
-                return { Text: '' };
-            default:
-                return { Text: '' };
+                return { Text: null };
         }
     }
 
     try {
+        console.log('transformToBackendParameter - Processing param type:', param.type_);
         switch (param.type_) {
             case 'Nat':
                 const natValue = BigInt(param.value);
                 if (natValue < 0) throw new Error('Nat cannot be negative');
-                return { Nat: natValue };
+                return { Nat: null };
             case 'Principal':
-                return { Principal: Principal.fromText(param.value) };
+                Principal.fromText(param.value); // Validate principal
+                return { Principal: null };
             case 'Text':
-                return { Text: param.value };
+                return { Text: null };
             default:
-                console.error(`Unknown parameter type: ${param.type_}`);
-                return { Text: '' };
+                console.error('transformToBackendParameter - Unknown type:', param.type_);
+                return { Text: null };
         }
     } catch (err) {
         console.error(`Error converting parameter ${param.name}:`, err);
+        console.log('transformToBackendParameter - Error case - Type:', param.type_);
         // Return appropriate default values based on type
         switch (param.type_) {
             case 'Nat':
-                return { Nat: BigInt(0) };
+                return { Nat: null };
             case 'Principal':
-                return { Principal: Principal.fromText('aaaaa-aa') };
+                return { Principal: null };
             default:
-                return { Text: '' };
+                return { Text: null };
         }
     }
 }
@@ -347,6 +439,7 @@ export default function AdminAchievementsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
+    const [conditionsLoaded, setConditionsLoaded] = useState(false);
 
     // Form state
     const [formData, setFormData] = useState<Achievement>({
@@ -356,32 +449,28 @@ export default function AdminAchievementsPage() {
         condition_usages: [],
     });
 
+    // Load conditions first, then achievements
     useEffect(() => {
-        const init = async () => {
-            try {
-                setLoading(true);
-                // Load conditions first
-                await loadConditions();
-                // Then load achievements
-                await loadAchievements();
-            } catch (err: any) {
-                setError('Failed to initialize: ' + (err.message || String(err)));
-            } finally {
-                setLoading(false);
-            }
-        };
-        init();
+        loadConditions();
     }, []);
+
+    // Only load achievements after conditions are loaded
+    useEffect(() => {
+        if (conditionsLoaded) {
+            loadAchievements();
+        }
+    }, [conditionsLoaded]);
 
     const loadConditions = async () => {
         try {
+            setLoading(true);
             const actor = await backendService.getActor();
             const result = await actor.get_all_conditions();
             console.log('Loaded conditions:', result);
             setConditions(result);
+            setConditionsLoaded(true);
         } catch (err: any) {
             setError('Failed to load conditions: ' + (err.message || String(err)));
-            throw err; // Re-throw to handle in init
         }
     };
 
@@ -401,15 +490,11 @@ export default function AdminAchievementsPage() {
                             let value = '';
                             
                             if (backendParam) {
-                                const variantKey = Object.keys(backendParam)[0] as ParameterType;
-                                value = transformFromBackendParameter(spec.type_, backendParam[variantKey]);
+                                const paramType = getTypeFromVariant(spec.type_);
+                                value = transformFromBackendParameter(paramType, backendParam[paramType]);
                             }
                             
-                            return {
-                                name: spec.name,
-                                type_: spec.type_,
-                                value: value
-                            };
+                            return createParameter(spec.name, spec.type_, value);
                         });
                         
                         return {
@@ -426,12 +511,18 @@ export default function AdminAchievementsPage() {
             setError(null);
         } catch (err: any) {
             setError('Failed to load achievements: ' + (err.message || String(err)));
-            throw err; // Re-throw to handle in init
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!conditionsLoaded) {
+            setError('Please wait for conditions to load');
+            return;
+        }
+
         try {
             setLoading(true);
             const actor = await backendService.getActor();
@@ -444,7 +535,7 @@ export default function AdminAchievementsPage() {
                     const condition = conditions.find(c => c.key === usage.condition_key);
                     if (!condition) {
                         console.error(`No condition found for key ${usage.condition_key}`);
-                        return usage;
+                        throw new Error(`Condition ${usage.condition_key} not found`);
                     }
 
                     // Transform all parameters using their spec types
@@ -452,15 +543,11 @@ export default function AdminAchievementsPage() {
                         const param = usage.parameters[index];
                         if (!param) {
                             console.error(`Missing parameter at index ${index} for condition ${condition.key}`);
-                            return { Text: "" };
+                            throw new Error(`Missing parameter ${spec.name} for condition ${condition.key}`);
                         }
 
-                        console.log(`Converting parameter ${spec.name} with value ${param.value} using type ${spec.type_}`);
-                        return transformToBackendParameter({
-                            name: spec.name,
-                            type_: spec.type_,
-                            value: param.value
-                        });
+                        console.log(`Converting parameter ${spec.name} with value ${param.value} using type ${param.type_}`);
+                        return transformToBackendParameter(param);
                     });
 
                     return {
@@ -540,15 +627,8 @@ export default function AdminAchievementsPage() {
                             return { Text: "" }; // Fallback if no spec
                         }
                         
-                        // Create parameter with the type from the spec
-                        const paramWithType = {
-                            name: param.name,
-                            type_: spec.type_, // Use the type from the spec
-                            value: param.value
-                        };
-                        
-                        console.log(`Converting parameter ${param.name} with value ${param.value} using type ${spec.type_}`);
-                        return transformToBackendParameter(paramWithType);
+                        console.log(`Converting parameter ${param.name} with value ${param.value} using type ${param.type_}`);
+                        return transformToBackendParameter(param);
                     });
 
                     return {
@@ -623,114 +703,118 @@ export default function AdminAchievementsPage() {
             
             {error && <div className="error-message">{error}</div>}
             
-            <form onSubmit={selectedAchievement ? handleUpdate : handleSubmit} className="achievement-form">
-                <h2>{selectedAchievement ? 'Edit Achievement' : 'Add New Achievement'}</h2>
-                
-                <div className="form-group">
-                    <label htmlFor="id">ID:</label>
-                    <input
-                        type="text"
-                        id="id"
-                        value={formData.id}
-                        onChange={(e) => setFormData({...formData, id: e.target.value})}
-                        required
-                        disabled={!!selectedAchievement}
-                    />
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="name">Name:</label>
-                    <input
-                        type="text"
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        required
-                    />
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="description">Description:</label>
-                    <textarea
-                        id="description"
-                        value={formData.description}
-                        onChange={(e) => setFormData({...formData, description: e.target.value})}
-                        required
-                    />
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="logo_url">Logo URL (optional):</label>
-                    <input
-                        type="text"
-                        id="logo_url"
-                        value={formData.logo_url || ''}
-                        onChange={(e) => setFormData({...formData, logo_url: e.target.value})}
-                    />
-                </div>
-
-                <div className="condition-usages">
-                    <h3>Conditions</h3>
-                    {formData.condition_usages.map((usage, index) => (
-                        <ConditionUsageEditor
-                            key={index}
-                            usage={usage}
-                            conditions={conditions}
-                            onChange={(usage) => handleConditionChange(index, usage)}
-                            onRemove={() => handleRemoveCondition(index)}
+            {!conditionsLoaded ? (
+                <div>Loading conditions...</div>
+            ) : (
+                <form onSubmit={selectedAchievement ? handleUpdate : handleSubmit} className="achievement-form">
+                    <h2>{selectedAchievement ? 'Edit Achievement' : 'Add New Achievement'}</h2>
+                    
+                    <div className="form-group">
+                        <label htmlFor="id">ID:</label>
+                        <input
+                            type="text"
+                            id="id"
+                            value={formData.id}
+                            onChange={(e) => setFormData({...formData, id: e.target.value})}
+                            required
+                            disabled={!!selectedAchievement}
                         />
-                    ))}
-                    <button type="button" onClick={handleAddCondition} className="add-condition">
-                        Add Condition
-                    </button>
-                </div>
+                    </div>
 
-                <div className="predicate-section">
-                    <h3>Predicate (Optional)</h3>
-                    <p className="help-text">
-                        Use predicates to create complex conditions using AND, OR, and NOT operations.
-                        Reference condition indices (0-based) to combine them logically.
-                    </p>
-                    {formData.predicate ? (
-                        <PredicateEditor
-                            predicate={formData.predicate}
-                            maxRef={Math.max(0, formData.condition_usages.length - 1)}
-                            onChange={handlePredicateChange}
-                            onRemove={() => setFormData({ ...formData, predicate: undefined })}
+                    <div className="form-group">
+                        <label htmlFor="name">Name:</label>
+                        <input
+                            type="text"
+                            id="name"
+                            value={formData.name}
+                            onChange={(e) => setFormData({...formData, name: e.target.value})}
+                            required
                         />
-                    ) : (
-                        <button
-                            type="button"
-                            onClick={() => handlePredicateChange({ REF: 0 })}
-                            className="add-predicate"
-                        >
-                            Add Predicate
-                        </button>
-                    )}
-                </div>
+                    </div>
 
-                <div className="form-actions">
-                    <button type="submit" disabled={loading}>
-                        {selectedAchievement ? 'Update Achievement' : 'Add Achievement'}
-                    </button>
-                    {selectedAchievement && (
-                        <button 
-                            type="button" 
-                            onClick={() => {
-                                setSelectedAchievement(null);
-                                setFormData({
-                                    id: '',
-                                    name: '',
-                                    description: '',
-                                    condition_usages: [],
-                                });
-                            }}
-                        >
-                            Cancel Edit
+                    <div className="form-group">
+                        <label htmlFor="description">Description:</label>
+                        <textarea
+                            id="description"
+                            value={formData.description}
+                            onChange={(e) => setFormData({...formData, description: e.target.value})}
+                            required
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="logo_url">Logo URL (optional):</label>
+                        <input
+                            type="text"
+                            id="logo_url"
+                            value={formData.logo_url || ''}
+                            onChange={(e) => setFormData({...formData, logo_url: e.target.value})}
+                        />
+                    </div>
+
+                    <div className="condition-usages">
+                        <h3>Conditions</h3>
+                        {formData.condition_usages.map((usage, index) => (
+                            <ConditionUsageEditor
+                                key={index}
+                                usage={usage}
+                                conditions={conditions}
+                                onChange={(usage) => handleConditionChange(index, usage)}
+                                onRemove={() => handleRemoveCondition(index)}
+                            />
+                        ))}
+                        <button type="button" onClick={handleAddCondition} className="add-condition">
+                            Add Condition
                         </button>
-                    )}
-                </div>
-            </form>
+                    </div>
+
+                    <div className="predicate-section">
+                        <h3>Predicate (Optional)</h3>
+                        <p className="help-text">
+                            Use predicates to create complex conditions using AND, OR, and NOT operations.
+                            Reference condition indices (0-based) to combine them logically.
+                        </p>
+                        {formData.predicate ? (
+                            <PredicateEditor
+                                predicate={formData.predicate}
+                                maxRef={Math.max(0, formData.condition_usages.length - 1)}
+                                onChange={handlePredicateChange}
+                                onRemove={() => setFormData({ ...formData, predicate: undefined })}
+                            />
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => handlePredicateChange({ REF: 0 })}
+                                className="add-predicate"
+                            >
+                                Add Predicate
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="form-actions">
+                        <button type="submit" disabled={loading}>
+                            {selectedAchievement ? 'Update Achievement' : 'Add Achievement'}
+                        </button>
+                        {selectedAchievement && (
+                            <button 
+                                type="button" 
+                                onClick={() => {
+                                    setSelectedAchievement(null);
+                                    setFormData({
+                                        id: '',
+                                        name: '',
+                                        description: '',
+                                        condition_usages: [],
+                                    });
+                                }}
+                            >
+                                Cancel Edit
+                            </button>
+                        )}
+                    </div>
+                </form>
+            )}
 
             <div className="achievements-list">
                 <h2>Existing Achievements</h2>
