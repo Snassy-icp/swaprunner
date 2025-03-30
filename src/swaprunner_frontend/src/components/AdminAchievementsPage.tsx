@@ -56,6 +56,28 @@ function ConditionUsageEditor({
 }) {
     const selectedCondition = conditions.find(c => c.key === usage.condition_key);
 
+    // Initialize parameters if they don't exist or if they're missing type information
+    React.useEffect(() => {
+        if (selectedCondition) {
+            const newParameters = selectedCondition.parameter_specs.map((spec, index) => {
+                const existingParam = usage.parameters[index];
+                return {
+                    name: spec.name,
+                    type_: spec.type_,
+                    value: existingParam?.value || spec.default_value || ''
+                };
+            });
+
+            // Only update if parameters have changed
+            if (JSON.stringify(newParameters) !== JSON.stringify(usage.parameters)) {
+                onChange({
+                    condition_key: usage.condition_key,
+                    parameters: newParameters
+                });
+            }
+        }
+    }, [selectedCondition, usage.condition_key]);
+
     const handleParameterChange = (spec: ParameterSpec, index: number, value: string) => {
         const newParameters = [...usage.parameters];
         newParameters[index] = {
@@ -104,13 +126,17 @@ function ConditionUsageEditor({
             {selectedCondition && (
                 <div className="parameters-editor">
                     {selectedCondition.parameter_specs.map((spec, index) => {
-                        const param = usage.parameters[index];
+                        const param = usage.parameters[index] || {
+                            name: spec.name,
+                            type_: spec.type_,
+                            value: spec.default_value || ''
+                        };
                         return (
                             <div key={spec.name} className="parameter-input">
                                 <label>{spec.name}:</label>
                                 <input
                                     type={spec.type_ === 'Nat' ? 'number' : 'text'}
-                                    value={param?.value || ''}
+                                    value={param.value}
                                     onChange={(e) => handleParameterChange(spec, index, e.target.value)}
                                 />
                             </div>
@@ -331,23 +357,36 @@ export default function AdminAchievementsPage() {
     });
 
     useEffect(() => {
-        loadAchievements();
-        loadConditions();
+        const init = async () => {
+            try {
+                setLoading(true);
+                // Load conditions first
+                await loadConditions();
+                // Then load achievements
+                await loadAchievements();
+            } catch (err: any) {
+                setError('Failed to initialize: ' + (err.message || String(err)));
+            } finally {
+                setLoading(false);
+            }
+        };
+        init();
     }, []);
 
     const loadConditions = async () => {
         try {
             const actor = await backendService.getActor();
             const result = await actor.get_all_conditions();
+            console.log('Loaded conditions:', result);
             setConditions(result);
         } catch (err: any) {
             setError('Failed to load conditions: ' + (err.message || String(err)));
+            throw err; // Re-throw to handle in init
         }
     };
 
     const loadAchievements = async () => {
         try {
-            setLoading(true);
             const actor = await backendService.getActor();
             const result = await actor.get_all_achievements();
             
@@ -387,8 +426,7 @@ export default function AdminAchievementsPage() {
             setError(null);
         } catch (err: any) {
             setError('Failed to load achievements: ' + (err.message || String(err)));
-        } finally {
-            setLoading(false);
+            throw err; // Re-throw to handle in init
         }
     };
 
@@ -404,25 +442,25 @@ export default function AdminAchievementsPage() {
                 predicate: formData.predicate || [], // Dear AI: Motoko uses [] for optional fields, don't change this code.
                 condition_usages: formData.condition_usages.map(usage => {
                     const condition = conditions.find(c => c.key === usage.condition_key);
-                    if (!condition) return usage;
+                    if (!condition) {
+                        console.error(`No condition found for key ${usage.condition_key}`);
+                        return usage;
+                    }
 
                     // Transform all parameters using their spec types
-                    const parameters = usage.parameters.map((param, index) => {
-                        const spec = condition.parameter_specs[index];
-                        if (!spec) {
-                            console.error(`No spec found for parameter at index ${index}`);
-                            return { Text: "" }; // Fallback if no spec
+                    const parameters = condition.parameter_specs.map((spec, index) => {
+                        const param = usage.parameters[index];
+                        if (!param) {
+                            console.error(`Missing parameter at index ${index} for condition ${condition.key}`);
+                            return { Text: "" };
                         }
-                        
-                        // Create parameter with the type from the spec
-                        const paramWithType = {
-                            name: param.name,
-                            type_: spec.type_, // Use the type from the spec
+
+                        console.log(`Converting parameter ${spec.name} with value ${param.value} using type ${spec.type_}`);
+                        return transformToBackendParameter({
+                            name: spec.name,
+                            type_: spec.type_,
                             value: param.value
-                        };
-                        
-                        console.log(`Converting parameter ${param.name} with value ${param.value} using type ${spec.type_}`);
-                        return transformToBackendParameter(paramWithType);
+                        });
                     });
 
                     return {
