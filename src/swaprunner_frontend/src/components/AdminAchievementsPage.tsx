@@ -375,6 +375,7 @@ export default function AdminAchievementsPage() {
             const transformedData = {
                 ...formData,
                 logo_url: formData.logo_url ? [formData.logo_url] : [],
+                predicate: formData.predicate || [],
                 condition_usages: formData.condition_usages.map(usage => {
                     const condition = conditions.find(c => c.key === usage.condition_key);
                     if (!condition) return usage;
@@ -445,6 +446,7 @@ export default function AdminAchievementsPage() {
             const transformedData = {
                 ...formData,
                 logo_url: formData.logo_url ? [formData.logo_url] : [],
+                predicate: formData.predicate || [],
                 condition_usages: formData.condition_usages.map(usage => {
                     const condition = conditions.find(c => c.key === usage.condition_key);
                     if (!condition) return usage;
