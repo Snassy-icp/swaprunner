@@ -76,10 +76,49 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
         }
     };
 
+    // Convert decimal string to e8s bigint
+    const toE8s = (amount: string): bigint => {
+        try {
+            // Handle empty string
+            if (!amount) return BigInt(0);
+            
+            // Parse the decimal string
+            const [whole = "0", decimal = ""] = amount.split(".");
+            
+            // Pad or truncate decimal to 8 places
+            const paddedDecimal = decimal.padEnd(8, "0").slice(0, 8);
+            
+            // Combine whole and decimal parts
+            return BigInt(whole + paddedDecimal);
+        } catch (err) {
+            return BigInt(0);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedAchievement || !selectedToken || !totalAmount || !perUserMin || !perUserMax) {
             setError('Please fill in all fields');
+            return;
+        }
+
+        // Validate decimal values
+        const total = toE8s(totalAmount);
+        const min = toE8s(perUserMin);
+        const max = toE8s(perUserMax);
+
+        if (total === BigInt(0) || min === BigInt(0) || max === BigInt(0)) {
+            setError('All amounts must be greater than 0');
+            return;
+        }
+
+        if (min > max) {
+            setError('Minimum amount cannot be greater than maximum amount');
+            return;
+        }
+
+        if (max > total) {
+            setError('Per-user maximum cannot exceed total amount');
             return;
         }
 
@@ -90,9 +129,9 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
             await onSubmit({
                 achievement_id: selectedAchievement,
                 token_canister_id: selectedToken,
-                total_amount_e8s: BigInt(totalAmount),
-                per_user_min_e8s: BigInt(perUserMin),
-                per_user_max_e8s: BigInt(perUserMax)
+                total_amount_e8s: total,
+                per_user_min_e8s: min,
+                per_user_max_e8s: max
             });
         } catch (err: any) {
             setError('Failed to create allocation: ' + (err.message || String(err)));
@@ -148,6 +187,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                     placeholder="Total allocation amount"
                     required
                     min="0"
+                    step="any"
                 />
             </div>
 
@@ -161,6 +201,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                         placeholder="Minimum per user"
                         required
                         min="0"
+                        step="any"
                     />
                 </div>
 
@@ -173,6 +214,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                         placeholder="Maximum per user"
                         required
                         min="0"
+                        step="any"
                     />
                 </div>
             </div>
