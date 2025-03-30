@@ -166,6 +166,11 @@ actor {
     private stable var allocationBalanceEntries : [(Text, Nat)] = [];  // Format: "{alloc_id}:{token_index}" -> amount
     private var allocationBalances = HashMap.fromIter<Text, Nat>(allocationBalanceEntries.vals(), 0, Text.equal, Text.hash);
     private stable var nextAllocationId : Nat = 0;
+
+    // Stable storage for server balances
+    private stable var serverBalanceEntries : [(Nat16, Nat)] = [];  // Format: token_index -> amount
+    private var serverBalances = HashMap.fromIter<Nat16, Nat>(serverBalanceEntries.vals(), 0, Nat16.equal, func(n: Nat16) : Hash.Hash { Nat32.fromNat(Nat16.toNat(n)) });
+
     // Helper function to get next allocation ID
     private func getNextAllocationId() : Nat {
         let id = nextAllocationId;
@@ -278,6 +283,7 @@ actor {
         userAchievementEntries := Iter.toArray(userAchievements.entries());
         userBalanceEntries := Iter.toArray(userBalances.entries());
         allocationBalanceEntries := Iter.toArray(allocationBalances.entries());
+        serverBalanceEntries := Iter.toArray(serverBalances.entries());
     };
 
     system func postupgrade() {
@@ -307,6 +313,7 @@ actor {
         userAchievementEntries := [];
         userBalanceEntries := [];
         allocationBalanceEntries := [];
+        serverBalanceEntries := [];
     };
 
     public query func get_cycle_balance() : async Nat {
@@ -3445,6 +3452,23 @@ actor {
     public shared query func get_allocation_balance(alloc_id: Nat, token_id: Principal) : async Nat {
         let token_index = getOrCreateUserIndex(token_id);
         getAllocationBalance(alloc_id, token_index)
+    };
+
+
+    // Helper functions for server balances
+    private func getServerBalance(token_index: Nat16) : Nat {
+        switch (serverBalances.get(token_index)) {
+            case (?balance) balance;
+            case null 0;
+        }
+    };
+
+    private func setServerBalance(token_index: Nat16, amount: Nat) {
+        if (amount == 0) {
+            serverBalances.delete(token_index);
+        } else {
+            serverBalances.put(token_index, amount);
+        };
     };
 
 
