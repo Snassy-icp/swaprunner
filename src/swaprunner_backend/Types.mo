@@ -374,7 +374,7 @@ module {
         description: Text;
         parameter_specs: [{
             name: Text;
-            type_: {#Principal; #Nat; #Text};
+            param_type: {#Principal; #Nat; #Text};
             default_value: ?Text;
         }];
     };

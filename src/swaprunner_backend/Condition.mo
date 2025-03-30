@@ -17,7 +17,7 @@ module {
         description = "Execute trades above specified amount";
         parameter_specs = [{
             name = "min_amount_e8s";
-            type_ = #Nat;
+            param_type = #Nat;
             default_value = null;
         }];
     };
@@ -28,7 +28,7 @@ module {
         description = "Execute a certain number of trades";
         parameter_specs = [{
             name = "min_trades";
-            type_ = #Nat;
+            param_type = #Nat;
             default_value = null;
         }];
     };
@@ -40,12 +40,12 @@ module {
         parameter_specs = [
             {
                 name = "token_id";
-                type_ = #Text;
+                param_type = #Text;
                 default_value = null;
             },
             {
                 name = "min_volume_e8s";
-                type_ = #Nat;
+                param_type = #Nat;
                 default_value = null;
             }
         ];
