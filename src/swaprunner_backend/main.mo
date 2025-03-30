@@ -3369,7 +3369,7 @@ actor {
     };
 
     // Helper function to generate balance key from user and token indices
-    private func getBalanceKey(user: Principal, token_index: Nat16) : Text {
+    private func getUserBalanceKey(user: Principal, token_index: Nat16) : Text {
         Principal.toText(user) # ":" # Nat16.toText(token_index)
     };
 
@@ -3383,7 +3383,7 @@ actor {
 
     // Internal function to get balance
     private func getUserBalance(user: Principal, token_index: Nat16) : Nat {
-        let key = getBalanceKey(user, token_index);
+        let key = getUserBalanceKey(user, token_index);
         switch (userBalances.get(key)) {
             case (?balance) balance;
             case null 0;
@@ -3392,7 +3392,7 @@ actor {
 
     // Internal function to set balance
     private func setUserBalance(user: Principal, token_index: Nat16, amount: Nat) {
-        let key = getBalanceKey(user, token_index);
+        let key = getUserBalanceKey(user, token_index);
         if (amount == 0) {
             userBalances.delete(key);
         } else {
@@ -3992,7 +3992,7 @@ actor {
     };
 
     public shared({caller}) func withdraw_from_balance(token_id: Principal, amount: Nat) : async Result.Result<(), Text> {
-        switch (getTokenIndex(token_id)) {
+        switch (getUserIndex(token_id)) {
             case null #err("Token not found");
             case (?token_index) {
                 if (subtractFromUserBalance(caller, token_index, amount)) {
@@ -4001,7 +4001,7 @@ actor {
                 } else {
                     #err("Insufficient balance")
                 }
-            };
+                    };
         }
     };
 
