@@ -6,14 +6,14 @@
 }
 
 .allocations-section .allocations-content {
-    padding: 16px 0;
+    padding: 16px;
 }
 
 .allocations-section .allocations-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
-    margin-bottom: 24px;
+    gap: 8px;
+    margin-bottom: 16px;
 }
 
 .allocations-section .create-button,
@@ -21,20 +21,20 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 12px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.05);
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-secondary);
+    color: #8F96A1;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .allocations-section .create-button:hover,
 .allocations-section .refresh-button:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
 }
 
 .allocations-section .refresh-button:disabled {
@@ -198,40 +198,43 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 12px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.05);
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-secondary);
+    color: #8F96A1;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .allocations-section .create-first-button:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
 }
 
 /* Allocation form styles */
 .allocations-section .allocation-form {
     background: #1A1D26;
     border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 24px;
+    padding: 16px;
+    margin-bottom: 16px;
+    width: 100%;
+    max-width: 480px;
+    box-sizing: border-box;
 }
 
 .allocations-section .form-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .allocations-section .form-header h3 {
     margin: 0;
     color: #fff;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 500;
 }
 
@@ -254,25 +257,27 @@
 }
 
 .allocations-section .form-group {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
+    width: 100%;
 }
 
 .allocations-section .form-group label {
     display: block;
     color: #8F96A1;
-    font-size: 14px;
-    margin-bottom: 8px;
+    font-size: 12px;
+    margin-bottom: 6px;
 }
 
 .allocations-section .form-group select,
-.allocations-section .form-group input {
+.allocations-section .form-group input,
+.allocations-section .token-select {
     width: 100%;
-    padding: 12px;
+    padding: 8px 12px;
     background: #2A2E3A;
     border: 1px solid #363B47;
     border-radius: 8px;
     color: #fff;
-    font-size: 14px;
+    font-size: 12px;
     font-family: 'Roboto Mono', monospace;
     box-sizing: border-box;
 }
@@ -290,7 +295,8 @@
 
 .allocations-section .form-row {
     display: flex;
-    gap: 16px;
+    gap: 12px;
+    width: 100%;
 }
 
 .allocations-section .form-row .form-group {
@@ -299,47 +305,34 @@
 
 .allocations-section .form-actions {
     display: flex;
-    gap: 12px;
-    margin-top: 24px;
+    gap: 8px;
+    margin-top: 16px;
 }
 
 .allocations-section .submit-button,
 .allocations-section .cancel-button {
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 8px;
-}
-
-.allocations-section .submit-button {
-    background: rgba(255, 255, 255, 0.05);
+    gap: 6px;
+    background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-secondary);
+    color: #8F96A1;
 }
 
-.allocations-section .submit-button:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
+.allocations-section .submit-button:hover:not(:disabled),
+.allocations-section .cancel-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
 }
 
 .allocations-section .submit-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-}
-
-.allocations-section .cancel-button {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-secondary);
-}
-
-.allocations-section .cancel-button:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
 }
 
 /* Override TokenSelect styles to fit our form */
@@ -353,12 +346,1057 @@
     background: #2A2E3A;
     border: 1px solid #363B47;
     border-radius: 8px;
-    padding: 12px;
+    padding: 8px 12px;
     color: #fff;
-    font-size: 14px;
+    font-size: 12px;
+    text-align: left;
 }
 
 .allocations-section .token-select-button:hover {
+    background: #363B47;
+    border-color: #454B57;
+}
+
+.section-content .allocations-content {
+    padding: 16px;
+}
+
+.section-content .allocations-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.section-content .create-button,
+.section-content .refresh-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #8F96A1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+}
+
+.section-content .create-button:hover,
+.section-content .refresh-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.section-content .refresh-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.section-content .refresh-button .spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.section-content .allocations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.section-content .allocation-card {
+    background: #1A1D26;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.section-content .allocation-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.section-content .allocation-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.section-content .allocation-icon-wrapper {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+}
+
+.section-content .allocation-icon {
+    color: #ffd700;
+}
+
+.section-content .allocation-info {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.section-content .allocation-info h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.2;
+    font-weight: 500;
+}
+
+.section-content .allocation-date {
+    color: #8F96A1;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.section-content .allocation-status {
+    margin: 0 16px;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.section-content .allocation-expand {
+    flex-shrink: 0;
+    color: #666;
+    display: flex;
+    align-items: center;
+}
+
+.section-content .allocation-details {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    animation: expandDetails 0.3s ease-out;
+}
+
+.section-content .allocation-details-content {
+    padding: 20px;
+}
+
+.section-content .detail-row {
+    display: flex;
+    margin-bottom: 12px;
+}
+
+.section-content .detail-row:last-child {
+    margin-bottom: 0;
+}
+
+.section-content .detail-label {
+    flex: 0 0 120px;
+    color: #8F96A1;
+    font-size: 12px;
+}
+
+.section-content .detail-value {
+    color: #fff;
+    font-size: 12px;
+    word-break: break-all;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.section-content .no-allocations {
+    text-align: center;
+    color: #8F96A1;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    background: #1A1D26;
+    border-radius: 12px;
+}
+
+.section-content .allocations-loading {
+    text-align: center;
+    color: #8F96A1;
+    padding: 40px;
+}
+
+.section-content .error-message {
+    color: #ef4444;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    background-color: rgba(239, 68, 68, 0.1);
+    font-size: 14px;
+}
+
+.section-content .create-first-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #8F96A1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+}
+
+.section-content .create-first-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+/* Allocation form styles */
+.section-content .allocation-form {
+    background: #1A1D26;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    width: 100%;
+    max-width: 480px;
+    box-sizing: border-box;
+}
+
+.section-content .form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.section-content .form-header h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.section-content .close-button {
+    background: none;
+    border: none;
+    color: #8F96A1;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.section-content .close-button:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.section-content .form-group {
+    margin-bottom: 12px;
+    width: 100%;
+}
+
+.section-content .form-group label {
+    display: block;
+    color: #8F96A1;
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+
+.section-content .form-group select,
+.section-content .form-group input,
+.section-content .token-select {
+    width: 100%;
+    padding: 8px 12px;
+    background: #2A2E3A;
+    border: 1px solid #363B47;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 12px;
+    font-family: 'Roboto Mono', monospace;
+    box-sizing: border-box;
+}
+
+.section-content .form-group select:focus,
+.section-content .form-group input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.section-content .form-group select option {
+    background: #1A1D26;
+    color: #fff;
+}
+
+.section-content .form-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.section-content .form-row .form-group {
+    flex: 1;
+}
+
+.section-content .form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.section-content .submit-button,
+.section-content .cancel-button {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #8F96A1;
+}
+
+.section-content .submit-button:hover:not(:disabled),
+.section-content .cancel-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.section-content .submit-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Override TokenSelect styles to fit our form */
+.section-content .token-select {
+    width: 100%;
+    max-width: none;
+}
+
+.section-content .token-select-button {
+    width: 100%;
+    background: #2A2E3A;
+    border: 1px solid #363B47;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #fff;
+    font-size: 12px;
+    text-align: left;
+}
+
+.section-content .token-select-button:hover {
+    background: #363B47;
+    border-color: #454B57;
+}
+
+.collapsible-section .allocations-content {
+    padding: 16px;
+}
+
+.collapsible-section .allocations-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.collapsible-section .create-button,
+.collapsible-section .refresh-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #8F96A1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+}
+
+.collapsible-section .create-button:hover,
+.collapsible-section .refresh-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.collapsible-section .refresh-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.collapsible-section .refresh-button .spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.collapsible-section .allocations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.collapsible-section .allocation-card {
+    background: #1A1D26;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.collapsible-section .allocation-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.collapsible-section .allocation-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.collapsible-section .allocation-icon-wrapper {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+}
+
+.collapsible-section .allocation-icon {
+    color: #ffd700;
+}
+
+.collapsible-section .allocation-info {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.collapsible-section .allocation-info h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.2;
+    font-weight: 500;
+}
+
+.collapsible-section .allocation-date {
+    color: #8F96A1;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.collapsible-section .allocation-status {
+    margin: 0 16px;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.collapsible-section .allocation-expand {
+    flex-shrink: 0;
+    color: #666;
+    display: flex;
+    align-items: center;
+}
+
+.collapsible-section .allocation-details {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    animation: expandDetails 0.3s ease-out;
+}
+
+@keyframes expandDetails {
+    from {
+        max-height: 0;
+        opacity: 0;
+    }
+    to {
+        max-height: 500px;
+        opacity: 1;
+    }
+}
+
+.collapsible-section .allocation-details-content {
+    padding: 20px;
+}
+
+.collapsible-section .detail-row {
+    display: flex;
+    margin-bottom: 12px;
+}
+
+.collapsible-section .detail-row:last-child {
+    margin-bottom: 0;
+}
+
+.collapsible-section .detail-label {
+    flex: 0 0 120px;
+    color: #8F96A1;
+    font-size: 12px;
+}
+
+.collapsible-section .detail-value {
+    color: #fff;
+    font-size: 12px;
+    word-break: break-all;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.collapsible-section .no-allocations {
+    text-align: center;
+    color: #8F96A1;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    background: #1A1D26;
+    border-radius: 12px;
+}
+
+.collapsible-section .allocations-loading {
+    text-align: center;
+    color: #8F96A1;
+    padding: 40px;
+}
+
+.collapsible-section .error-message {
+    color: #ef4444;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    background-color: rgba(239, 68, 68, 0.1);
+    font-size: 14px;
+}
+
+.collapsible-section .create-first-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #8F96A1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+}
+
+.collapsible-section .create-first-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+/* Allocation form styles */
+.collapsible-section .allocation-form {
+    background: #1A1D26;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.collapsible-section .form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.collapsible-section .form-header h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.collapsible-section .close-button {
+    background: none;
+    border: none;
+    color: #8F96A1;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.collapsible-section .close-button:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.collapsible-section .form-group {
+    margin-bottom: 12px;
+    width: 100%;
+}
+
+.collapsible-section .form-group label {
+    display: block;
+    color: #8F96A1;
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+
+.collapsible-section .form-group select,
+.collapsible-section .form-group input,
+.collapsible-section .token-select {
+    width: 100%;
+    padding: 8px 12px;
+    background: #2A2E3A;
+    border: 1px solid #363B47;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 12px;
+    font-family: 'Roboto Mono', monospace;
+    box-sizing: border-box;
+}
+
+.collapsible-section .form-group select:focus,
+.collapsible-section .form-group input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.collapsible-section .form-group select option {
+    background: #1A1D26;
+    color: #fff;
+}
+
+.collapsible-section .form-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.collapsible-section .form-row .form-group {
+    flex: 1;
+}
+
+.collapsible-section .form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.collapsible-section .submit-button,
+.collapsible-section .cancel-button {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #8F96A1;
+}
+
+.collapsible-section .submit-button:hover:not(:disabled),
+.collapsible-section .cancel-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.collapsible-section .submit-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Override TokenSelect styles to fit our form */
+.collapsible-section .token-select {
+    width: 100%;
+    max-width: none;
+}
+
+.collapsible-section .token-select-button {
+    width: 100%;
+    background: #2A2E3A;
+    border: 1px solid #363B47;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #fff;
+    font-size: 12px;
+    text-align: left;
+}
+
+.collapsible-section .token-select-button:hover {
+    background: #363B47;
+    border-color: #454B57;
+}
+
+.collapsible-section .section-content .allocations-content {
+    padding: 16px;
+}
+
+.collapsible-section .section-content .allocations-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.collapsible-section .section-content .create-button,
+.collapsible-section .section-content .refresh-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #8F96A1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+}
+
+.collapsible-section .section-content .create-button:hover,
+.collapsible-section .section-content .refresh-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.collapsible-section .section-content .refresh-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.collapsible-section .section-content .refresh-button .spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.collapsible-section .section-content .allocations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.collapsible-section .section-content .allocation-card {
+    background: #1A1D26;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.collapsible-section .section-content .allocation-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.collapsible-section .section-content .allocation-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.collapsible-section .section-content .allocation-icon-wrapper {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+}
+
+.collapsible-section .section-content .allocation-icon {
+    color: #ffd700;
+}
+
+.collapsible-section .section-content .allocation-info {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.collapsible-section .section-content .allocation-info h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.2;
+    font-weight: 500;
+}
+
+.collapsible-section .section-content .allocation-date {
+    color: #8F96A1;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.collapsible-section .section-content .allocation-status {
+    margin: 0 16px;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.collapsible-section .section-content .allocation-expand {
+    flex-shrink: 0;
+    color: #666;
+    display: flex;
+    align-items: center;
+}
+
+.collapsible-section .section-content .allocation-details {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    animation: expandDetails 0.3s ease-out;
+}
+
+@keyframes expandDetails {
+    from {
+        max-height: 0;
+        opacity: 0;
+    }
+    to {
+        max-height: 500px;
+        opacity: 1;
+    }
+}
+
+.collapsible-section .section-content .allocation-details-content {
+    padding: 20px;
+}
+
+.collapsible-section .section-content .detail-row {
+    display: flex;
+    margin-bottom: 12px;
+}
+
+.collapsible-section .section-content .detail-row:last-child {
+    margin-bottom: 0;
+}
+
+.collapsible-section .section-content .detail-label {
+    flex: 0 0 120px;
+    color: #8F96A1;
+    font-size: 12px;
+}
+
+.collapsible-section .section-content .detail-value {
+    color: #fff;
+    font-size: 12px;
+    word-break: break-all;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.collapsible-section .section-content .no-allocations {
+    text-align: center;
+    color: #8F96A1;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    background: #1A1D26;
+    border-radius: 12px;
+}
+
+.collapsible-section .section-content .allocations-loading {
+    text-align: center;
+    color: #8F96A1;
+    padding: 40px;
+}
+
+.collapsible-section .section-content .error-message {
+    color: #ef4444;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    background-color: rgba(239, 68, 68, 0.1);
+    font-size: 14px;
+}
+
+.collapsible-section .section-content .create-first-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #8F96A1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+}
+
+.collapsible-section .section-content .create-first-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+/* Allocation form styles */
+.collapsible-section .section-content .allocation-form {
+    background: #1A1D26;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    width: 100%;
+    max-width: 480px;
+    box-sizing: border-box;
+}
+
+.collapsible-section .section-content .form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.collapsible-section .section-content .form-header h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.collapsible-section .section-content .close-button {
+    background: none;
+    border: none;
+    color: #8F96A1;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.collapsible-section .section-content .close-button:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.collapsible-section .section-content .form-group {
+    margin-bottom: 12px;
+    width: 100%;
+}
+
+.collapsible-section .section-content .form-group label {
+    display: block;
+    color: #8F96A1;
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+
+.collapsible-section .section-content .form-group select,
+.collapsible-section .section-content .form-group input,
+.collapsible-section .section-content .token-select {
+    width: 100%;
+    padding: 8px 12px;
+    background: #2A2E3A;
+    border: 1px solid #363B47;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 12px;
+    font-family: 'Roboto Mono', monospace;
+    box-sizing: border-box;
+}
+
+.collapsible-section .section-content .form-group select:focus,
+.collapsible-section .section-content .form-group input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.collapsible-section .section-content .form-group select option {
+    background: #1A1D26;
+    color: #fff;
+}
+
+.collapsible-section .section-content .form-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.collapsible-section .section-content .form-row .form-group {
+    flex: 1;
+}
+
+.collapsible-section .section-content .form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.collapsible-section .section-content .submit-button,
+.collapsible-section .section-content .cancel-button {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #8F96A1;
+}
+
+.collapsible-section .section-content .submit-button:hover:not(:disabled),
+.collapsible-section .section-content .cancel-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.collapsible-section .section-content .submit-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Override TokenSelect styles to fit our form */
+.collapsible-section .section-content .token-select {
+    width: 100%;
+    max-width: none;
+}
+
+.collapsible-section .section-content .token-select-button {
+    width: 100%;
+    background: #2A2E3A;
+    border: 1px solid #363B47;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #fff;
+    font-size: 12px;
+    text-align: left;
+}
+
+.collapsible-section .section-content .token-select-button:hover {
     background: #363B47;
     border-color: #454B57;
 } 
