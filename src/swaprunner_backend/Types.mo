@@ -377,6 +377,48 @@ module {
         discovered_at: Int; // Timestamp
     };
 
+    //--------------------------------  
+    // Types for Allocation module
+    //--------------------------------
+
+    public type Allocation = {
+        id: Text;                   // Unique identifier
+        creator: Principal;         // Creator's principal
+        achievement_id: Text;       // References Achievement.id
+        token: {
+            canister_id: Principal; // Token canister ID
+            total_amount_e8s: Nat;  // Initial allocation size
+            per_user: {            // Per-user claim amount
+                min_e8s: Nat;      // Minimum claim amount
+                max_e8s: Nat;      // Maximum claim amount (equal to min for fixed)
+            };
+        };
+        created_at: Int;           // Timestamp
+    };
+
+    public type AllocationStatus = {
+        #Draft;              // Just created
+        #Funded;            // Tokens transferred to backend
+        #Active;            // Ready for claims
+        #Depleted;          // All funds claimed
+        #Cancelled;         // Cancelled by creator
+    };
+
+    public type AllocationClaim = {
+        allocation_id: Text;
+        user: Principal;
+        amount_e8s: Nat;    
+        claimed_at: Int;    
+    };
+
+    public type CreateAllocationArgs = {
+        achievement_id: Text;
+        token_canister_id: Principal;
+        total_amount_e8s: Nat;
+        per_user_min_e8s: Nat;
+        per_user_max_e8s: Nat;
+    };
+
     // Context type containing all required state from main.mo
     public type Context = {
         achievements: HashMap.HashMap<Text, Achievement>;
