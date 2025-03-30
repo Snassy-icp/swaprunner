@@ -3991,4 +3991,18 @@ actor {
         Buffer.toArray(conditions)
     };
 
+    public shared({caller}) func withdraw_from_balance(token_id: Principal, amount: Nat) : async Result.Result<(), Text> {
+        switch (getTokenIndex(token_id)) {
+            case null #err("Token not found");
+            case (?token_index) {
+                if (subtractFromUserBalance(caller, token_index, amount)) {
+                    // TODO: Implement actual token transfer here
+                    #ok()
+                } else {
+                    #err("Insufficient balance")
+                }
+            };
+        }
+    };
+
 }
