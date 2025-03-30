@@ -73,7 +73,7 @@ module {
 
         switch (usage.condition_key) {
             case "trades_above_amount" {
-                let min_amount = switch (usage.parameters) {
+                let min_amount = switch (usage.parameters[0]) {
                     case (#Nat(amount)) ?amount;
                     case _ null;
                 };
@@ -92,7 +92,7 @@ module {
             };
 
             case "total_trades_count" {
-                let min_trades = switch (usage.parameters) {
+                let min_trades = switch (usage.parameters[0]) {
                     case (#Nat(trades)) ?trades;
                     case _ null;
                 };
@@ -110,12 +110,12 @@ module {
             };
 
             case "token_trade_volume" {
-                let token_id = switch (usage.parameters) {
+                let token_id = switch (usage.parameters[0]) {
                     case (#Text(id)) ?id;
                     case _ null;
                 };
                 
-                let min_volume = switch (usage.parameters) {
+                let min_volume = switch (usage.parameters[1]) {
                     case (#Nat(volume)) ?volume;
                     case _ null;
                 };

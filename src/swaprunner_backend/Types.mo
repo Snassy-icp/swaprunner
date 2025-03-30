@@ -336,11 +336,11 @@ module {
 
     public type ConditionUsage = {
         condition_key: Text;
-        parameters: {
+        parameters: [{  // Now an array of variants
             #Principal: Principal;
             #Nat: Nat;
             #Text: Text;
-        };
+        }];
     };
 
     public type PredicateExpression = {
