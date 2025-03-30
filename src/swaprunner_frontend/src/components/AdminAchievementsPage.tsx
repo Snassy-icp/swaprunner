@@ -300,7 +300,23 @@ export default function AdminAchievementsPage() {
             setLoading(true);
             const actor = await backendService.getActor();
             const result = await actor.get_all_achievements();
-            setAchievements(result);
+            
+            // Transform the parameters into our frontend format
+            const transformedAchievements = result.map((achievement: any) => ({
+                ...achievement,
+                condition_usages: achievement.condition_usages.map((usage: any) => {
+                    const parameterEntry = Object.entries(usage.parameters)[0];
+                    return {
+                        condition_key: usage.condition_key,
+                        parameters: {
+                            type: parameterEntry[0] as 'Principal' | 'Nat' | 'Text',
+                            value: parameterEntry[1]
+                        }
+                    };
+                })
+            }));
+            
+            setAchievements(transformedAchievements);
             setError(null);
         } catch (err: any) {
             setError('Failed to load achievements: ' + (err.message || String(err)));
@@ -314,7 +330,19 @@ export default function AdminAchievementsPage() {
         try {
             setLoading(true);
             const actor = await backendService.getActor();
-            const result = await actor.add_achievement(formData);
+
+            // Transform the parameters into the correct variant format
+            const transformedData = {
+                ...formData,
+                condition_usages: formData.condition_usages.map(usage => ({
+                    condition_key: usage.condition_key,
+                    parameters: {
+                        [usage.parameters.type]: usage.parameters.value
+                    }
+                }))
+            };
+
+            const result = await actor.add_achievement(transformedData);
             if ('ok' in result) {
                 await loadAchievements();
                 setFormData({
@@ -365,7 +393,19 @@ export default function AdminAchievementsPage() {
         try {
             setLoading(true);
             const actor = await backendService.getActor();
-            const result = await actor.update_achievement(formData);
+
+            // Transform the parameters into the correct variant format
+            const transformedData = {
+                ...formData,
+                condition_usages: formData.condition_usages.map(usage => ({
+                    condition_key: usage.condition_key,
+                    parameters: {
+                        [usage.parameters.type]: usage.parameters.value
+                    }
+                }))
+            };
+
+            const result = await actor.update_achievement(transformedData);
             if ('ok' in result) {
                 await loadAchievements();
                 setSelectedAchievement(null);
