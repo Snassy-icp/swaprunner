@@ -143,6 +143,12 @@ export const AdminPage: React.FC = () => {
         >
           Price Testing
         </button>
+        <button 
+          className="nav-button"
+          onClick={() => navigate('/admin/achievements')}
+        >
+          Achievement Management
+        </button>
       </div>
 
       <div className="price-test-section">

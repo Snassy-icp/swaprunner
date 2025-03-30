@@ -3809,4 +3809,12 @@ actor {
         }
     };
 
+    public shared query func get_all_conditions() : async [T.Condition] {
+        let conditions = Buffer.Buffer<T.Condition>(conditionRegistry.size());
+        for ((_, condition) in conditionRegistry.entries()) {
+            conditions.add(condition);
+        };
+        Buffer.toArray(conditions)
+    };
+
 }

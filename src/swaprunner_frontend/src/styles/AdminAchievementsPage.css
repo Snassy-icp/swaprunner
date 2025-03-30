@@ -14,7 +14,7 @@
 }
 
 .achievement-form {
-    background: #f8f9fa;
+    background: #080808;
     padding: 20px;
     border-radius: 8px;
     margin-bottom: 30px;
@@ -109,4 +109,158 @@
 .achievements-list td button:last-child {
     background-color: #dc3545;
     color: white;
+}
+
+.condition-usages {
+    margin-top: 20px;
+    border-top: 1px solid #dee2e6;
+    padding-top: 20px;
+}
+
+.condition-usage-editor {
+    background: rgb(85, 85, 85);
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.condition-select {
+    margin-bottom: 15px;
+}
+
+.condition-select select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+.parameters-editor {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.parameter-input {
+    display: flex;
+    flex-direction: column;
+}
+
+.parameter-input label {
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    color: #495057;
+}
+
+.parameter-input input {
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+
+.add-condition {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.remove-condition {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.condition-usage-editor h4 {
+    margin: 0 0 10px 0;
+    color: #495057;
+}
+
+.predicate-section {
+    margin-top: 20px;
+    border-top: 1px solid #dee2e6;
+    padding-top: 20px;
+}
+
+.help-text {
+    color: #6c757d;
+    font-size: 0.9em;
+    margin-bottom: 15px;
+}
+
+.predicate-editor {
+    background: white;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.predicate-type {
+    margin-bottom: 15px;
+}
+
+.predicate-type select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+.ref-input {
+    margin-bottom: 15px;
+}
+
+.ref-input input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+.binary-op {
+    display: grid;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.sub-predicate {
+    border-left: 2px solid #dee2e6;
+    padding-left: 15px;
+}
+
+.unary-op {
+    border-left: 2px solid #dee2e6;
+    padding-left: 15px;
+    margin-bottom: 15px;
+}
+
+.add-predicate {
+    background-color: #17a2b8;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.remove-predicate {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
 } 

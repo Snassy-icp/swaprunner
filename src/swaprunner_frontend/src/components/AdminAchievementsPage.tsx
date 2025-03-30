@@ -24,8 +24,229 @@ interface Achievement {
     };
 }
 
+interface Condition {
+    key: string;
+    name: string;
+    description: string;
+    parameter_specs: Array<{
+        name: string;
+        type_: 'Principal' | 'Nat' | 'Text';
+        default_value?: string;
+    }>;
+}
+
+function ConditionUsageEditor({ 
+    usage, 
+    conditions,
+    onChange,
+    onRemove 
+}: { 
+    usage: Achievement['condition_usages'][0],
+    conditions: Condition[],
+    onChange: (usage: Achievement['condition_usages'][0]) => void,
+    onRemove: () => void
+}) {
+    const selectedCondition = conditions.find(c => c.key === usage.condition_key);
+
+    return (
+        <div className="condition-usage-editor">
+            <div className="condition-select">
+                <label>Condition:</label>
+                <select 
+                    value={usage.condition_key}
+                    onChange={(e) => {
+                        const newCondition = conditions.find(c => c.key === e.target.value);
+                        if (!newCondition) return;
+                        
+                        // Create empty parameters based on specs
+                        const parameters = {};
+                        onChange({
+                            condition_key: e.target.value,
+                            parameters
+                        });
+                    }}
+                >
+                    <option value="">Select a condition</option>
+                    {conditions.map(condition => (
+                        <option key={condition.key} value={condition.key}>
+                            {condition.name}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            {selectedCondition && (
+                <div className="parameters-editor">
+                    {selectedCondition.parameter_specs.map(spec => (
+                        <div key={spec.name} className="parameter-input">
+                            <label>{spec.name}:</label>
+                            <input
+                                type={spec.type_ === 'Nat' ? 'number' : 'text'}
+                                value={usage.parameters[spec.type_]?.toString() || ''}
+                                onChange={(e) => {
+                                    let value: any = e.target.value;
+                                    if (spec.type_ === 'Nat') {
+                                        value = { Nat: BigInt(value) };
+                                    } else if (spec.type_ === 'Principal') {
+                                        try {
+                                            value = { Principal: Principal.fromText(value) };
+                                        } catch {
+                                            return; // Invalid principal
+                                        }
+                                    } else if (spec.type_ === 'Text') {
+                                        value = { Text: value };
+                                    }
+                                    onChange({
+                                        ...usage,
+                                        parameters: value
+                                    });
+                                }}
+                            />
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <button type="button" onClick={onRemove} className="remove-condition">
+                Remove Condition
+            </button>
+        </div>
+    );
+}
+
+function PredicateEditor({
+    predicate,
+    maxRef,
+    onChange,
+    onRemove
+}: {
+    predicate: Achievement['predicate'],
+    maxRef: number,
+    onChange: (predicate: Achievement['predicate']) => void,
+    onRemove: () => void
+}) {
+    const [type, setType] = useState<'AND' | 'OR' | 'NOT' | 'REF'>(
+        predicate ? 
+            Object.keys(predicate)[0] as any :
+            'REF'
+    );
+
+    const handleTypeChange = (newType: typeof type) => {
+        setType(newType);
+        switch (newType) {
+            case 'AND':
+            case 'OR':
+                onChange({
+                    [newType]: [
+                        { REF: 0 },
+                        { REF: 0 }
+                    ]
+                });
+                break;
+            case 'NOT':
+                onChange({
+                    NOT: { REF: 0 }
+                });
+                break;
+            case 'REF':
+                onChange({
+                    REF: 0
+                });
+                break;
+        }
+    };
+
+    return (
+        <div className="predicate-editor">
+            <div className="predicate-type">
+                <label>Type:</label>
+                <select 
+                    value={type}
+                    onChange={(e) => handleTypeChange(e.target.value as typeof type)}
+                >
+                    <option value="AND">AND</option>
+                    <option value="OR">OR</option>
+                    <option value="NOT">NOT</option>
+                    <option value="REF">Reference</option>
+                </select>
+            </div>
+
+            {type === 'REF' && (
+                <div className="ref-input">
+                    <label>Condition Index:</label>
+                    <input
+                        type="number"
+                        min="0"
+                        max={maxRef}
+                        value={predicate?.REF || 0}
+                        onChange={(e) => onChange({ REF: Math.min(maxRef, Math.max(0, parseInt(e.target.value))) })}
+                    />
+                </div>
+            )}
+
+            {(type === 'AND' || type === 'OR') && predicate && (type in predicate) && (
+                <div className="binary-op">
+                    <div className="sub-predicate">
+                        <h4>Left Operand</h4>
+                        <PredicateEditor
+                            predicate={(predicate as any)[type][0]}
+                            maxRef={maxRef}
+                            onChange={(left) => {
+                                onChange({
+                                    [type]: [
+                                        left,
+                                        (predicate as any)[type][1]
+                                    ]
+                                });
+                            }}
+                            onRemove={() => {}}
+                        />
+                    </div>
+                    <div className="sub-predicate">
+                        <h4>Right Operand</h4>
+                        <PredicateEditor
+                            predicate={(predicate as any)[type][1]}
+                            maxRef={maxRef}
+                            onChange={(right) => {
+                                onChange({
+                                    [type]: [
+                                        (predicate as any)[type][0],
+                                        right
+                                    ]
+                                });
+                            }}
+                            onRemove={() => {}}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {type === 'NOT' && predicate?.NOT && (
+                <div className="unary-op">
+                    <h4>Operand</h4>
+                    <PredicateEditor
+                        predicate={predicate.NOT}
+                        maxRef={maxRef}
+                        onChange={(child) => {
+                            onChange({
+                                NOT: child
+                            });
+                        }}
+                        onRemove={() => {}}
+                    />
+                </div>
+            )}
+
+            <button type="button" onClick={onRemove} className="remove-predicate">
+                Remove Predicate
+            </button>
+        </div>
+    );
+}
+
 export default function AdminAchievementsPage() {
     const [achievements, setAchievements] = useState<Achievement[]>([]);
+    const [conditions, setConditions] = useState<Condition[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
@@ -40,7 +261,18 @@ export default function AdminAchievementsPage() {
 
     useEffect(() => {
         loadAchievements();
+        loadConditions();
     }, []);
+
+    const loadConditions = async () => {
+        try {
+            const actor = await backendService.getActor();
+            const result = await actor.get_all_conditions();
+            setConditions(result);
+        } catch (err: any) {
+            setError('Failed to load conditions: ' + (err.message || String(err)));
+        }
+    };
 
     const loadAchievements = async () => {
         try {
@@ -133,6 +365,42 @@ export default function AdminAchievementsPage() {
         }
     };
 
+    const handleAddCondition = () => {
+        setFormData({
+            ...formData,
+            condition_usages: [
+                ...formData.condition_usages,
+                {
+                    condition_key: '',
+                    parameters: {}
+                }
+            ]
+        });
+    };
+
+    const handleConditionChange = (index: number, usage: Achievement['condition_usages'][0]) => {
+        const newUsages = [...formData.condition_usages];
+        newUsages[index] = usage;
+        setFormData({
+            ...formData,
+            condition_usages: newUsages
+        });
+    };
+
+    const handleRemoveCondition = (index: number) => {
+        setFormData({
+            ...formData,
+            condition_usages: formData.condition_usages.filter((_, i) => i !== index)
+        });
+    };
+
+    const handlePredicateChange = (predicate: Achievement['predicate']) => {
+        setFormData({
+            ...formData,
+            predicate
+        });
+    };
+
     return (
         <div className="admin-achievements-page">
             <h1>Manage Achievements</h1>
@@ -185,8 +453,46 @@ export default function AdminAchievementsPage() {
                     />
                 </div>
 
-                {/* TODO: Add condition usage and predicate editors */}
-                
+                <div className="condition-usages">
+                    <h3>Conditions</h3>
+                    {formData.condition_usages.map((usage, index) => (
+                        <ConditionUsageEditor
+                            key={index}
+                            usage={usage}
+                            conditions={conditions}
+                            onChange={(usage) => handleConditionChange(index, usage)}
+                            onRemove={() => handleRemoveCondition(index)}
+                        />
+                    ))}
+                    <button type="button" onClick={handleAddCondition} className="add-condition">
+                        Add Condition
+                    </button>
+                </div>
+
+                <div className="predicate-section">
+                    <h3>Predicate (Optional)</h3>
+                    <p className="help-text">
+                        Use predicates to create complex conditions using AND, OR, and NOT operations.
+                        Reference condition indices (0-based) to combine them logically.
+                    </p>
+                    {formData.predicate ? (
+                        <PredicateEditor
+                            predicate={formData.predicate}
+                            maxRef={Math.max(0, formData.condition_usages.length - 1)}
+                            onChange={handlePredicateChange}
+                            onRemove={() => setFormData({ ...formData, predicate: undefined })}
+                        />
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => handlePredicateChange({ REF: 0 })}
+                            className="add-predicate"
+                        >
+                            Add Predicate
+                        </button>
+                    )}
+                </div>
+
                 <div className="form-actions">
                     <button type="submit" disabled={loading}>
                         {selectedAchievement ? 'Update Achievement' : 'Add Achievement'}
