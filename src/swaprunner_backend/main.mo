@@ -3790,4 +3790,23 @@ actor {
         };
     };
 
+    // Achievement queries
+    public query({caller}) func get_user_achievements() : async [T.UserAchievement] {
+        switch (userAchievements.get(Principal.toText(caller))) {
+            case null [];
+            case (?achievements) achievements;
+        }
+    };
+
+    public query func get_all_achievements() : async [T.Achievement] {
+        Iter.toArray(achievementRegistry.vals())
+    };
+
+    public query func get_achievement_details(id: Text) : async Result.Result<T.Achievement, Text> {
+        switch (achievementRegistry.get(id)) {
+            case null #err("Achievement not found");
+            case (?achievement) #ok(achievement);
+        }
+    };
+
 }
