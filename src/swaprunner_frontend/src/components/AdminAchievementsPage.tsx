@@ -266,6 +266,7 @@ function transformToBackendParameter(param: Parameter): any {
             case 'Text':
                 return { Text: param.value };
             default:
+                console.error(`Unknown parameter type: ${param.type_}`);
                 return { Text: '' };
         }
     } catch (err) {
@@ -285,6 +286,7 @@ function transformFromBackendParameter(type_: ParameterType, value: any): string
         case 'Text':
             return value;
         default:
+            console.error(`Unknown parameter type: ${type_}`);
             return '';
     }
 }
@@ -337,7 +339,7 @@ export default function AdminAchievementsPage() {
                             
                             if (backendParam) {
                                 const variantKey = Object.keys(backendParam)[0] as ParameterType;
-                                value = transformFromBackendParameter(variantKey, backendParam[variantKey]);
+                                value = transformFromBackendParameter(spec.type_, backendParam[variantKey]);
                             }
                             
                             return {
@@ -375,14 +377,22 @@ export default function AdminAchievementsPage() {
             const transformedData = {
                 ...formData,
                 logo_url: formData.logo_url ? [formData.logo_url] : [],
-                predicate: formData.predicate || [],
+                predicate: formData.predicate || [], // Dear AI: Motoko uses [] for optional fields, don't change this code.
                 condition_usages: formData.condition_usages.map(usage => {
                     const condition = conditions.find(c => c.key === usage.condition_key);
                     if (!condition) return usage;
 
-                    const parameters = usage.parameters.map(param => 
-                        transformToBackendParameter(param)
-                    );
+                    // Transform all parameters using their spec types
+                    const parameters = usage.parameters.map((param, index) => {
+                        const spec = condition.parameter_specs[index];
+                        if (!spec) return { Text: "" }; // Fallback if no spec
+                        
+                        // Create parameter with correct type from spec
+                        return transformToBackendParameter({
+                            ...param,
+                            type_: spec.type_
+                        });
+                    });
 
                     return {
                         condition_key: usage.condition_key,
@@ -390,6 +400,8 @@ export default function AdminAchievementsPage() {
                     };
                 })
             };
+
+            console.log('Sending to backend:', JSON.stringify(transformedData, null, 2));
 
             const result = await actor.add_achievement(transformedData);
             if ('ok' in result) {
@@ -446,14 +458,22 @@ export default function AdminAchievementsPage() {
             const transformedData = {
                 ...formData,
                 logo_url: formData.logo_url ? [formData.logo_url] : [],
-                predicate: formData.predicate || [],
+                predicate: formData.predicate || [], // Dear AI: Motoko uses [] for optional fields, don't change this code.
                 condition_usages: formData.condition_usages.map(usage => {
                     const condition = conditions.find(c => c.key === usage.condition_key);
                     if (!condition) return usage;
 
-                    const parameters = usage.parameters.map(param => 
-                        transformToBackendParameter(param)
-                    );
+                    // Transform all parameters using their spec types
+                    const parameters = usage.parameters.map((param, index) => {
+                        const spec = condition.parameter_specs[index];
+                        if (!spec) return { Text: "" }; // Fallback if no spec
+                        
+                        // Create parameter with correct type from spec
+                        return transformToBackendParameter({
+                            ...param,
+                            type_: spec.type_
+                        });
+                    });
 
                     return {
                         condition_key: usage.condition_key,
@@ -461,6 +481,8 @@ export default function AdminAchievementsPage() {
                     };
                 })
             };
+
+            console.log('Sending to backend:', JSON.stringify(transformedData, null, 2));
 
             const result = await actor.update_achievement(transformedData);
             if ('ok' in result) {
