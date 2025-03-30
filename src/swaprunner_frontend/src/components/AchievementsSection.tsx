@@ -114,8 +114,14 @@ export const AchievementsSection: React.FC = () => {
                             const details = achievementDetails[achievement.achievement_id];
                             if (!details) return null;
 
+                            const tooltipContent = `${details.name}\n${details.description}\nEarned on ${formatDate(achievement.discovered_at)}`;
+
                             return (
-                                <div key={achievement.achievement_id} className="achievement-card">
+                                <div 
+                                    key={achievement.achievement_id} 
+                                    className="achievement-card"
+                                    title={tooltipContent}
+                                >
                                     {details.logo_url ? (
                                         <img 
                                             src={details.logo_url} 
@@ -126,10 +132,6 @@ export const AchievementsSection: React.FC = () => {
                                         <FiAward size={48} className="achievement-icon" />
                                     )}
                                     <h3>{details.name}</h3>
-                                    <p className="achievement-description">{details.description}</p>
-                                    <div className="achievement-date">
-                                        Earned on {formatDate(achievement.discovered_at)}
-                                    </div>
                                 </div>
                             );
                         })
