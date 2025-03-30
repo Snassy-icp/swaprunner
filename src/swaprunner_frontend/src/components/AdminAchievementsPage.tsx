@@ -10,11 +10,9 @@ interface Achievement {
     logo_url?: string;
     condition_usages: Array<{
         condition_key: string;
-        parameters: {
-            Principal?: Principal;
-            Nat?: bigint;
-            Text?: string;
-        };
+        parameters: { type: 'Principal'; value: Principal } |
+                   { type: 'Nat'; value: bigint } |
+                   { type: 'Text'; value: string };
     }>;
     predicate?: {
         AND?: [any, any];
@@ -58,8 +56,24 @@ function ConditionUsageEditor({
                         const newCondition = conditions.find(c => c.key === e.target.value);
                         if (!newCondition) return;
                         
-                        // Create empty parameters based on specs
-                        const parameters = {};
+                        // Create empty parameters based on first spec
+                        const firstSpec = newCondition.parameter_specs[0];
+                        let parameters: Achievement['condition_usages'][0]['parameters'] = { type: 'Text', value: '' };
+                        
+                        if (firstSpec) {
+                            switch (firstSpec.type_) {
+                                case 'Nat':
+                                    parameters = { type: 'Nat', value: BigInt(0) };
+                                    break;
+                                case 'Principal':
+                                    parameters = { type: 'Principal', value: Principal.fromText('aaaaa-aa') };
+                                    break;
+                                case 'Text':
+                                    parameters = { type: 'Text', value: '' };
+                                    break;
+                            }
+                        }
+                        
                         onChange({
                             condition_key: e.target.value,
                             parameters
@@ -82,23 +96,30 @@ function ConditionUsageEditor({
                             <label>{spec.name}:</label>
                             <input
                                 type={spec.type_ === 'Nat' ? 'number' : 'text'}
-                                value={usage.parameters[spec.type_]?.toString() || ''}
+                                value={usage.parameters.value.toString()}
                                 onChange={(e) => {
                                     let value: any = e.target.value;
+                                    let parameters: Achievement['condition_usages'][0]['parameters'];
+                                    
                                     if (spec.type_ === 'Nat') {
-                                        value = { Nat: BigInt(value) };
+                                        try {
+                                            parameters = { type: 'Nat', value: BigInt(value || 0) };
+                                        } catch {
+                                            return; // Invalid number
+                                        }
                                     } else if (spec.type_ === 'Principal') {
                                         try {
-                                            value = { Principal: Principal.fromText(value) };
+                                            parameters = { type: 'Principal', value: Principal.fromText(value || 'aaaaa-aa') };
                                         } catch {
                                             return; // Invalid principal
                                         }
-                                    } else if (spec.type_ === 'Text') {
-                                        value = { Text: value };
+                                    } else {
+                                        parameters = { type: 'Text', value: value };
                                     }
+                                    
                                     onChange({
                                         ...usage,
-                                        parameters: value
+                                        parameters
                                     });
                                 }}
                             />
@@ -372,7 +393,7 @@ export default function AdminAchievementsPage() {
                 ...formData.condition_usages,
                 {
                     condition_key: '',
-                    parameters: {}
+                    parameters: { type: 'Text', value: '' }
                 }
             ]
         });
