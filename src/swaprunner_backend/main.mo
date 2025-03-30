@@ -63,6 +63,8 @@ actor {
     private stable var userWalletTokenEntries : [(Principal, [Nat16])] = [];
 
     // Stable storage for statistics
+    // IMPORTANT: DO NOT MODIFY ANY STATS CODE BELOW THIS LINE
+    // The stats implementation is well-tested and any changes must be explicitly requested
     private stable var userTokenStatsEntries : [(Text, T.UserTokenStats)] = [];
     private stable var tokenSavingsStatsEntries : [(Text, T.TokenSavingsStats)] = [];
     private stable var globalStats : T.GlobalStats = {
