@@ -6,6 +6,8 @@ import Buffer "mo:base/Buffer";
 import Nat "mo:base/Nat";
 import Int "mo:base/Int";
 import HashMap "mo:base/HashMap";
+import Debug "mo:base/Debug";
+import Bool "mo:base/Bool";
 
 import T "./Types";
 
@@ -66,76 +68,150 @@ module {
         usage: T.ConditionUsage,
         registry: HashMap.HashMap<Text, T.Condition>
     ) : async Bool {
+        Debug.print("Evaluating condition: " # usage.condition_key # " for user: " # Principal.toText(user));
+        
         let condition = switch (registry.get(usage.condition_key)) {
-            case null return false; // Invalid condition key
+            case null {
+                Debug.print("Invalid condition key: " # usage.condition_key);
+                return false; // Invalid condition key
+            };
             case (?c) c;
         };
 
+        Debug.print("Found condition in registry: " # condition.name);
+        Debug.print("Parameters received: " # debug_show(usage.parameters));
+
         switch (usage.condition_key) {
             case "trades_above_amount" {
+                Debug.print("Evaluating trades_above_amount condition");
                 let min_amount = switch (usage.parameters[0]) {
-                    case (#Nat(amount)) ?amount;
-                    case _ null;
+                    case (#Nat(amount)) {
+                        Debug.print("Min amount parameter: " # Nat.toText(amount));
+                        ?amount;
+                    };
+                    case _ {
+                        Debug.print("Invalid min_amount parameter type");
+                        null;
+                    };
                 };
                 
                 switch (min_amount) {
-                    case null return false;
+                    case null {
+                        Debug.print("No valid min_amount parameter");
+                        return false;
+                    };
                     case (?min) {
                         let stats = switch (context.user_stats.get(Principal.toText(user))) {
-                            case null return false;
-                            case (?s) s;
+                            case null {
+                                Debug.print("No user stats found");
+                                return false;
+                            };
+                            case (?s) {
+                                Debug.print("Found user stats");
+                                s;
+                            };
                         };
                         // TODO: Implement largest trade check when we add that stat
+                        Debug.print("trades_above_amount not yet implemented");
                         return false;
                     };
                 };
             };
 
             case "total_trades_count" {
+                Debug.print("Evaluating total_trades_count condition");
                 let min_trades = switch (usage.parameters[0]) {
-                    case (#Nat(trades)) ?trades;
-                    case _ null;
+                    case (#Nat(trades)) {
+                        Debug.print("Min trades parameter: " # Nat.toText(trades));
+                        ?trades;
+                    };
+                    case _ {
+                        Debug.print("Invalid min_trades parameter type");
+                        null;
+                    };
                 };
                 
                 switch (min_trades) {
-                    case null return false;
+                    case null {
+                        Debug.print("No valid min_trades parameter");
+                        return false;
+                    };
                     case (?min) {
                         let stats = switch (context.user_stats.get(Principal.toText(user))) {
-                            case null return false;
-                            case (?s) s;
+                            case null {
+                                Debug.print("No user stats found");
+                                return false;
+                            };
+                            case (?s) {
+                                Debug.print("Found user stats with total_swaps: " # Nat.toText(s.total_swaps));
+                                s;
+                            };
                         };
-                        return stats.total_swaps >= min;
+                        let result = stats.total_swaps >= min;
+                        Debug.print("Total trades condition result: " # Bool.toText(result) # 
+                                  " (required: " # Nat.toText(min) # 
+                                  ", actual: " # Nat.toText(stats.total_swaps) # ")");
+                        return result;
                     };
                 };
             };
 
             case "token_trade_volume" {
+                Debug.print("Evaluating token_trade_volume condition");
                 let token_id = switch (usage.parameters[0]) {
-                    case (#Text(id)) ?id;
-                    case _ null;
+                    case (#Text(id)) {
+                        Debug.print("Token ID parameter: " # id);
+                        ?id;
+                    };
+                    case _ {
+                        Debug.print("Invalid token_id parameter type");
+                        null;
+                    };
                 };
                 
                 let min_volume = switch (usage.parameters[1]) {
-                    case (#Nat(volume)) ?volume;
-                    case _ null;
+                    case (#Nat(volume)) {
+                        Debug.print("Min volume parameter: " # Nat.toText(volume));
+                        ?volume;
+                    };
+                    case _ {
+                        Debug.print("Invalid min_volume parameter type");
+                        null;
+                    };
                 };
                 
                 switch (token_id, min_volume) {
                     case (?id, ?min) {
                         let stats = switch (context.user_token_stats.get(getUserTokenStatsKey(user, id))) {
-                            case null return false;
-                            case (?stats) stats;
+                            case null {
+                                Debug.print("No token stats found for token: " # id);
+                                return false;
+                            };
+                            case (?stats) {
+                                Debug.print("Found token stats");
+                                stats;
+                            };
                         };
                         let total_volume = stats.input_volume_e8s_icpswap + 
                                          stats.input_volume_e8s_kong +
                                          stats.input_volume_e8s_split;
-                        return total_volume >= min;
+                        let result = total_volume >= min;
+                        Debug.print("Token volume condition result: " # Bool.toText(result) # 
+                                  " (required: " # Nat.toText(min) # 
+                                  ", actual: " # Nat.toText(total_volume) # ")");
+                        return result;
                     };
-                    case _ return false;
+                    case _ {
+                        Debug.print("Missing token_id or min_volume parameter");
+                        return false;
+                    };
                 };
             };
 
-            case _ return false; // Unknown condition
+            case _ {
+                Debug.print("Unknown condition type: " # usage.condition_key);
+                return false; // Unknown condition
+            };
         };
     };
 
