@@ -5,6 +5,7 @@ import TrieMap "mo:base/TrieMap";
 import Buffer "mo:base/Buffer";
 import Nat "mo:base/Nat";
 import Int "mo:base/Int";
+import HashMap "mo:base/HashMap";
 
 import T "./Types";
 
@@ -63,7 +64,7 @@ module {
         context: T.Context,
         user: Principal,
         usage: T.ConditionUsage,
-        registry: TrieMap.TrieMap<Text, T.Condition>
+        registry: HashMap.HashMap<Text, T.Condition>
     ) : async Bool {
         let condition = switch (registry.get(usage.condition_key)) {
             case null return false; // Invalid condition key

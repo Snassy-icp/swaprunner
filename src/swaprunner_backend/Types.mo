@@ -4,6 +4,7 @@ import Nat "mo:base/Nat";
 import TrieMap "mo:base/TrieMap";
 import Nat8 "mo:base/Nat8";
 import Int "mo:base/Int";
+import HashMap "mo:base/HashMap";
 
 module {
 
@@ -357,13 +358,13 @@ module {
 
     // Context type containing all required state from main.mo
     public type Context = {
-        achievements: TrieMap.TrieMap<Text, Achievement>;
-        conditions: TrieMap.TrieMap<Text, Condition>;
+        achievements: HashMap.HashMap<Text, Achievement>;
+        conditions: HashMap.HashMap<Text, Condition>;
         global_stats: GlobalStats;
-        token_stats: TrieMap.TrieMap<Text, TokenStats>;
-        user_achievements: TrieMap.TrieMap<Text, [UserAchievement]>;
-        user_stats: TrieMap.TrieMap<Text, UserStats>;
-        user_token_stats: TrieMap.TrieMap<Text, UserTokenStats>;
+        token_stats: HashMap.HashMap<Text, TokenStats>;
+        user_achievements: HashMap.HashMap<Text, [UserAchievement]>;
+        user_stats: HashMap.HashMap<Text, UserStats>;
+        user_token_stats: HashMap.HashMap<Text, UserTokenStats>;
     };
 
     // Types for conditions

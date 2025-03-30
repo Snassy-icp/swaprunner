@@ -31,15 +31,18 @@ actor {
     private let MAX_RESPONSE_SIZE_BYTES : Nat = 2_500_000; // Conservative limit below IC's max of ~3.1MB
 
     // Runtime state
-    private var conditionRegistry = TrieMap.fromEntries<Text, T.Condition>(
-            Condition.setup_registry().vals(),
-            Text.equal,
-            Text.hash
-        );
+    private var conditionRegistry = HashMap.HashMap<Text, T.Condition>(10, Text.equal, Text.hash);
 
-    // Add after conditionRegistry
-    private var achievementRegistry = TrieMap.TrieMap<Text, T.Achievement>(Text.equal, Text.hash);
-    private var userAchievements = TrieMap.TrieMap<Text, [T.UserAchievement]>(Text.equal, Text.hash);
+    // Initialize condition registry
+    do {
+        let entries = Condition.setup_registry();
+        for ((key, value) in entries.vals()) {
+            conditionRegistry.put(key, value);
+        };
+    };
+
+    private var achievementRegistry = HashMap.HashMap<Text, T.Achievement>(10, Text.equal, Text.hash);
+    private var userAchievements = HashMap.HashMap<Text, [T.UserAchievement]>(10, Text.equal, Text.hash);
 
     // Stable storage for admin list
     private stable var admins : [Principal] = [];
