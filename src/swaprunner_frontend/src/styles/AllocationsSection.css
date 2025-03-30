@@ -1273,6 +1273,7 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
+    width: 100%;
 }
 
 .collapsible-section .section-content .form-header h3 {

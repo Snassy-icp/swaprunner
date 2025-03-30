@@ -3,7 +3,7 @@ import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiPlus, FiX 
 import { useNavigate } from 'react-router-dom';
 import { backendService } from '../services/backend';
 import { CollapsibleSection } from '../pages/Me';
-import { formatTokenAmount } from '../utils/format';
+import { formatTokenAmount, parseTokenAmount } from '../utils/format';
 import { TokenSelect } from './TokenSelect';
 import '../styles/AllocationsSection.css';
 
@@ -76,25 +76,6 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
         }
     };
 
-    // Convert decimal string to e8s bigint
-    const toE8s = (amount: string): bigint => {
-        try {
-            // Handle empty string
-            if (!amount) return BigInt(0);
-            
-            // Parse the decimal string
-            const [whole = "0", decimal = ""] = amount.split(".");
-            
-            // Pad or truncate decimal to 8 places
-            const paddedDecimal = decimal.padEnd(8, "0").slice(0, 8);
-            
-            // Combine whole and decimal parts
-            return BigInt(whole + paddedDecimal);
-        } catch (err) {
-            return BigInt(0);
-        }
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedAchievement || !selectedToken || !totalAmount || !perUserMin || !perUserMax) {
@@ -102,29 +83,29 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
             return;
         }
 
-        // Validate decimal values
-        const total = toE8s(totalAmount);
-        const min = toE8s(perUserMin);
-        const max = toE8s(perUserMax);
-
-        if (total === BigInt(0) || min === BigInt(0) || max === BigInt(0)) {
-            setError('All amounts must be greater than 0');
-            return;
-        }
-
-        if (min > max) {
-            setError('Minimum amount cannot be greater than maximum amount');
-            return;
-        }
-
-        if (max > total) {
-            setError('Per-user maximum cannot exceed total amount');
-            return;
-        }
-
         try {
             setLoading(true);
             setError(null);
+
+            // Parse amounts using token metadata for proper decimal handling
+            const total = parseTokenAmount(totalAmount, selectedToken);
+            const min = parseTokenAmount(perUserMin, selectedToken);
+            const max = parseTokenAmount(perUserMax, selectedToken);
+
+            if (total === BigInt(0) || min === BigInt(0) || max === BigInt(0)) {
+                setError('All amounts must be greater than 0');
+                return;
+            }
+
+            if (min > max) {
+                setError('Minimum amount cannot be greater than maximum amount');
+                return;
+            }
+
+            if (max > total) {
+                setError('Per-user maximum cannot exceed total amount');
+                return;
+            }
 
             await onSubmit({
                 achievement_id: selectedAchievement,
@@ -181,13 +162,17 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
             <div className="form-group">
                 <label>Total Amount</label>
                 <input
-                    type="number"
+                    type="text"
                     value={totalAmount}
-                    onChange={(e) => setTotalAmount(e.target.value)}
+                    onChange={(e) => {
+                        // Only allow numbers and one decimal point
+                        const value = e.target.value.replace(/[^0-9.]/g, '');
+                        if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                            setTotalAmount(value);
+                        }
+                    }}
                     placeholder="Total allocation amount"
                     required
-                    min="0"
-                    step="any"
                 />
             </div>
 
@@ -195,26 +180,34 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                 <div className="form-group">
                     <label>Per User Min</label>
                     <input
-                        type="number"
+                        type="text"
                         value={perUserMin}
-                        onChange={(e) => setPerUserMin(e.target.value)}
+                        onChange={(e) => {
+                            // Only allow numbers and one decimal point
+                            const value = e.target.value.replace(/[^0-9.]/g, '');
+                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                setPerUserMin(value);
+                            }
+                        }}
                         placeholder="Minimum per user"
                         required
-                        min="0"
-                        step="any"
                     />
                 </div>
 
                 <div className="form-group">
                     <label>Per User Max</label>
                     <input
-                        type="number"
+                        type="text"
                         value={perUserMax}
-                        onChange={(e) => setPerUserMax(e.target.value)}
+                        onChange={(e) => {
+                            // Only allow numbers and one decimal point
+                            const value = e.target.value.replace(/[^0-9.]/g, '');
+                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                setPerUserMax(value);
+                            }
+                        }}
                         placeholder="Maximum per user"
                         required
-                        min="0"
-                        step="any"
                     />
                 </div>
             </div>
