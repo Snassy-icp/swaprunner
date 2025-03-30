@@ -20,6 +20,7 @@ import T "Types";
 import TrieMap "mo:base/TrieMap";
 
 import Condition "./Condition";
+import Achievement "./Achievement";
 
 actor {
     // Constants
@@ -35,6 +36,10 @@ actor {
             Text.equal,
             Text.hash
         );
+
+    // Add after conditionRegistry
+    private var achievementRegistry = TrieMap.TrieMap<Text, T.Achievement>(Text.equal, Text.hash);
+    private var userAchievements = TrieMap.TrieMap<Text, [T.UserAchievement]>(Text.equal, Text.hash);
 
     // Stable storage for admin list
     private stable var admins : [Principal] = [];
@@ -3700,6 +3705,31 @@ actor {
             };
             case null #ok([]);
         };
+    };
+
+    // Add public endpoints for achievements
+    public shared({caller}) func scan_for_new_achievements() : async {
+        new_achievements: [T.UserAchievement];
+        available_claims: [{
+            achievement_id: Text;
+            allocation_id: Text;
+            claimable_amount: {
+                min_e8s: Nat;
+                max_e8s: Nat;
+            };
+        }];
+    } {
+        let context : T.Context = {
+            achievements = achievementRegistry;
+            conditions = conditionRegistry;
+            global_stats = globalStats;
+            token_stats = tokenStats;
+            user_achievements = userAchievements;
+            user_stats = userStats;
+            user_token_stats = userTokenStats;
+        };
+        
+        await Achievement.scan_for_new_achievements(context, caller)
     };
 
 }
