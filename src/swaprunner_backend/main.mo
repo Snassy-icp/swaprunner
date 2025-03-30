@@ -3737,7 +3737,20 @@ actor {
             user_token_stats = userTokenStats;
         };
         
-        await Achievement.scan_for_new_achievements(context, caller)
+        let result = await Achievement.scan_for_new_achievements(context, caller);
+        
+        // Store any new achievements
+        if (Array.size(result.new_achievements) > 0) {
+            Debug.print("Storing " # Nat.toText(Array.size(result.new_achievements)) # " new achievements");
+            let existing = switch (userAchievements.get(Principal.toText(caller))) {
+                case null { [] };
+                case (?ua) { ua };
+            };
+            userAchievements.put(Principal.toText(caller), Array.append(existing, result.new_achievements));
+            Debug.print("Successfully stored new achievements");
+        };
+        
+        return result;
     };
 
     // Achievement management (admin only)

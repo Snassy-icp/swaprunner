@@ -32,19 +32,23 @@ export const AchievementsSection: React.FC = () => {
             
             // Get user's achievements
             const achievements = await actor.get_user_achievements();
+            console.log('Loaded achievements:', achievements);
             setUserAchievements(achievements);
 
             // Get details for each achievement
             const details: Record<string, Achievement> = {};
             for (const achievement of achievements) {
                 const result = await actor.get_achievement_details(achievement.achievement_id);
+                console.log('Achievement details result:', result);
                 if ('ok' in result) {
                     details[achievement.achievement_id] = result.ok;
                 }
             }
+            console.log('Final achievement details:', details);
             setAchievementDetails(details);
         } catch (err: any) {
             setError('Failed to load achievements: ' + (err.message || String(err)));
+            console.error('Load error:', err);
         } finally {
             setLoading(false);
         }
@@ -57,12 +61,18 @@ export const AchievementsSection: React.FC = () => {
             const actor = await backendService.getActor();
             
             const result = await actor.scan_for_new_achievements();
+            console.log('Scan result:', result);
+            
             if (result.new_achievements.length > 0) {
+                console.log('Found', result.new_achievements.length, 'new achievements, reloading...');
                 // Reload achievements to get the new ones
                 await loadAchievements();
+            } else {
+                console.log('No new achievements found');
             }
         } catch (err: any) {
             setError('Failed to scan for achievements: ' + (err.message || String(err)));
+            console.error('Scan error:', err);
         } finally {
             setScanning(false);
         }
