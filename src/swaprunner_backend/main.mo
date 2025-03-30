@@ -3364,18 +3364,57 @@ actor {
         Buffer.toArray(conditions)
     };
 
-    public shared({caller}) func withdraw_from_balance(token_id: Principal, amount: Nat) : async Result.Result<(), Text> {
-        switch (getUserIndex(token_id)) {
+    public shared({caller}) func withdraw_from_balance(token_id: Principal, amount_e8s: Nat) : async Result.Result<Text, Text> {
+        // Check if token exists and get metadata
+        switch (getTokenMetadata(token_id)) {
             case null #err("Token not found");
-            case (?token_index) {
-                if (subtractFromUserBalance(caller, token_index, amount)) {
-                    // TODO: Implement actual token transfer here
-                    #ok()
-                } else {
-                    #err("Insufficient balance")
-                }
+            case (?token_metadata) {
+                // Get user's balance key
+                switch (getUserIndex(token_id)) {
+                    case null #err("Token not found");
+                    case (?token_index) {
+                        // Check if user has sufficient balance
+                        switch (subtractFromUserBalance(caller, token_index, amount_e8s)) {
+                            case false #err("Insufficient balance");
+                            case true {
+
+                                // Create actor to interact with token ledger
+                                let token_actor : T.ICRC1Interface = actor(Principal.toText(token_id));
+                                
+                                // Prepare transfer arguments
+                                let transfer_args : T.TransferArgs = {
+                                    from_subaccount = null;
+                                    to = {
+                                        owner = caller;
+                                        subaccount = null;
+                                    };
+                                    amount = amount_e8s;
+                                    fee = token_metadata.fee;
+                                    memo = null;
+                                    created_at_time = null;
+                                };
+
+                                try {
+                                    let transfer_result = await token_actor.icrc1_transfer(transfer_args);
+                                    switch (transfer_result) {
+                                        case (#Ok(block_index)) {
+                                            // Update user balance
+                                            
+                                            #ok("Transfer successful")
+                                        };
+                                        case (#Err(transfer_error)) {
+                                            #err("Transfer failed: " # debug_show(transfer_error))
+                                        };
+                                    };
+                                } catch (error) {
+                                    #err("Transfer failed: " # Error.message(error))
+                                };
+                            };
+                        };
                     };
-        }
+                };
+            };
+        };
     };
 
 }

@@ -132,6 +132,19 @@ module {
         icrc1_fee : shared query () -> async ?Nat;
         icrc1_decimals : shared query () -> async ?Nat8;
         icrc1_supported_standards : shared query () -> async [StandardRecord];
+        icrc1_transfer : shared ({
+            from_subaccount: ?[Nat8];
+            to: Account;
+            amount: Nat;
+            fee: ?Nat;
+            memo: ?[Nat8];
+            created_at_time: ?Nat64;
+        }) -> async TransferResult;
+    };
+
+    public type TransferResult = {
+        #Ok: Nat;
+        #Err: TransferError;
     };
 
     public type Account = {
