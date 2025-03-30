@@ -17,6 +17,10 @@ import Hash "mo:base/Hash";
 import Float "mo:base/Float";
 import Int "mo:base/Int";
 import T "Types";
+import TrieMap "mo:base/TrieMap";
+
+import Condition "./Condition";
+
 actor {
     // Constants
     private let ICPSWAP_TOKEN_CANISTER_ID = "k37c6-riaaa-aaaag-qcyza-cai"; // ICPSwap trusted token list canister ID (contains getList() for trusted token list and getLogo() for token logos)
@@ -3689,5 +3693,29 @@ actor {
             };
             case null #ok([]);
         };
+    };
+
+    // Add after other variable declarations
+    private var conditionRegistry = TrieMap.TrieMap<Text, T.Condition>(Text.equal, Text.hash);
+
+    // Add to system init()
+    system func init() {
+        // Initialize condition registry from static definitions
+        conditionRegistry := TrieMap.fromEntries<Text, T.Condition>(
+            Condition.setup_registry().vals(),
+            Text.equal,
+            Text.hash
+        );
+    };
+
+    // Update context creation in achievement-related functions
+    let context : T.Context = {
+        achievements = achievementRegistry;
+        conditions = conditionRegistry;
+        global_stats = globalStats;
+        token_stats = tokenStats;
+        user_achievements = userAchievements;
+        user_stats = userStats;
+        user_token_stats = userTokenStats;
     };
 }
