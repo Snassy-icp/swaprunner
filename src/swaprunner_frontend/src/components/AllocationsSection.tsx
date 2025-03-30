@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader } from 'react-icons/fi';
+import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiPlus } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import { backendService } from '../services/backend';
 import { CollapsibleSection } from '../pages/Me';
 import { formatTokenAmount } from '../utils/format';
@@ -111,6 +112,7 @@ export const AllocationsSection: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [allocations, setAllocations] = useState<AllocationWithStatus[]>([]);
+    const navigate = useNavigate();
 
     const loadAllocations = async () => {
         try {
@@ -142,9 +144,20 @@ export const AllocationsSection: React.FC = () => {
         return new Date(Number(timestamp) / 1_000_000).toLocaleString();
     };
 
+    const handleCreateAllocation = () => {
+        navigate('/admin/achievements?action=create_allocation');
+    };
+
     const allocationsContent = (
         <div className="allocations-content">
             <div className="allocations-actions">
+                <button 
+                    className="create-button" 
+                    onClick={handleCreateAllocation}
+                >
+                    <FiPlus />
+                    Create Allocation
+                </button>
                 <button 
                     className="refresh-button" 
                     onClick={loadAllocations}
@@ -164,6 +177,13 @@ export const AllocationsSection: React.FC = () => {
                     {allocations.length === 0 ? (
                         <div className="no-allocations">
                             You haven't created any allocations yet.
+                            <button 
+                                className="create-first-button"
+                                onClick={handleCreateAllocation}
+                            >
+                                <FiPlus />
+                                Create Your First Allocation
+                            </button>
                         </div>
                     ) : (
                         allocations.map(allocation => (
