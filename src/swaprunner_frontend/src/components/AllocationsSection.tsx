@@ -41,6 +41,11 @@ interface Achievement {
     logo_url?: string;
 }
 
+interface AllocationFeeConfig {
+    icp_fee_e8s: bigint;
+    cut_basis_points: number;
+}
+
 interface AllocationFormProps {
     onSubmit: (data: {
         achievement_id: string;
@@ -61,9 +66,11 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
     const [totalAmount, setTotalAmount] = useState<string>('');
     const [perUserMin, setPerUserMin] = useState<string>('');
     const [perUserMax, setPerUserMax] = useState<string>('');
+    const [feeConfig, setFeeConfig] = useState<AllocationFeeConfig | null>(null);
 
     useEffect(() => {
         loadAchievements();
+        loadFeeConfig();
     }, []);
 
     const loadAchievements = async () => {
@@ -73,6 +80,29 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
             setAchievements(result);
         } catch (err: any) {
             setError('Failed to load achievements: ' + (err.message || String(err)));
+        }
+    };
+
+    const loadFeeConfig = async () => {
+        try {
+            const actor = await backendService.getActor();
+            const config = await actor.get_allocation_fee_config();
+            setFeeConfig(config);
+        } catch (err: any) {
+            setError('Failed to load fee configuration: ' + (err.message || String(err)));
+        }
+    };
+
+    // Calculate the cut amount based on total amount and fee config
+    const calculateCutAmount = (): string => {
+        if (!feeConfig || !totalAmount || !selectedToken) return '0';
+        try {
+            const totalE8s = parseTokenAmount(totalAmount, selectedToken);
+            const cutBasisPoints = BigInt(feeConfig.cut_basis_points);
+            const cutAmount = (totalE8s * cutBasisPoints) / BigInt(10000);
+            return formatTokenAmount(cutAmount, selectedToken);
+        } catch {
+            return '0';
         }
     };
 
@@ -211,6 +241,31 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                     />
                 </div>
             </div>
+
+            {feeConfig && (
+                <div className="fee-info">
+                    <div className="fee-section">
+                        <div className="fee-header">Platform Fee</div>
+                        <div className="fee-content">
+                            <div className="fee-row">
+                                <span className="fee-label">Creation Fee</span>
+                                <span className="fee-value">
+                                    {formatTokenAmount(feeConfig.icp_fee_e8s, 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP
+                                </span>
+                            </div>
+                            <div className="fee-row">
+                                <span className="fee-label">Platform Cut</span>
+                                <span className="fee-value">
+                                    {calculateCutAmount()} {selectedToken ? 'tokens' : ''} ({Number(feeConfig.cut_basis_points) / 100}%)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="fee-info-note">
+                        Note: The creation fee is paid in ICP, and the platform cut is taken from the allocation amount.
+                    </div>
+                </div>
+            )}
 
             <div className="form-actions">
                 <button type="submit" className="submit-button" disabled={loading}>

@@ -1400,4 +1400,68 @@
 .collapsible-section .section-content .token-select-button:hover {
     background: #363B47;
     border-color: #454B57;
+}
+
+.fee-info {
+    background: #1A1D26;
+    border: 1px solid #363B47;
+    border-radius: 8px;
+    margin: 16px 0;
+    overflow: hidden;
+}
+
+.fee-section {
+    padding: 16px;
+}
+
+.fee-header {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 12px;
+}
+
+.fee-content {
+    background: #2A2E3A;
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.fee-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.fee-row:first-child {
+    padding-top: 0;
+}
+
+.fee-row:last-child {
+    padding-bottom: 0;
+}
+
+.fee-row + .fee-row {
+    border-top: 1px solid #363B47;
+}
+
+.fee-label {
+    color: #8F96A1;
+    font-size: 12px;
+}
+
+.fee-value {
+    color: #fff;
+    font-size: 12px;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.fee-info-note {
+    font-size: 12px;
+    color: #8F96A1;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid #363B47;
+    line-height: 1.5;
 } 
