@@ -3644,4 +3644,20 @@ actor {
         allocation_claims.get(Allocation.get_claim_key(user, allocation_id))
     };
 
+    // Query allocations created by a user
+    public query({caller}) func get_my_created_allocations() : async Result.Result<[{
+        allocation: T.Allocation;
+        status: T.AllocationStatus;
+    }], Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        #ok(Allocation.get_user_created_allocations(
+            caller,
+            allocations,
+            allocation_statuses,
+        ))
+    };
+
 }

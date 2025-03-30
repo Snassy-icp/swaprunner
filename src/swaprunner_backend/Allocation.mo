@@ -169,4 +169,35 @@ module {
     public func get_claim_key(user: Principal, allocation_id: Text) : Text {
         Principal.toText(user) # ":" # allocation_id
     };
+
+    // Get all allocations created by a user
+    public func get_user_created_allocations(
+        creator: Principal,
+        allocations: HashMap.HashMap<Text, T.Allocation>,
+        allocation_statuses: HashMap.HashMap<Text, T.AllocationStatus>,
+    ) : [{
+        allocation: T.Allocation;
+        status: T.AllocationStatus;
+    }] {
+        let results = Buffer.Buffer<{
+            allocation: T.Allocation;
+            status: T.AllocationStatus;
+        }>(0);
+
+        for ((id, allocation) in allocations.entries()) {
+            if (allocation.creator == creator) {
+                switch (allocation_statuses.get(id)) {
+                    case (?status) {
+                        results.add({
+                            allocation = allocation;
+                            status = status;
+                        });
+                    };
+                    case null {}; // Skip if no status found (shouldn't happen)
+                };
+            };
+        };
+
+        Buffer.toArray(results)
+    };
 }
