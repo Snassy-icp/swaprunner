@@ -19,7 +19,7 @@ interface Parameter {
 
 interface ConditionUsage {
     condition_key: string;
-    parameters: Record<string, Parameter>;
+    parameters: Parameter[];
 }
 
 interface Achievement {
@@ -56,16 +56,16 @@ function ConditionUsageEditor({
 }) {
     const selectedCondition = conditions.find(c => c.key === usage.condition_key);
 
-    const handleParameterChange = (spec: ParameterSpec, value: string) => {
-        const newParameters = { ...usage.parameters };
-        newParameters[spec.name] = {
+    const handleParameterChange = (spec: ParameterSpec, index: number, value: string) => {
+        const newParameters = [...usage.parameters];
+        newParameters[index] = {
             name: spec.name,
             type_: spec.type_,
             value: value
         };
         
         onChange({
-            ...usage,
+            condition_key: usage.condition_key,
             parameters: newParameters
         });
     };
@@ -80,14 +80,11 @@ function ConditionUsageEditor({
                         const newCondition = conditions.find(c => c.key === e.target.value);
                         if (!newCondition) return;
                         
-                        const parameters: Record<string, Parameter> = {};
-                        newCondition.parameter_specs.forEach(spec => {
-                            parameters[spec.name] = {
-                                name: spec.name,
-                                type_: spec.type_,
-                                value: spec.default_value || ''
-                            };
-                        });
+                        const parameters = newCondition.parameter_specs.map(spec => ({
+                            name: spec.name,
+                            type_: spec.type_,
+                            value: spec.default_value || ''
+                        }));
                         
                         onChange({
                             condition_key: e.target.value,
@@ -106,15 +103,15 @@ function ConditionUsageEditor({
 
             {selectedCondition && (
                 <div className="parameters-editor">
-                    {selectedCondition.parameter_specs.map(spec => {
-                        const param = usage.parameters[spec.name];
+                    {selectedCondition.parameter_specs.map((spec, index) => {
+                        const param = usage.parameters[index];
                         return (
                             <div key={spec.name} className="parameter-input">
                                 <label>{spec.name}:</label>
                                 <input
                                     type={spec.type_ === 'Nat' ? 'number' : 'text'}
                                     value={param?.value || ''}
-                                    onChange={(e) => handleParameterChange(spec, e.target.value)}
+                                    onChange={(e) => handleParameterChange(spec, index, e.target.value)}
                                 />
                             </div>
                         );
@@ -259,15 +256,15 @@ function PredicateEditor({
     );
 }
 
-function transformToBackendParameter(param: Parameter, spec: ParameterSpec): any {
+function transformToBackendParameter(param: Parameter): any {
     try {
-        switch (spec.type_) {
+        switch (param.type_) {
             case 'Nat':
-                return { [spec.type_]: BigInt(param.value || '0') };
+                return { Nat: BigInt(param.value || '0') };
             case 'Principal':
-                return { [spec.type_]: Principal.fromText(param.value || 'aaaaa-aa') };
+                return { Principal: Principal.fromText(param.value || 'aaaaa-aa') };
             case 'Text':
-                return { [spec.type_]: param.value };
+                return { Text: param.value };
             default:
                 return { Text: '' };
         }
@@ -279,7 +276,17 @@ function transformToBackendParameter(param: Parameter, spec: ParameterSpec): any
 
 function transformFromBackendParameter(type_: ParameterType, value: any): string {
     if (value === undefined || value === null) return '';
-    return value.toString();
+    
+    switch (type_) {
+        case 'Nat':
+            return value.toString();
+        case 'Principal':
+            return value.toText();
+        case 'Text':
+            return value;
+        default:
+            return '';
+    }
 }
 
 export default function AdminAchievementsPage() {
@@ -321,24 +328,32 @@ export default function AdminAchievementsPage() {
             const transformedAchievements = result.map((achievement: any) => ({
                 ...achievement,
                 condition_usages: achievement.condition_usages.map((usage: any) => {
-                    const parameters: Record<string, Parameter> = {};
                     const condition = conditions.find(c => c.key === usage.condition_key);
                     
                     if (condition) {
-                        condition.parameter_specs.forEach(spec => {
-                            const backendValue = usage.parameters[spec.type_];
-                            parameters[spec.name] = {
+                        const parameters = condition.parameter_specs.map((spec, index) => {
+                            const backendParam = usage.parameters[index];
+                            let value = '';
+                            
+                            if (backendParam) {
+                                const variantKey = Object.keys(backendParam)[0] as ParameterType;
+                                value = transformFromBackendParameter(variantKey, backendParam[variantKey]);
+                            }
+                            
+                            return {
                                 name: spec.name,
                                 type_: spec.type_,
-                                value: transformFromBackendParameter(spec.type_, backendValue)
+                                value: value
                             };
                         });
+                        
+                        return {
+                            condition_key: usage.condition_key,
+                            parameters
+                        };
                     }
                     
-                    return {
-                        condition_key: usage.condition_key,
-                        parameters
-                    };
+                    return usage;
                 })
             }));
             
@@ -364,14 +379,9 @@ export default function AdminAchievementsPage() {
                     const condition = conditions.find(c => c.key === usage.condition_key);
                     if (!condition) return usage;
 
-                    const parameters: any = {};
-                    condition.parameter_specs.forEach(spec => {
-                        const param = usage.parameters[spec.name];
-                        if (param) {
-                            const backendParam = transformToBackendParameter(param, spec);
-                            Object.assign(parameters, backendParam);
-                        }
-                    });
+                    const parameters = usage.parameters.map(param => 
+                        transformToBackendParameter(param)
+                    );
 
                     return {
                         condition_key: usage.condition_key,
@@ -439,14 +449,9 @@ export default function AdminAchievementsPage() {
                     const condition = conditions.find(c => c.key === usage.condition_key);
                     if (!condition) return usage;
 
-                    const parameters: any = {};
-                    condition.parameter_specs.forEach(spec => {
-                        const param = usage.parameters[spec.name];
-                        if (param) {
-                            const backendParam = transformToBackendParameter(param, spec);
-                            Object.assign(parameters, backendParam);
-                        }
-                    });
+                    const parameters = usage.parameters.map(param => 
+                        transformToBackendParameter(param)
+                    );
 
                     return {
                         condition_key: usage.condition_key,
@@ -483,7 +488,7 @@ export default function AdminAchievementsPage() {
                 ...formData.condition_usages,
                 {
                     condition_key: '',
-                    parameters: {}
+                    parameters: []
                 }
             ]
         });
