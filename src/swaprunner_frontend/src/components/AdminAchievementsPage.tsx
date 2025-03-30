@@ -616,9 +616,14 @@ export default function AdminAchievementsPage() {
             setLoading(true);
             const actor = await backendService.getActor();
 
+            // Ensure logo_url is a single-wrapped array for Motoko optional string
+            // If it's already an array, use it as is, otherwise wrap it
+            const logo_url = Array.isArray(formData.logo_url) ? formData.logo_url : 
+                           (formData.logo_url ? [formData.logo_url] : []);
+            
             const transformedData = {
                 ...formData,
-                logo_url: formData.logo_url ? [formData.logo_url] : [],
+                logo_url,
                 predicate: formData.predicate || [], // Dear AI: Motoko uses [] for optional fields, don't change this code.
                 condition_usages: formData.condition_usages.map(usage => {
                     const condition = conditions.find(c => c.key === usage.condition_key);
