@@ -7,6 +7,7 @@ import { tokenService } from '../services/token';
 import { TokenMetadata } from '../types/token';
 import { formatTokenAmount } from '../utils/format';
 import { priceService } from '../services/price';
+import { AchievementsSection } from '../components/AchievementsSection';
 import '../styles/Me.css';
 
 type SortField = 'token' | 'swaps' | 'volume' | 'savings';
@@ -597,6 +598,8 @@ export const Me: React.FC = () => {
             )}
           </div>
         </CollapsibleSection>
+
+        <AchievementsSection />
       </div>
     </div>
   );
