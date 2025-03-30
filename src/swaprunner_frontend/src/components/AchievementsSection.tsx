@@ -114,14 +114,23 @@ export const AchievementsSection: React.FC = () => {
                             const details = achievementDetails[achievement.achievement_id];
                             if (!details) return null;
 
-                            const tooltipContent = `${details.name}\n${details.description}\nEarned on ${formatDate(achievement.discovered_at)}`;
-
                             return (
                                 <div 
                                     key={achievement.achievement_id} 
                                     className="achievement-card"
-                                    title={tooltipContent}
                                 >
+                                    <div className="achievement-tooltip">
+                                        <div className="tooltip-header">
+                                            <h4>{details.name}</h4>
+                                        </div>
+                                        <div className="tooltip-body">
+                                            <p>{details.description}</p>
+                                        </div>
+                                        <div className="tooltip-footer">
+                                            <span className="tooltip-label">Earned:</span>
+                                            <span className="tooltip-date">{formatDate(achievement.discovered_at)}</span>
+                                        </div>
+                                    </div>
                                     {details.logo_url ? (
                                         <img 
                                             src={details.logo_url} 
