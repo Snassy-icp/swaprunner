@@ -3352,9 +3352,10 @@ actor {
         }
     };
 
-    private func getUserIndex(principal: Principal) : async Nat16 {
-        getOrCreateUserIndex(principal)
-    };
+    // Safe token index getter (no creation)
+    private func getUserIndex(principal: Principal) : ?Nat16 {
+        principalToIndex.get(principal)
+    };    
 
     private func getPrincipalByIndex(index: Nat16) : async Result.Result<Principal, Text> {
         switch (indexToPrincipal.get(index)) {
@@ -3374,8 +3375,10 @@ actor {
 
     // Get user balance
     public shared query(msg) func get_user_balance(token_id: Principal) : async Nat {
-        let token_index = getOrCreateUserIndex(token_id);
-        getUserBalance(msg.caller, token_index)
+        switch (getUserIndex(token_id)) {
+            case (?token_index) getUserBalance(msg.caller, token_index);
+            case null 0;
+        }
     };
 
     // Internal function to get balance
@@ -3451,8 +3454,10 @@ actor {
 
     // Public query method for allocation balances
     public shared query func get_allocation_balance(alloc_id: Nat, token_id: Principal) : async Nat {
-        let token_index = getOrCreateUserIndex(token_id);
-        getAllocationBalance(alloc_id, token_index)
+        switch (getUserIndex(token_id)) {
+            case (?token_index) getAllocationBalance(alloc_id, token_index);
+            case null 0;
+        }
     };
 
 
@@ -3488,8 +3493,10 @@ actor {
     };
 
     public shared query func get_server_balance(token_id: Principal) : async Nat {
-        let token_index = getOrCreateUserIndex(token_id);
-        getServerBalance(token_index)
+        switch (getUserIndex(token_id)) {
+            case (?token_index) getServerBalance(token_index);
+            case null 0;
+        }
     };
 
     public shared({caller}) func add_pool(pool_canister_id: Principal) : async Result.Result<(), Text> {
