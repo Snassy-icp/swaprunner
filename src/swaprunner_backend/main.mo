@@ -878,6 +878,11 @@ actor {
         Iter.toArray(tokenSavingsStats.entries())
     };
 
+    // Add after other helper functions but before record methods
+    private func getUserTokenStatsKey(user: Principal, token: Text) : Text {
+        Principal.toText(user) # "_" # token
+    };
+
     // Get user-token stats for the caller
     public shared query(msg) func get_my_token_stats() : async [(Text, T.UserTokenStats)] {
         let user = msg.caller;
