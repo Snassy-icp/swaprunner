@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiAward, FiRefreshCw } from 'react-icons/fi';
+import { FiAward, FiRefreshCw, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { backendService } from '../services/backend';
 import { CollapsibleSection } from '../pages/Me';
 import '../styles/AchievementsSection.css';
@@ -16,6 +16,57 @@ interface UserAchievement {
     achievement_id: string;
     discovered_at: number;
 }
+
+interface AchievementCardProps {
+    achievement: UserAchievement;
+    details: Achievement;
+    formatDate: (timestamp: number) => string;
+}
+
+const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details, formatDate }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    return (
+        <div className="achievement-card">
+            <div 
+                className="achievement-header"
+                onClick={() => setIsExpanded(!isExpanded)}
+            >
+                <div className="achievement-icon-wrapper">
+                    {details.logo_url ? (
+                        <img 
+                            src={details.logo_url} 
+                            alt={details.name} 
+                            className="achievement-logo"
+                        />
+                    ) : (
+                        <FiAward size={32} className="achievement-icon" />
+                    )}
+                </div>
+                <div className="achievement-info">
+                    <h3>{details.name}</h3>
+                    <div className="achievement-date">
+                        {formatDate(achievement.discovered_at)}
+                    </div>
+                </div>
+                <div className="achievement-expand">
+                    {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+                </div>
+            </div>
+            {isExpanded && (
+                <div className="achievement-details">
+                    <div className="achievement-details-content">
+                        <h4>{details.name}</h4>
+                        <p>{details.description}</p>
+                        <div className="achievement-details-date">
+                            Earned on {formatDate(achievement.discovered_at)}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 export const AchievementsSection: React.FC = () => {
     const [loading, setLoading] = useState(true);
@@ -104,7 +155,7 @@ export const AchievementsSection: React.FC = () => {
             {loading ? (
                 <div className="achievements-loading">Loading achievements...</div>
             ) : (
-                <div className="achievements-grid">
+                <div className="achievements-list">
                     {userAchievements.length === 0 ? (
                         <div className="no-achievements">
                             No achievements yet. Keep trading to earn some!
@@ -115,33 +166,12 @@ export const AchievementsSection: React.FC = () => {
                             if (!details) return null;
 
                             return (
-                                <div 
-                                    key={achievement.achievement_id} 
-                                    className="achievement-card"
-                                >
-                                    <div className="achievement-tooltip">
-                                        <div className="tooltip-header">
-                                            <h4>{details.name}</h4>
-                                        </div>
-                                        <div className="tooltip-body">
-                                            <p>{details.description}</p>
-                                        </div>
-                                        <div className="tooltip-footer">
-                                            <span className="tooltip-label">Earned:</span>
-                                            <span className="tooltip-date">{formatDate(achievement.discovered_at)}</span>
-                                        </div>
-                                    </div>
-                                    {details.logo_url ? (
-                                        <img 
-                                            src={details.logo_url} 
-                                            alt={details.name} 
-                                            className="achievement-logo"
-                                        />
-                                    ) : (
-                                        <FiAward size={48} className="achievement-icon" />
-                                    )}
-                                    <h3>{details.name}</h3>
-                                </div>
+                                <AchievementCard
+                                    key={achievement.achievement_id}
+                                    achievement={achievement}
+                                    details={details}
+                                    formatDate={formatDate}
+                                />
                             );
                         })
                     )}
