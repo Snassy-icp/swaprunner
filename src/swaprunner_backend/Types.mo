@@ -419,6 +419,12 @@ module {
         per_user_max_e8s: Nat;
     };
 
+    // Fee configuration for allocations
+    public type AllocationFeeConfig = {
+        icp_fee_e8s: Nat;     // Fixed ICP fee in e8s for creating an allocation
+        cut_basis_points: Nat; // Cut taken from allocation amount in basis points (100 = 1%)
+    };
+
     // Context type containing all required state from main.mo
     public type Context = {
         achievements: HashMap.HashMap<Text, Achievement>;

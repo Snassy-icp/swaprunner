@@ -181,6 +181,26 @@ actor {
     private var allocation_statuses = HashMap.fromIter<Text, T.AllocationStatus>(allocationStatusEntries.vals(), 0, Text.equal, Text.hash);
     private var allocation_claims = HashMap.fromIter<Text, T.AllocationClaim>(allocationClaimEntries.vals(), 0, Text.equal, Text.hash);
 
+    // Allocation fee configuration
+    private stable var allocation_fee_config : T.AllocationFeeConfig = {
+        icp_fee_e8s = 1000_0000; // Default 0.1 ICP
+        cut_basis_points = 100; // Default 1%
+    };
+
+    // Public query to get allocation fee config
+    public query func get_allocation_fee_config() : async T.AllocationFeeConfig {
+        allocation_fee_config
+    };
+
+    // Admin method to update allocation fee config
+    public shared({caller}) func update_allocation_fee_config(config: T.AllocationFeeConfig) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        allocation_fee_config := config;
+        #ok(())
+    };
+
     // Helper function to get next allocation ID
     private func getNextAllocationId() : Nat {
         let id = nextAllocationId;
