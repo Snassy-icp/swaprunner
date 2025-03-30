@@ -29,6 +29,13 @@ actor {
     // Add new constant at the top of the file, near other constants
     private let MAX_RESPONSE_SIZE_BYTES : Nat = 2_500_000; // Conservative limit below IC's max of ~3.1MB
 
+    // Runtime state
+    private var conditionRegistry = TrieMap.fromEntries<Text, T.Condition>(
+            Condition.setup_registry().vals(),
+            Text.equal,
+            Text.hash
+        );
+
     // Stable storage for admin list
     private stable var admins : [Principal] = [];
 
@@ -3695,27 +3702,4 @@ actor {
         };
     };
 
-    // Add after other variable declarations
-    private var conditionRegistry = TrieMap.TrieMap<Text, T.Condition>(Text.equal, Text.hash);
-
-    // Add to system init()
-    system func init() {
-        // Initialize condition registry from static definitions
-        conditionRegistry := TrieMap.fromEntries<Text, T.Condition>(
-            Condition.setup_registry().vals(),
-            Text.equal,
-            Text.hash
-        );
-    };
-
-    // Update context creation in achievement-related functions
-    let context : T.Context = {
-        achievements = achievementRegistry;
-        conditions = conditionRegistry;
-        global_stats = globalStats;
-        token_stats = tokenStats;
-        user_achievements = userAchievements;
-        user_stats = userStats;
-        user_token_stats = userTokenStats;
-    };
 }
