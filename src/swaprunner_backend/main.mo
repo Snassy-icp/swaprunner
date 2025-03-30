@@ -459,6 +459,14 @@ actor {
         true
     };
 
+    // Helper method to get token metadata from both maps
+    private func getTokenMetadata(token_canister_id: Principal) : ?T.TokenMetadata {
+        switch (tokenMetadata.get(token_canister_id)) {
+            case (?metadata) ?metadata;
+            case null tokenMetadataICPSwap.get(token_canister_id);
+        };
+    };
+
     // Token Whitelist Methods
 
     // Internal function to add token without admin check
