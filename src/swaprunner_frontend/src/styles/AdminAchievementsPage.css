@@ -1,0 +1,112 @@
+.admin-achievements-page {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.error-message {
+    color: #dc3545;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #dc3545;
+    border-radius: 4px;
+    background-color: #f8d7da;
+}
+
+.achievement-form {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+
+.form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.form-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.form-actions button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.form-actions button[type="submit"] {
+    background-color: #007bff;
+    color: white;
+}
+
+.form-actions button[type="submit"]:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.form-actions button[type="button"] {
+    background-color: #6c757d;
+    color: white;
+}
+
+.achievements-list {
+    margin-top: 30px;
+}
+
+.achievements-list table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.achievements-list th,
+.achievements-list td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.achievements-list th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+.achievements-list td button {
+    margin-right: 5px;
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.achievements-list td button:first-child {
+    background-color: #28a745;
+    color: white;
+}
+
+.achievements-list td button:last-child {
+    background-color: #dc3545;
+    color: white;
+} 
