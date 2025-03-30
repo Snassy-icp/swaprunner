@@ -334,6 +334,7 @@ export default function AdminAchievementsPage() {
             // Transform the parameters into the correct variant format
             const transformedData = {
                 ...formData,
+                logo_url: formData.logo_url ? [formData.logo_url] : [], // Convert to opt format
                 condition_usages: formData.condition_usages.map(usage => ({
                     condition_key: usage.condition_key,
                     parameters: {
@@ -397,6 +398,7 @@ export default function AdminAchievementsPage() {
             // Transform the parameters into the correct variant format
             const transformedData = {
                 ...formData,
+                logo_url: formData.logo_url ? [formData.logo_url] : [], // Convert to opt format
                 condition_usages: formData.condition_usages.map(usage => ({
                     condition_key: usage.condition_key,
                     parameters: {
