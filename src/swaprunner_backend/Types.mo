@@ -358,11 +358,12 @@ module {
     // Context type containing all required state from main.mo
     public type Context = {
         achievements: TrieMap.TrieMap<Text, Achievement>;
-        user_achievements: TrieMap.TrieMap<Text, [UserAchievement]>; // Key: user principal as text
+        conditions: TrieMap.TrieMap<Text, Condition>;
+        global_stats: GlobalStats;
+        token_stats: TrieMap.TrieMap<Text, TokenStats>;
+        user_achievements: TrieMap.TrieMap<Text, [UserAchievement]>;
         user_stats: TrieMap.TrieMap<Text, UserStats>;
         user_token_stats: TrieMap.TrieMap<Text, UserTokenStats>;
-        token_stats: TrieMap.TrieMap<Text, TokenStats>;
-        global_stats: GlobalStats;
     };
 
     // Types for conditions

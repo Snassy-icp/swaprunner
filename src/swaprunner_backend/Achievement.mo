@@ -6,17 +6,17 @@ import TrieMap "mo:base/TrieMap";
 import Buffer "mo:base/Buffer";
 import Nat "mo:base/Nat";
 import Int "mo:base/Int";
-
+import Array "mo:base/Array";
 import T "./Types";
 import Condition "./Condition";
 
 module {
     // Static methods
     public func scan_for_new_achievements(
-        context: Context,
+        context: T.Context,
         user: Principal,
     ) : async {
-        new_achievements: [UserAchievement];
+        new_achievements: [T.UserAchievement];
         available_claims: [{
             achievement_id: Text;
             allocation_id: Text;
@@ -26,7 +26,7 @@ module {
             };
         }];
     } {
-        let new_achievements = Buffer.Buffer<UserAchievement>(0);
+        let new_achievements = Buffer.Buffer<T.UserAchievement>(0);
         
         // Get existing user achievements
         let existing = switch (context.user_achievements.get(Principal.toText(user))) {
@@ -37,7 +37,7 @@ module {
         // Check each achievement
         label next_achievement for ((id, achievement) in context.achievements.entries()) {
             // Skip if already earned
-            if (Array.find<UserAchievement>(existing, func(ua) = ua.achievement_id == id) != null) {
+            if (Array.find<T.UserAchievement>(existing, func(ua) = ua.achievement_id == id) != null) {
                 continue next_achievement;
             };
             
@@ -64,15 +64,15 @@ module {
 
     // Helper function to evaluate an achievement's conditions
     private func evaluate_achievement(
-        context: Context,
+        context: T.Context,
         user: Principal,
-        achievement: Achievement
+        achievement: T.Achievement
     ) : async Bool {
         switch (achievement.predicate) {
             // If no predicate, all conditions must be true
             case null {
                 for (usage in achievement.condition_usages.vals()) {
-                    let result = await Condition.evaluate_condition(context, user, usage);
+                    let result = await Condition.evaluate_condition(context, user, usage, context.conditions);
                     if (not result) {
                         return false;
                     };
@@ -89,10 +89,10 @@ module {
 
     // Helper function to evaluate a predicate expression
     private func evaluate_predicate(
-        context: Context,
+        context: T.Context,
         user: Principal,
-        pred: PredicateExpression,
-        condition_usages: [ConditionUsage]
+        pred: T.PredicateExpression,
+        condition_usages: [T.ConditionUsage]
     ) : async Bool {
         switch (pred) {
             case (#AND(left, right)) {
@@ -115,7 +115,7 @@ module {
                 if (index >= condition_usages.size()) {
                     return false; // Invalid reference
                 };
-                return await Condition.evaluate_condition(context, user, condition_usages[index]);
+                return await Condition.evaluate_condition(context, user, condition_usages[index], context.conditions);
             };
         };
     };
