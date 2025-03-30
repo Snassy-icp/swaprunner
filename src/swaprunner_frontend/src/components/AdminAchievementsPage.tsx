@@ -8,11 +8,11 @@ type ParameterType = 'Principal' | 'Nat' | 'Text';
 
 // Backend types (matching Motoko variants)
 type BackendParameterType = {
-    Principal: null;
+    Principal: Principal;
 } | {
-    Nat: null;
+    Nat: number;
 } | {
-    Text: null;
+    Text: string;
 };
 
 interface ParameterSpec {
@@ -103,11 +103,11 @@ function createParameter(name: string, typeVariant: BackendParameterType | any, 
 function createBackendType(type: ParameterType): BackendParameterType {
     switch (type) {
         case 'Principal':
-            return { Principal: null };
+            return { Principal: Principal.fromText("aaaaa-aa") };
         case 'Nat':
-            return { Nat: null };
+            return { Nat: 0 };
         case 'Text':
-            return { Text: null };
+            return { Text: "" };
     }
 }
 
@@ -383,11 +383,11 @@ function transformToBackendParameter(param: Parameter): BackendParameterType {
         console.error(`Empty value for parameter ${param.name} of type ${param.type_}`);
         switch (param.type_) {
             case 'Nat':
-                return { Nat: null };
+                return { Nat: 0 };
             case 'Principal':
-                return { Principal: null };
+                return { Principal: Principal.fromText("aaaaa-aa") };
             case 'Text':
-                return { Text: null };
+                return { Text: "" };
         }
     }
 
@@ -395,17 +395,17 @@ function transformToBackendParameter(param: Parameter): BackendParameterType {
         console.log('transformToBackendParameter - Processing param type:', param.type_);
         switch (param.type_) {
             case 'Nat':
-                const natValue = BigInt(param.value);
-                if (natValue < 0) throw new Error('Nat cannot be negative');
-                return { Nat: null };
+                const natValue = parseInt(param.value, 10);
+                if (isNaN(natValue) || natValue < 0) throw new Error('Nat must be a non-negative number');
+                return { Nat: natValue };
             case 'Principal':
-                Principal.fromText(param.value); // Validate principal
-                return { Principal: null };
+                const principal = Principal.fromText(param.value);
+                return { Principal: principal };
             case 'Text':
-                return { Text: null };
+                return { Text: param.value };
             default:
                 console.error('transformToBackendParameter - Unknown type:', param.type_);
-                return { Text: null };
+                return { Text: param.value };
         }
     } catch (err) {
         console.error(`Error converting parameter ${param.name}:`, err);
@@ -413,11 +413,11 @@ function transformToBackendParameter(param: Parameter): BackendParameterType {
         // Return appropriate default values based on type
         switch (param.type_) {
             case 'Nat':
-                return { Nat: null };
+                return { Nat: 0 };
             case 'Principal':
-                return { Principal: null };
+                return { Principal: Principal.fromText("aaaaa-aa") };
             default:
-                return { Text: null };
+                return { Text: "" };
         }
     }
 }
