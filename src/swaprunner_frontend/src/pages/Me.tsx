@@ -25,7 +25,7 @@ interface CollapsibleSectionProps {
   defaultExpanded?: boolean;
 }
 
-const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ 
+export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ 
   title, 
   icon, 
   children,

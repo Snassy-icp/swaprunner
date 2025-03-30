@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiAward, FiRefreshCw } from 'react-icons/fi';
 import { backendService } from '../services/backend';
+import { CollapsibleSection } from '../pages/Me';
 import '../styles/AchievementsSection.css';
 
 interface Achievement {
@@ -75,17 +76,9 @@ export const AchievementsSection: React.FC = () => {
         return new Date(Number(timestamp) / 1_000_000).toLocaleString();
     };
 
-    if (loading) {
-        return <div className="achievements-loading">Loading achievements...</div>;
-    }
-
-    return (
-        <div className="achievements-section">
-            <div className="achievements-header">
-                <div className="achievements-title">
-                    <FiAward size={24} />
-                    <h2>Achievements</h2>
-                </div>
+    const achievementsContent = (
+        <div className="achievements-content">
+            <div className="achievements-actions">
                 <button 
                     className="scan-button" 
                     onClick={scanForNewAchievements}
@@ -98,37 +91,51 @@ export const AchievementsSection: React.FC = () => {
 
             {error && <div className="error-message">{error}</div>}
 
-            <div className="achievements-grid">
-                {userAchievements.length === 0 ? (
-                    <div className="no-achievements">
-                        No achievements yet. Keep trading to earn some!
-                    </div>
-                ) : (
-                    userAchievements.map(achievement => {
-                        const details = achievementDetails[achievement.achievement_id];
-                        if (!details) return null;
+            {loading ? (
+                <div className="achievements-loading">Loading achievements...</div>
+            ) : (
+                <div className="achievements-grid">
+                    {userAchievements.length === 0 ? (
+                        <div className="no-achievements">
+                            No achievements yet. Keep trading to earn some!
+                        </div>
+                    ) : (
+                        userAchievements.map(achievement => {
+                            const details = achievementDetails[achievement.achievement_id];
+                            if (!details) return null;
 
-                        return (
-                            <div key={achievement.achievement_id} className="achievement-card">
-                                {details.logo_url ? (
-                                    <img 
-                                        src={details.logo_url} 
-                                        alt={details.name} 
-                                        className="achievement-logo"
-                                    />
-                                ) : (
-                                    <FiAward size={48} className="achievement-icon" />
-                                )}
-                                <h3>{details.name}</h3>
-                                <p className="achievement-description">{details.description}</p>
-                                <div className="achievement-date">
-                                    Earned on {formatDate(achievement.discovered_at)}
+                            return (
+                                <div key={achievement.achievement_id} className="achievement-card">
+                                    {details.logo_url ? (
+                                        <img 
+                                            src={details.logo_url} 
+                                            alt={details.name} 
+                                            className="achievement-logo"
+                                        />
+                                    ) : (
+                                        <FiAward size={48} className="achievement-icon" />
+                                    )}
+                                    <h3>{details.name}</h3>
+                                    <p className="achievement-description">{details.description}</p>
+                                    <div className="achievement-date">
+                                        Earned on {formatDate(achievement.discovered_at)}
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    })
-                )}
-            </div>
+                            );
+                        })
+                    )}
+                </div>
+            )}
         </div>
+    );
+
+    return (
+        <CollapsibleSection 
+            title="Achievements" 
+            icon={<FiAward size={24} />}
+            defaultExpanded={false}
+        >
+            {achievementsContent}
+        </CollapsibleSection>
     );
 }; 

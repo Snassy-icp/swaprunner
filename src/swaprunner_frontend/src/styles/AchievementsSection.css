@@ -22,6 +22,16 @@
     margin: 0;
 }
 
+.achievements-content {
+    padding: 20px 0;
+}
+
+.achievements-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+}
+
 .scan-button {
     display: flex;
     align-items: center;
