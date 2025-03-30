@@ -3740,4 +3740,54 @@ actor {
         await Achievement.scan_for_new_achievements(context, caller)
     };
 
+    // Achievement management (admin only)
+    public shared({caller}) func add_achievement(achievement: T.Achievement) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        
+        // Validate achievement
+        switch (achievementRegistry.get(achievement.id)) {
+            case (?_) {
+                return #err("Achievement with ID " # achievement.id # " already exists");
+            };
+            case null {
+                achievementRegistry.put(achievement.id, achievement);
+                return #ok();
+            };
+        };
+    };
+
+    public shared({caller}) func remove_achievement(id: Text) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        
+        switch (achievementRegistry.get(id)) {
+            case null {
+                return #err("Achievement not found");
+            };
+            case (?_) {
+                achievementRegistry.delete(id);
+                return #ok();
+            };
+        };
+    };
+
+    public shared({caller}) func update_achievement(achievement: T.Achievement) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        
+        switch (achievementRegistry.get(achievement.id)) {
+            case null {
+                return #err("Achievement not found");
+            };
+            case (?_) {
+                achievementRegistry.put(achievement.id, achievement);
+                return #ok();
+            };
+        };
+    };
+
 }
