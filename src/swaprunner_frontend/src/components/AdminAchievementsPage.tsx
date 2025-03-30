@@ -259,15 +259,15 @@ function PredicateEditor({
     );
 }
 
-function transformToBackendParameter(param: Parameter): any {
+function transformToBackendParameter(param: Parameter, spec: ParameterSpec): any {
     try {
-        switch (param.type_) {
+        switch (spec.type_) {
             case 'Nat':
-                return { [param.type_]: BigInt(param.value) };
+                return { [spec.type_]: BigInt(param.value || '0') };
             case 'Principal':
-                return { [param.type_]: Principal.fromText(param.value) };
+                return { [spec.type_]: Principal.fromText(param.value || 'aaaaa-aa') };
             case 'Text':
-                return { [param.type_]: param.value };
+                return { [spec.type_]: param.value };
             default:
                 return { Text: '' };
         }
@@ -359,15 +359,18 @@ export default function AdminAchievementsPage() {
 
             const transformedData = {
                 ...formData,
-                logo_url: formData.logo_url ? formData.logo_url : [],
+                logo_url: formData.logo_url ? [formData.logo_url] : [],
                 condition_usages: formData.condition_usages.map(usage => {
                     const condition = conditions.find(c => c.key === usage.condition_key);
                     if (!condition) return usage;
 
                     const parameters: any = {};
-                    Object.values(usage.parameters).forEach(param => {
-                        const backendParam = transformToBackendParameter(param);
-                        Object.assign(parameters, backendParam);
+                    condition.parameter_specs.forEach(spec => {
+                        const param = usage.parameters[spec.name];
+                        if (param) {
+                            const backendParam = transformToBackendParameter(param, spec);
+                            Object.assign(parameters, backendParam);
+                        }
                     });
 
                     return {
@@ -431,15 +434,18 @@ export default function AdminAchievementsPage() {
 
             const transformedData = {
                 ...formData,
-                logo_url: formData.logo_url ? formData.logo_url : [],
+                logo_url: formData.logo_url ? [formData.logo_url] : [],
                 condition_usages: formData.condition_usages.map(usage => {
                     const condition = conditions.find(c => c.key === usage.condition_key);
                     if (!condition) return usage;
 
                     const parameters: any = {};
-                    Object.values(usage.parameters).forEach(param => {
-                        const backendParam = transformToBackendParameter(param);
-                        Object.assign(parameters, backendParam);
+                    condition.parameter_specs.forEach(spec => {
+                        const param = usage.parameters[spec.name];
+                        if (param) {
+                            const backendParam = transformToBackendParameter(param, spec);
+                            Object.assign(parameters, backendParam);
+                        }
                     });
 
                     return {
