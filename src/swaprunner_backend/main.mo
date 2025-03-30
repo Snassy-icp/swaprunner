@@ -50,7 +50,9 @@ actor {
     private stable var userCustomTokenEntries : [(Principal, [Principal])] = [];  // New: Store user's custom tokens
     private stable var userTokenSubaccountsEntries : [(Principal, [T.UserTokenSubaccounts])] = [];  // Named subaccounts storage
 
-    // User index mapping system
+    // IMPORTANT NOTE: Despite the naming, this is actually a token/pool index system, not a user index system!
+    // It maps token/pool canister IDs to compact Nat16 indices for efficient storage.
+    // The "user" prefix in the variable names is historical and misleading.
     private stable var nextUserIndex : Nat16 = 0;
     private stable var userIndexEntries : [(Principal, Nat16)] = [];
     private var principalToIndex = HashMap.HashMap<Principal, Nat16>(0, Principal.equal, Principal.hash);
@@ -156,6 +158,10 @@ actor {
     // Add variable for next batch size
     private var nextMetadataBatchSize : ?Nat = null;
 
+    // Stable storage for user balances
+    private stable var userBalanceEntries : [(Text, Nat)] = [];  // Format: "{principal}:{token_index}" -> amount
+    private var userBalances = HashMap.fromIter<Text, Nat>(userBalanceEntries.vals(), 0, Text.equal, Text.hash);
+
     // Helper function to check if a token is whitelisted
     private func isWhitelisted(tokenId: Principal) : Bool {
         switch(tokenMetadata.get(tokenId)) {
@@ -241,7 +247,7 @@ actor {
 
     // System upgrade hooks
     system func preupgrade() {
-        // Save token metadata state
+        // Store runtime maps into stable storage
         tokenMetadataEntries := Iter.toArray(tokenMetadata.entries());
         tokenLogoEntries := Iter.toArray(tokenLogos.entries());
         userCustomTokenEntries := Iter.toArray(userCustomTokens.entries());
@@ -259,6 +265,7 @@ actor {
         userTokenSubaccountsEntries := Iter.toArray(userTokenSubaccounts.entries());
         achievementEntries := Iter.toArray(achievementRegistry.entries());
         userAchievementEntries := Iter.toArray(userAchievements.entries());
+        userBalanceEntries := Iter.toArray(userBalances.entries());
     };
 
     system func postupgrade() {
@@ -286,6 +293,7 @@ actor {
         userTokenSubaccountsEntries := []; 
         achievementEntries := [];
         userAchievementEntries := [];
+        userBalanceEntries := [];
     };
 
     public query func get_cycle_balance() : async Nat {
@@ -3336,6 +3344,51 @@ actor {
 
     public query func get_next_user_index() : async Nat16 {
         nextUserIndex
+    };
+
+    // Helper function to generate balance key from user and token indices
+    private func getBalanceKey(user: Principal, token_index: Nat16) : Text {
+        Principal.toText(user) # ":" # Nat16.toText(token_index)
+    };
+
+    // Get user balance
+    public shared query(msg) func get_user_balance(token_id: Principal) : async Nat {
+        let token_index = getOrCreateUserIndex(token_id);
+        getUserBalance(msg.caller, token_index)
+    };
+
+    // Internal function to get balance
+    private func getUserBalance(user: Principal, token_index: Nat16) : Nat {
+        let key = getBalanceKey(user, token_index);
+        switch (userBalances.get(key)) {
+            case (?balance) balance;
+            case null 0;
+        }
+    };
+
+    // Internal function to set balance
+    private func setUserBalance(user: Principal, token_index: Nat16, amount: Nat) {
+        let key = getBalanceKey(user, token_index);
+        if (amount == 0) {
+            userBalances.delete(key);
+        } else {
+            userBalances.put(key, amount);
+        };
+    };
+
+    private func addToUserBalance(user: Principal, token_index: Nat16, amount: Nat) {
+        let current = getUserBalance(user, token_index);
+        setUserBalance(user, token_index, current + amount);
+    };
+
+    private func subtractFromUserBalance(user: Principal, token_index: Nat16, amount: Nat) : Bool {
+        let current = getUserBalance(user, token_index);
+        if (current >= amount) {
+            setUserBalance(user, token_index, current - amount);
+            true
+        } else {
+            false
+        }
     };
 
     public shared({caller}) func add_pool(pool_canister_id: Principal) : async Result.Result<(), Text> {
