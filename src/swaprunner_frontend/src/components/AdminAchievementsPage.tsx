@@ -257,12 +257,28 @@ function PredicateEditor({
 }
 
 function transformToBackendParameter(param: Parameter): any {
+    if (!param.value) {
+        console.error(`Empty value for parameter ${param.name} of type ${param.type_}`);
+        switch (param.type_) {
+            case 'Nat':
+                return { Nat: BigInt(0) };
+            case 'Principal':
+                return { Principal: Principal.fromText('aaaaa-aa') };
+            case 'Text':
+                return { Text: '' };
+            default:
+                return { Text: '' };
+        }
+    }
+
     try {
         switch (param.type_) {
             case 'Nat':
-                return { Nat: BigInt(param.value || '0') };
+                const natValue = BigInt(param.value);
+                if (natValue < 0) throw new Error('Nat cannot be negative');
+                return { Nat: natValue };
             case 'Principal':
-                return { Principal: Principal.fromText(param.value || 'aaaaa-aa') };
+                return { Principal: Principal.fromText(param.value) };
             case 'Text':
                 return { Text: param.value };
             default:
@@ -271,7 +287,15 @@ function transformToBackendParameter(param: Parameter): any {
         }
     } catch (err) {
         console.error(`Error converting parameter ${param.name}:`, err);
-        return { Text: '' };
+        // Return appropriate default values based on type
+        switch (param.type_) {
+            case 'Nat':
+                return { Nat: BigInt(0) };
+            case 'Principal':
+                return { Principal: Principal.fromText('aaaaa-aa') };
+            default:
+                return { Text: '' };
+        }
     }
 }
 
@@ -385,13 +409,20 @@ export default function AdminAchievementsPage() {
                     // Transform all parameters using their spec types
                     const parameters = usage.parameters.map((param, index) => {
                         const spec = condition.parameter_specs[index];
-                        if (!spec) return { Text: "" }; // Fallback if no spec
+                        if (!spec) {
+                            console.error(`No spec found for parameter at index ${index}`);
+                            return { Text: "" }; // Fallback if no spec
+                        }
                         
-                        // Create parameter with correct type from spec
-                        return transformToBackendParameter({
-                            ...param,
-                            type_: spec.type_
-                        });
+                        // Create parameter with the type from the spec
+                        const paramWithType = {
+                            name: param.name,
+                            type_: spec.type_, // Use the type from the spec
+                            value: param.value
+                        };
+                        
+                        console.log(`Converting parameter ${param.name} with value ${param.value} using type ${spec.type_}`);
+                        return transformToBackendParameter(paramWithType);
                     });
 
                     return {
@@ -466,13 +497,20 @@ export default function AdminAchievementsPage() {
                     // Transform all parameters using their spec types
                     const parameters = usage.parameters.map((param, index) => {
                         const spec = condition.parameter_specs[index];
-                        if (!spec) return { Text: "" }; // Fallback if no spec
+                        if (!spec) {
+                            console.error(`No spec found for parameter at index ${index}`);
+                            return { Text: "" }; // Fallback if no spec
+                        }
                         
-                        // Create parameter with correct type from spec
-                        return transformToBackendParameter({
-                            ...param,
-                            type_: spec.type_
-                        });
+                        // Create parameter with the type from the spec
+                        const paramWithType = {
+                            name: param.name,
+                            type_: spec.type_, // Use the type from the spec
+                            value: param.value
+                        };
+                        
+                        console.log(`Converting parameter ${param.name} with value ${param.value} using type ${spec.type_}`);
+                        return transformToBackendParameter(paramWithType);
                     });
 
                     return {
