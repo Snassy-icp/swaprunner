@@ -56,10 +56,10 @@
 }
 
 .send-modal-content {
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  width: 100%;
+  gap: 1rem;
 }
 
 .send-modal-recipient {
@@ -577,4 +577,76 @@
   margin-top: 8px;
   color: #ef4444;
   font-size: 14px;
+}
+
+.send-modal-source {
+  background-color: var(--background-light);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.source-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.subaccount-formats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.format-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.format-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  min-width: 4rem;
+}
+
+.source-subaccount {
+  font-family: monospace;
+  font-size: 0.9rem;
+  background-color: var(--background-dark);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  word-break: break-all;
+  flex: 1;
+}
+
+.send-modal-subaccount-select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #fff;
+  font-size: 14px;
+  color: #1a202c;
+  margin-top: 8px;
+  transition: all 0.2s;
+}
+
+.send-modal-subaccount-select:hover {
+  border-color: #cbd5e0;
+}
+
+.send-modal-subaccount-select:focus {
+  outline: none;
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+}
+
+.send-modal-subaccount-select:disabled {
+  background-color: #f7fafc;
+  cursor: not-allowed;
+}
+
+.send-modal-subaccount-select option {
+  padding: 8px;
 } 

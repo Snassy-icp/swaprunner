@@ -11,13 +11,13 @@ export interface ExecutionResult {
 }
 
 interface ICRC1Actor {
-  icrc1_balance_of: (arg: { owner: Principal; subaccount: [] }) => Promise<bigint>;
+  icrc1_balance_of: (arg: { owner: Principal; subaccount: [] | [number[]] }) => Promise<bigint>;
   icrc1_transfer: (arg: {
     to: { owner: Principal; subaccount: [] | [number[]] };
     amount: bigint;
     fee: bigint[];
     memo: [];
-    from_subaccount: [];
+    from_subaccount: [] | [number[]];
     created_at_time: [];
   }) => Promise<{ Ok: bigint } | { Err: any }>;
 }
@@ -52,18 +52,24 @@ export class ICRC1Service {
   }
 
   async getBalance(tokenId: string): Promise<{ balance_e8s: bigint }> {
+    return this.getBalanceWithSubaccount(tokenId);
+  }
+
+  async getBalanceWithSubaccount(tokenId: string, subaccount?: number[]): Promise<{ balance_e8s: bigint }> {
     try {
       const tokenActor = await this.getTokenActor(tokenId);
       const userPrincipal = await authService.getPrincipal();
       if (!userPrincipal) {
         throw new Error('No principal available');
       }
+
+      const parsedSubaccount: [] | [number[]] = subaccount ? [[...subaccount]] : [];
       
       const balance = await tokenActor.icrc1_balance_of({
         owner: userPrincipal,
-        subaccount: []
+        subaccount: parsedSubaccount
       });
-
+      
       return { balance_e8s: balance };
     } catch (error: any) {
       console.error('Error getting balance:', error);
@@ -76,6 +82,7 @@ export class ICRC1Service {
     to: string;
     amount_e8s: string;
     subaccount?: Uint8Array;
+    from_subaccount?: number[];
   }): Promise<ExecutionResult> {
     try {
       console.log('Transfer params:', params);
@@ -94,26 +101,28 @@ export class ICRC1Service {
       const toPrincipal = Principal.fromText(params.to);
       
       // Convert subaccount to optional array of numbers if present
-      const subaccount: [] | [number[]] = params.subaccount ? [[...params.subaccount]] : [];
+      const toSubaccount: [] | [number[]] = params.subaccount ? [[...params.subaccount]] : [];
+      const fromSubaccount: [] | [number[]] = params.from_subaccount ? [[...params.from_subaccount]] : [];
       
       console.log('Executing transfer with:', {
         to: { 
           owner: toPrincipal, 
-          subaccount
+          subaccount: toSubaccount
         },
         amount: amountE8.toString(),
         fee: metadata.fee.toString(),
+        from_subaccount: fromSubaccount,
       });
 
       const result = await tokenActor.icrc1_transfer({
         to: { 
           owner: toPrincipal,
-          subaccount
+          subaccount: toSubaccount
         },
         amount: amountE8,
         fee: [metadata.fee],
         memo: [],
-        from_subaccount: [],
+        from_subaccount: fromSubaccount,
         created_at_time: [],
       });
 

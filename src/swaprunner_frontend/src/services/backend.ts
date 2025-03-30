@@ -14,10 +14,21 @@ interface TokenMetadata {
   standard: string;
 }
 
-interface RegisterTokenResponse {
-  metadata: TokenMetadata;
-  logo: string | null;
+interface NamedSubaccount {
+  name: string;
+  subaccount: number[];
+  created_at: bigint;
 }
+
+interface UserTokenSubaccounts {
+  token_id: Principal;
+  subaccounts: NamedSubaccount[];
+}
+
+type RegisterTokenResponse = {
+  metadata: TokenMetadata;
+  logo?: string;
+};
 
 class BackendService {
   private agent: HttpAgent | null = null;
@@ -88,6 +99,35 @@ class BackendService {
   async remove_wallet_token(tokenId: string): Promise<boolean> {
     const actor = await this.getActor();
     return await actor.remove_wallet_token(tokenId);
+  }
+
+  async add_named_subaccount(args: {
+    token_id: Principal;
+    name: string;
+    subaccount: number[];
+  }): Promise<void> {
+    const actor = await this.getActor();
+    await actor.add_named_subaccount(args);
+  }
+
+  async get_named_subaccounts(tokenId: string): Promise<NamedSubaccount[]> {
+    const actor = await this.getActor();
+    const result = await actor.get_named_subaccounts(Principal.fromText(tokenId));
+    if ('ok' in result) {
+      return result.ok;
+    } else {
+      throw new Error(result.err);
+    }
+  }
+
+  async get_all_named_subaccounts(): Promise<UserTokenSubaccounts[]> {
+    const actor = await this.getActor();
+    const result = await actor.get_all_named_subaccounts();
+    if ('ok' in result) {
+      return result.ok;
+    } else {
+      throw new Error(result.err);
+    }
   }
 }
 

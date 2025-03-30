@@ -1,8 +1,8 @@
 import Principal "mo:base/Principal";
 import Result "mo:base/Result";
-import Text "mo:base/Text";
-import TrieMap "mo:base/TrieMap";
 import Nat "mo:base/Nat";
+import TrieMap "mo:base/TrieMap";
+import Nat8 "mo:base/Nat8";
 import Int "mo:base/Int";
 
 module {
@@ -133,6 +133,31 @@ module {
         icrc1_supported_standards : shared query () -> async [StandardRecord];
     };
 
+    public type Account = {
+        owner: Principal;
+        subaccount: ?[Nat8];
+    };
+
+    public type TransferArgs = {
+        from_subaccount: ?[Nat8];
+        to: Account;
+        amount: Nat;
+        fee: ?Nat;
+        memo: ?[Nat8];
+        created_at_time: ?Nat64;
+    };
+
+    public type TransferError = {
+        #BadFee: { expected_fee: Nat };
+        #BadBurn: { min_burn_amount: Nat };
+        #InsufficientFunds: { balance: Nat };
+        #TooOld;
+        #CreatedInFuture: { ledger_time: Nat64 };
+        #Duplicate: { duplicate_of: Nat };
+        #TemporarilyUnavailable;
+        #GenericError: { error_code: Nat; message: Text };
+    };
+
     public type ICPSwapInterface = actor {
         getLogo : shared query (Text) -> async {#ok : Text; #err : Text};
     };
@@ -183,59 +208,6 @@ module {
         is_running: Bool;
     };
 
-
-    // Modify the return type to include logo
-    public type RegisterTokenResponse = {
-        metadata: TokenMetadata;
-        logo: ?Text;
-    };
-
-    // Modify the type definition
-    public type PaginatedLogosResponse = {
-        items: [(Principal, ?Text)]; // Only Principal and optional logo URL
-        total: Nat;
-        start_index: Nat;
-    };
-
-    // DIP20 interface
-    public type DIP20Interface = actor {
-        getMetadata : shared query () -> async DIP20Metadata;
-        name : shared query () -> async Text;
-        symbol : shared query () -> async Text;
-        decimals : shared query () -> async Nat8;
-        fee : shared query () -> async Nat;
-    };
-
-    public type DIP20Metadata = {
-        logo: Text;
-        name: Text;
-        symbol: Text;
-        decimals: Nat8;
-        totalSupply: Nat;
-        owner: Principal;
-        fee: Nat;
-    };
-
-    // Add new type for metadata refresh progress
-    public type MetadataRefreshProgress = {
-        total_tokens: Nat;
-        processed_count: Nat;
-        updated_count: Nat;
-        skipped_count: Nat;
-        failed_count: Nat;
-        is_running: Bool;
-        last_processed: ?Principal;
-    };
-
-    // Add type for metadata discrepancies
-    public type MetadataDiscrepancy = {
-        ledger_id: Principal;
-        old_metadata: TokenMetadata;
-        new_metadata: TokenMetadata;
-        timestamp: Int;
-    };
-
-
     // User-Token statistics type
     public type UserTokenStats = {
         // Input stats by swap type
@@ -265,6 +237,88 @@ module {
         total_withdrawals: Nat;
     };
 
+
+    // Add new type for metadata refresh progress
+    public type MetadataRefreshProgress = {
+        total_tokens: Nat;
+        processed_count: Nat;
+        updated_count: Nat;
+        skipped_count: Nat;
+        failed_count: Nat;
+        is_running: Bool;
+        last_processed: ?Principal;
+    };
+
+    // Add type for metadata discrepancies
+    public type MetadataDiscrepancy = {
+        ledger_id: Principal;
+        old_metadata: TokenMetadata;
+        new_metadata: TokenMetadata;
+        timestamp: Int;
+    };
+
+    // Modify the return type to include logo
+    public type RegisterTokenResponse = {
+        metadata: TokenMetadata;
+        logo: ?Text;
+    };
+
+
+    // Modify the type definition
+    public type PaginatedLogosResponse = {
+        items: [(Principal, ?Text)]; // Only Principal and optional logo URL
+        total: Nat;
+        start_index: Nat;
+    };
+
+
+    // DIP20 interface
+    public type DIP20Interface = actor {
+        getMetadata : shared query () -> async DIP20Metadata;
+        name : shared query () -> async Text;
+        symbol : shared query () -> async Text;
+        decimals : shared query () -> async Nat8;
+        fee : shared query () -> async Nat;
+    };
+
+    public type DIP20Metadata = {
+        logo: Text;
+        name: Text;
+        symbol: Text;
+        decimals: Nat8;
+        totalSupply: Nat;
+        owner: Principal;
+        fee: Nat;
+    };
+
+    // Named subaccount types
+    public type NamedSubaccount = {
+        name: Text;
+        subaccount: [Nat8];  // 32-byte array
+        created_at: Int;     // Timestamp when created
+    };
+
+    public type UserTokenSubaccounts = {
+        token_id: Principal;
+        subaccounts: [NamedSubaccount];
+    };
+
+    public type AddSubaccountArgs = {
+        token_id: Principal;
+        name: Text;
+        subaccount: [Nat8];
+    };
+
+    public type RemoveSubaccountArgs = {
+        token_id: Principal;
+        subaccount: [Nat8];
+    };
+
+    public type WithdrawSubaccountArgs = {
+        token_id: Principal;
+        subaccount: [Nat8];
+        amount_e8s: ?Nat;  // If null, withdraw entire balance
+    };
 
     //--------------------------------  
     // Types for Achievement module
@@ -322,6 +376,5 @@ module {
             default_value: ?Text;
         }];
     };
-
 
 }
