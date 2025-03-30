@@ -17,7 +17,7 @@ type BackendParameterType = {
 
 interface ParameterSpec {
     name: string;
-    type_: BackendParameterType;
+    param_type: BackendParameterType;
     default_value?: string;
 }
 
@@ -55,19 +55,14 @@ interface Condition {
 
 // Helper function to extract frontend type from backend variant
 function getTypeFromVariant(typeVariant: BackendParameterType): ParameterType {
-    // Check if typeVariant is a direct variant object
+    console.log('getTypeFromVariant - Input:', typeVariant);
+    
+    // Handle direct variant objects
     if (typeVariant && typeof typeVariant === 'object') {
+        // Check for variant type
         if ('Principal' in typeVariant) return 'Principal';
         if ('Nat' in typeVariant) return 'Nat';
         if ('Text' in typeVariant) return 'Text';
-    }
-    
-    // Handle the case where typeVariant might be a direct string or have a type property
-    if (typeVariant && typeof typeVariant === 'object' && 'type_' in typeVariant) {
-        const type = (typeVariant as any).type_;
-        if (type === '#Principal') return 'Principal';
-        if (type === '#Nat') return 'Nat';
-        if (type === '#Text') return 'Text';
     }
     
     console.error('Invalid type variant:', typeVariant);
@@ -82,7 +77,15 @@ function createParameter(name: string, typeVariant: BackendParameterType | any, 
     
     // Handle direct variant objects
     if (typeVariant && typeof typeVariant === 'object') {
-        type_ = getTypeFromVariant(typeVariant);
+        if ('Nat' in typeVariant) {
+            type_ = 'Nat';
+        } else if ('Principal' in typeVariant) {
+            type_ = 'Principal';
+        } else if ('Text' in typeVariant) {
+            type_ = 'Text';
+        } else {
+            type_ = getTypeFromVariant(typeVariant);
+        }
     } else {
         // Default to Text if we can't determine the type
         type_ = 'Text';
@@ -92,7 +95,7 @@ function createParameter(name: string, typeVariant: BackendParameterType | any, 
     return {
         name,
         type_,
-        value
+        value: Array.isArray(value) ? '' : value // Handle array default values
     };
 }
 
@@ -136,7 +139,7 @@ function ConditionUsageEditor({
                 
                 return createParameter(
                     spec.name,
-                    spec.type_,
+                    spec.param_type,
                     existingParam?.value || spec.default_value || ''
                 );
             });
@@ -162,7 +165,7 @@ function ConditionUsageEditor({
         console.log('handleParameterChange - Current parameters:', usage.parameters);
         
         const newParameters = [...usage.parameters];
-        newParameters[index] = createParameter(spec.name, spec.type_, value);
+        newParameters[index] = createParameter(spec.name, spec.param_type, value);
         
         console.log('handleParameterChange - Updated parameters:', newParameters);
         
@@ -186,9 +189,11 @@ function ConditionUsageEditor({
                         
                         const parameters = newCondition.parameter_specs.map(spec => {
                             console.log('Condition select - Processing spec:', spec);
+                            const typeVariant = spec.param_type;
+                            console.log('Condition select - Using type variant:', typeVariant);
                             return createParameter(
                                 spec.name,
-                                spec.type_,
+                                typeVariant,
                                 spec.default_value || ''
                             );
                         });
@@ -216,7 +221,7 @@ function ConditionUsageEditor({
                         console.log('Parameter input - Current parameters:', usage.parameters);
                         const param = usage.parameters[index] || createParameter(
                             spec.name,
-                            spec.type_,
+                            spec.param_type,
                             spec.default_value || ''
                         );
                         console.log('Parameter input - Using param:', param);
@@ -490,11 +495,11 @@ export default function AdminAchievementsPage() {
                             let value = '';
                             
                             if (backendParam) {
-                                const paramType = getTypeFromVariant(spec.type_);
+                                const paramType = getTypeFromVariant(spec.param_type);
                                 value = transformFromBackendParameter(paramType, backendParam[paramType]);
                             }
                             
-                            return createParameter(spec.name, spec.type_, value);
+                            return createParameter(spec.name, spec.param_type, value);
                         });
                         
                         return {
