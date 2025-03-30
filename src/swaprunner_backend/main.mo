@@ -3472,6 +3472,25 @@ actor {
         };
     };
 
+    private func addToServerBalance(token_index: Nat16, amount: Nat) {
+        let current = getServerBalance(token_index);
+        setServerBalance(token_index, current + amount);
+    };
+
+    private func subtractFromServerBalance(token_index: Nat16, amount: Nat) : Bool {
+        let current = getServerBalance(token_index);
+        if (current >= amount) {
+            setServerBalance(token_index, current - amount);
+            true
+        } else {
+            false
+        }
+    };
+
+    public shared query func get_server_balance(token_id: Principal) : async Nat {
+        let token_index = getOrCreateUserIndex(token_id);
+        getServerBalance(token_index)
+    };
 
     public shared({caller}) func add_pool(pool_canister_id: Principal) : async Result.Result<(), Text> {
         await add_pool_impl(caller, pool_canister_id);
