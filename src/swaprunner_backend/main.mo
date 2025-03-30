@@ -166,50 +166,6 @@ actor {
     private stable var allocationBalanceEntries : [(Text, Nat)] = [];  // Format: "{alloc_id}:{token_index}" -> amount
     private var allocationBalances = HashMap.fromIter<Text, Nat>(allocationBalanceEntries.vals(), 0, Text.equal, Text.hash);
     private stable var nextAllocationId : Nat = 0;
-
-    // Helper functions for allocation balances
-    private func getAllocationBalanceKey(alloc_id: Nat, token_index: Nat16) : Text {
-        Nat.toText(alloc_id) # ":" # Nat16.toText(token_index)
-    };
-
-    private func getAllocationBalance(alloc_id: Nat, token_index: Nat16) : Nat {
-        let key = getAllocationBalanceKey(alloc_id, token_index);
-        switch (allocationBalances.get(key)) {
-            case (?balance) balance;
-            case null 0;
-        }
-    };
-
-    private func setAllocationBalance(alloc_id: Nat, token_index: Nat16, amount: Nat) {
-        let key = getAllocationBalanceKey(alloc_id, token_index);
-        if (amount == 0) {
-            allocationBalances.delete(key);
-        } else {
-            allocationBalances.put(key, amount);
-        };
-    };
-
-    private func addToAllocationBalance(alloc_id: Nat, token_index: Nat16, amount: Nat) {
-        let current = getAllocationBalance(alloc_id, token_index);
-        setAllocationBalance(alloc_id, token_index, current + amount);
-    };
-
-    private func subtractFromAllocationBalance(alloc_id: Nat, token_index: Nat16, amount: Nat) : Bool {
-        let current = getAllocationBalance(alloc_id, token_index);
-        if (current >= amount) {
-            setAllocationBalance(alloc_id, token_index, current - amount);
-            true
-        } else {
-            false
-        }
-    };
-
-    // Public query method for allocation balances
-    public shared query func get_allocation_balance(alloc_id: Nat, token_id: Principal) : async Nat {
-        let token_index = getOrCreateUserIndex(token_id);
-        getAllocationBalance(alloc_id, token_index)
-    };
-
     // Helper function to get next allocation ID
     private func getNextAllocationId() : Nat {
         let id = nextAllocationId;
@@ -3447,6 +3403,50 @@ actor {
             false
         }
     };
+
+    // Helper functions for allocation balances
+    private func getAllocationBalanceKey(alloc_id: Nat, token_index: Nat16) : Text {
+        Nat.toText(alloc_id) # ":" # Nat16.toText(token_index)
+    };
+
+    private func getAllocationBalance(alloc_id: Nat, token_index: Nat16) : Nat {
+        let key = getAllocationBalanceKey(alloc_id, token_index);
+        switch (allocationBalances.get(key)) {
+            case (?balance) balance;
+            case null 0;
+        }
+    };
+
+    private func setAllocationBalance(alloc_id: Nat, token_index: Nat16, amount: Nat) {
+        let key = getAllocationBalanceKey(alloc_id, token_index);
+        if (amount == 0) {
+            allocationBalances.delete(key);
+        } else {
+            allocationBalances.put(key, amount);
+        };
+    };
+
+    private func addToAllocationBalance(alloc_id: Nat, token_index: Nat16, amount: Nat) {
+        let current = getAllocationBalance(alloc_id, token_index);
+        setAllocationBalance(alloc_id, token_index, current + amount);
+    };
+
+    private func subtractFromAllocationBalance(alloc_id: Nat, token_index: Nat16, amount: Nat) : Bool {
+        let current = getAllocationBalance(alloc_id, token_index);
+        if (current >= amount) {
+            setAllocationBalance(alloc_id, token_index, current - amount);
+            true
+        } else {
+            false
+        }
+    };
+
+    // Public query method for allocation balances
+    public shared query func get_allocation_balance(alloc_id: Nat, token_id: Principal) : async Nat {
+        let token_index = getOrCreateUserIndex(token_id);
+        getAllocationBalance(alloc_id, token_index)
+    };
+
 
     public shared({caller}) func add_pool(pool_canister_id: Principal) : async Result.Result<(), Text> {
         await add_pool_impl(caller, pool_canister_id);
