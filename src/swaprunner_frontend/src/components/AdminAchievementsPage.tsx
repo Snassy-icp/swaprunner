@@ -3,17 +3,31 @@ import { Principal } from '@dfinity/principal';
 import { backendService } from '../services/backend';
 import '../styles/AdminAchievementsPage.css';
 
+type ParameterType = 'Principal' | 'Nat' | 'Text';
+
+interface ParameterSpec {
+    name: string;
+    type_: ParameterType;
+    default_value?: string;
+}
+
+interface Parameter {
+    name: string;
+    type_: ParameterType;
+    value: string;
+}
+
+interface ConditionUsage {
+    condition_key: string;
+    parameters: Record<string, Parameter>;
+}
+
 interface Achievement {
     id: string;
     name: string;
     description: string;
     logo_url?: string;
-    condition_usages: Array<{
-        condition_key: string;
-        parameters: { type: 'Principal'; value: Principal } |
-                   { type: 'Nat'; value: bigint } |
-                   { type: 'Text'; value: string };
-    }>;
+    condition_usages: ConditionUsage[];
     predicate?: {
         AND?: [any, any];
         OR?: [any, any];
@@ -26,11 +40,7 @@ interface Condition {
     key: string;
     name: string;
     description: string;
-    parameter_specs: Array<{
-        name: string;
-        type_: 'Principal' | 'Nat' | 'Text';
-        default_value?: string;
-    }>;
+    parameter_specs: ParameterSpec[];
 }
 
 function ConditionUsageEditor({ 
@@ -39,12 +49,26 @@ function ConditionUsageEditor({
     onChange,
     onRemove 
 }: { 
-    usage: Achievement['condition_usages'][0],
-    conditions: Condition[],
-    onChange: (usage: Achievement['condition_usages'][0]) => void,
-    onRemove: () => void
+    usage: ConditionUsage;
+    conditions: Condition[];
+    onChange: (usage: ConditionUsage) => void;
+    onRemove: () => void;
 }) {
     const selectedCondition = conditions.find(c => c.key === usage.condition_key);
+
+    const handleParameterChange = (spec: ParameterSpec, value: string) => {
+        const newParameters = { ...usage.parameters };
+        newParameters[spec.name] = {
+            name: spec.name,
+            type_: spec.type_,
+            value: value
+        };
+        
+        onChange({
+            ...usage,
+            parameters: newParameters
+        });
+    };
 
     return (
         <div className="condition-usage-editor">
@@ -56,23 +80,14 @@ function ConditionUsageEditor({
                         const newCondition = conditions.find(c => c.key === e.target.value);
                         if (!newCondition) return;
                         
-                        // Create empty parameters based on first spec
-                        const firstSpec = newCondition.parameter_specs[0];
-                        let parameters: Achievement['condition_usages'][0]['parameters'] = { type: 'Text', value: '' };
-                        
-                        if (firstSpec) {
-                            switch (firstSpec.type_) {
-                                case 'Nat':
-                                    parameters = { type: 'Nat', value: BigInt(0) };
-                                    break;
-                                case 'Principal':
-                                    parameters = { type: 'Principal', value: Principal.fromText('aaaaa-aa') };
-                                    break;
-                                case 'Text':
-                                    parameters = { type: 'Text', value: '' };
-                                    break;
-                            }
-                        }
+                        const parameters: Record<string, Parameter> = {};
+                        newCondition.parameter_specs.forEach(spec => {
+                            parameters[spec.name] = {
+                                name: spec.name,
+                                type_: spec.type_,
+                                value: spec.default_value || ''
+                            };
+                        });
                         
                         onChange({
                             condition_key: e.target.value,
@@ -91,40 +106,19 @@ function ConditionUsageEditor({
 
             {selectedCondition && (
                 <div className="parameters-editor">
-                    {selectedCondition.parameter_specs.map(spec => (
-                        <div key={spec.name} className="parameter-input">
-                            <label>{spec.name}:</label>
-                            <input
-                                type={spec.type_ === 'Nat' ? 'number' : 'text'}
-                                value={usage.parameters.value.toString()}
-                                onChange={(e) => {
-                                    let value: any = e.target.value;
-                                    let parameters: Achievement['condition_usages'][0]['parameters'];
-                                    
-                                    if (spec.type_ === 'Nat') {
-                                        try {
-                                            parameters = { type: 'Nat', value: BigInt(value || 0) };
-                                        } catch {
-                                            return; // Invalid number
-                                        }
-                                    } else if (spec.type_ === 'Principal') {
-                                        try {
-                                            parameters = { type: 'Principal', value: Principal.fromText(value || 'aaaaa-aa') };
-                                        } catch {
-                                            return; // Invalid principal
-                                        }
-                                    } else {
-                                        parameters = { type: 'Text', value: value };
-                                    }
-                                    
-                                    onChange({
-                                        ...usage,
-                                        parameters
-                                    });
-                                }}
-                            />
-                        </div>
-                    ))}
+                    {selectedCondition.parameter_specs.map(spec => {
+                        const param = usage.parameters[spec.name];
+                        return (
+                            <div key={spec.name} className="parameter-input">
+                                <label>{spec.name}:</label>
+                                <input
+                                    type={spec.type_ === 'Nat' ? 'number' : 'text'}
+                                    value={param?.value || ''}
+                                    onChange={(e) => handleParameterChange(spec, e.target.value)}
+                                />
+                            </div>
+                        );
+                    })}
                 </div>
             )}
 
@@ -265,6 +259,29 @@ function PredicateEditor({
     );
 }
 
+function transformToBackendParameter(param: Parameter): any {
+    try {
+        switch (param.type_) {
+            case 'Nat':
+                return { [param.type_]: BigInt(param.value) };
+            case 'Principal':
+                return { [param.type_]: Principal.fromText(param.value) };
+            case 'Text':
+                return { [param.type_]: param.value };
+            default:
+                return { Text: '' };
+        }
+    } catch (err) {
+        console.error(`Error converting parameter ${param.name}:`, err);
+        return { Text: '' };
+    }
+}
+
+function transformFromBackendParameter(type_: ParameterType, value: any): string {
+    if (value === undefined || value === null) return '';
+    return value.toString();
+}
+
 export default function AdminAchievementsPage() {
     const [achievements, setAchievements] = useState<Achievement[]>([]);
     const [conditions, setConditions] = useState<Condition[]>([]);
@@ -301,17 +318,26 @@ export default function AdminAchievementsPage() {
             const actor = await backendService.getActor();
             const result = await actor.get_all_achievements();
             
-            // Transform the parameters into our frontend format
             const transformedAchievements = result.map((achievement: any) => ({
                 ...achievement,
                 condition_usages: achievement.condition_usages.map((usage: any) => {
-                    const parameterEntry = Object.entries(usage.parameters)[0];
+                    const parameters: Record<string, Parameter> = {};
+                    const condition = conditions.find(c => c.key === usage.condition_key);
+                    
+                    if (condition) {
+                        condition.parameter_specs.forEach(spec => {
+                            const backendValue = usage.parameters[spec.type_];
+                            parameters[spec.name] = {
+                                name: spec.name,
+                                type_: spec.type_,
+                                value: transformFromBackendParameter(spec.type_, backendValue)
+                            };
+                        });
+                    }
+                    
                     return {
                         condition_key: usage.condition_key,
-                        parameters: {
-                            type: parameterEntry[0] as 'Principal' | 'Nat' | 'Text',
-                            value: parameterEntry[1]
-                        }
+                        parameters
                     };
                 })
             }));
@@ -331,16 +357,24 @@ export default function AdminAchievementsPage() {
             setLoading(true);
             const actor = await backendService.getActor();
 
-            // Transform the parameters into the correct variant format
             const transformedData = {
                 ...formData,
-                logo_url: formData.logo_url ? [formData.logo_url] : [], // Convert to opt format
-                condition_usages: formData.condition_usages.map(usage => ({
-                    condition_key: usage.condition_key,
-                    parameters: {
-                        [usage.parameters.type]: usage.parameters.value
-                    }
-                }))
+                logo_url: formData.logo_url ? [formData.logo_url] : [],
+                condition_usages: formData.condition_usages.map(usage => {
+                    const condition = conditions.find(c => c.key === usage.condition_key);
+                    if (!condition) return usage;
+
+                    const parameters: any = {};
+                    Object.values(usage.parameters).forEach(param => {
+                        const backendParam = transformToBackendParameter(param);
+                        Object.assign(parameters, backendParam);
+                    });
+
+                    return {
+                        condition_key: usage.condition_key,
+                        parameters
+                    };
+                })
             };
 
             const result = await actor.add_achievement(transformedData);
@@ -395,16 +429,24 @@ export default function AdminAchievementsPage() {
             setLoading(true);
             const actor = await backendService.getActor();
 
-            // Transform the parameters into the correct variant format
             const transformedData = {
                 ...formData,
-                logo_url: formData.logo_url ? [formData.logo_url] : [], // Convert to opt format
-                condition_usages: formData.condition_usages.map(usage => ({
-                    condition_key: usage.condition_key,
-                    parameters: {
-                        [usage.parameters.type]: usage.parameters.value
-                    }
-                }))
+                logo_url: formData.logo_url ? [formData.logo_url] : [],
+                condition_usages: formData.condition_usages.map(usage => {
+                    const condition = conditions.find(c => c.key === usage.condition_key);
+                    if (!condition) return usage;
+
+                    const parameters: any = {};
+                    Object.values(usage.parameters).forEach(param => {
+                        const backendParam = transformToBackendParameter(param);
+                        Object.assign(parameters, backendParam);
+                    });
+
+                    return {
+                        condition_key: usage.condition_key,
+                        parameters
+                    };
+                })
             };
 
             const result = await actor.update_achievement(transformedData);
@@ -435,13 +477,13 @@ export default function AdminAchievementsPage() {
                 ...formData.condition_usages,
                 {
                     condition_key: '',
-                    parameters: { type: 'Text', value: '' }
+                    parameters: {}
                 }
             ]
         });
     };
 
-    const handleConditionChange = (index: number, usage: Achievement['condition_usages'][0]) => {
+    const handleConditionChange = (index: number, usage: ConditionUsage) => {
         const newUsages = [...formData.condition_usages];
         newUsages[index] = usage;
         setFormData({
