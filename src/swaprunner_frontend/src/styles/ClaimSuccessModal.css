@@ -276,41 +276,47 @@
 
 .balloon {
     position: absolute;
-    bottom: 0;
+    bottom: -100px;
     border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
     transform-origin: bottom center;
     opacity: 0.9;
     box-shadow: inset -5px -5px 15px rgba(0,0,0,0.2);
+    will-change: transform;
 }
 
 .balloon-string {
     position: absolute;
     width: 1px;
     background: rgba(255, 255, 255, 0.7);
-    bottom: -80%;
+    height: 100%;
     left: 50%;
+    bottom: -100%;
     transform-origin: top center;
+    pointer-events: none;
 }
 
 @keyframes float {
     0% {
-        transform: translateY(0) rotate(0deg);
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
         opacity: 1;
     }
     80% {
         opacity: 1;
     }
     100% {
-        transform: translateY(-120vh) rotate(15deg);
+        transform: translateY(-20vh) rotate(15deg);
         opacity: 0;
     }
 }
 
 @keyframes sway {
     0%, 100% {
-        margin-left: 0;
+        transform: translateX(0);
     }
     50% {
-        margin-left: var(--sway-amount, 30px);
+        transform: translateX(var(--sway-amount, 30px));
     }
 } 

@@ -244,8 +244,8 @@ const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
     const [balloons] = useState(() => 
         Array.from({ length: count }, () => ({
             x: 10 + Math.random() * 80, // Keep balloons within 10-90% of screen width
-            delay: Math.random() * 2,
-            duration: 4 + Math.random() * 3, // 4-7 seconds to float up
+            delay: Math.random() * 1, // Reduced delay for quicker start
+            duration: 6 + Math.random() * 2, // 6-8 seconds to float up
             size: 30 + Math.random() * 20, // 30-50px balloons
             color: BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)],
             swayAmount: 30 + Math.random() * 40, // 30-70px sway
@@ -254,28 +254,30 @@ const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
 
     return (
         <div className="balloon-container">
-            {balloons.map((balloon, i) => (
-                <div
-                    key={i}
-                    className="balloon"
-                    style={{
-                        left: `${balloon.x}%`,
-                        width: `${balloon.size}px`,
-                        height: `${balloon.size * 1.2}px`,
-                        backgroundColor: balloon.color,
-                        animation: `float ${balloon.duration}s ${balloon.delay}s ease-out forwards, sway ${balloon.duration * 0.8}s ${balloon.delay}s ease-in-out infinite`,
-                        '--sway-amount': `${balloon.swayAmount}px`
-                    } as React.CSSProperties}
-                >
-                    <div 
-                        className="balloon-string"
+            {balloons.map((balloon, i) => {
+                const stringLength = balloon.size * 0.8;
+                return (
+                    <div
+                        key={i}
+                        className="balloon"
                         style={{
-                            height: `${balloon.size * 0.8}px`,
-                            animation: `sway ${balloon.duration * 0.8}s ${balloon.delay}s ease-in-out infinite`
-                        }}
-                    />
-                </div>
-            ))}
+                            left: `${balloon.x}%`,
+                            width: `${balloon.size}px`,
+                            height: `${balloon.size * 1.2}px`,
+                            backgroundColor: balloon.color,
+                            animation: `float ${balloon.duration}s ${balloon.delay}s ease-out forwards, sway ${balloon.duration * 0.5}s ${balloon.delay}s ease-in-out infinite`,
+                            '--sway-amount': `${balloon.swayAmount}px`
+                        } as React.CSSProperties}
+                    >
+                        <div 
+                            className="balloon-string"
+                            style={{
+                                height: `${stringLength}px`
+                            }}
+                        />
+                    </div>
+                );
+            })}
         </div>
     );
 };
