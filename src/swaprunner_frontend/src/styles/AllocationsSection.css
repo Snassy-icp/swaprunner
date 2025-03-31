@@ -1597,4 +1597,91 @@
     font-size: 0.9em;
     text-align: center;
     padding: 8px 0;
+}
+
+.detail-section {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.detail-section h4 {
+    margin: 0 0 12px 0;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.detail-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+}
+
+.detail-label {
+    color: #8F96A1;
+    font-size: 13px;
+}
+
+.detail-value {
+    color: #fff;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 13px;
+}
+
+.detail-actions {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.action-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.action-button.primary {
+    background: #3b82f6;
+    border: none;
+    color: white;
+}
+
+.action-button.primary:hover:not(:disabled) {
+    background: #2563eb;
+}
+
+.action-button.primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.action-button .spinning {
+    animation: spin 1s linear infinite;
+}
+
+.detail-loading {
+    color: #8F96A1;
+    font-size: 13px;
+    text-align: center;
+    padding: 8px 0;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 } 

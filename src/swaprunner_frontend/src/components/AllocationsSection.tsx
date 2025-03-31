@@ -558,26 +558,26 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                 <div className="allocation-details">
                     <div className="allocation-details-content">
                         {status === 'Draft' && (
-                            <div className="payment-section">
+                            <div className="detail-section">
                                 <h4>Payment Status</h4>
                                 {paymentStatus ? (
-                                    <div className="payment-info">
-                                        <div className="payment-row">
-                                            <span className="payment-label">Required Fee:</span>
-                                            <span className="payment-value">
+                                    <div className="detail-content">
+                                        <div className="detail-row">
+                                            <span className="detail-label">Required Fee:</span>
+                                            <span className="detail-value">
                                                 {formatTokenAmount(paymentStatus.required_fee_e8s, 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP
                                             </span>
                                         </div>
-                                        <div className="payment-row">
-                                            <span className="payment-label">Current Balance:</span>
-                                            <span className="payment-value">
+                                        <div className="detail-row">
+                                            <span className="detail-label">Current Balance:</span>
+                                            <span className="detail-value">
                                                 {formatTokenAmount(paymentStatus.current_balance_e8s, 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP
                                             </span>
                                         </div>
                                         {!paymentStatus.is_paid && (
-                                            <div className="payment-row">
-                                                <span className="payment-label">Remaining:</span>
-                                                <span className="payment-value">
+                                            <div className="detail-row">
+                                                <span className="detail-label">Remaining:</span>
+                                                <span className="detail-value">
                                                     {formatTokenAmount(
                                                         paymentStatus.required_fee_e8s - paymentStatus.current_balance_e8s,
                                                         'ryjl3-tyaaa-aaaaa-aaaba-cai'
@@ -585,10 +585,10 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                                 </span>
                                             </div>
                                         )}
-                                        <div className="payment-actions">
+                                        <div className="detail-actions">
                                             {!paymentStatus.is_paid && (
                                                 <button 
-                                                    className="pay-button"
+                                                    className="action-button primary"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handlePay();
@@ -608,7 +608,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="payment-loading">Loading payment status...</div>
+                                    <div className="detail-loading">Loading payment status...</div>
                                 )}
                             </div>
                         )}
