@@ -3481,13 +3481,13 @@ actor {
         }
     };
 
-    public shared({caller}) func get_derived_subaccount(principal: Principal, allocation_id: Text) : async Result.Result<[Nat8], Text> {
+    public shared({caller}) func get_derived_subaccount(principal: Principal, allocation_id: Nat) : async Result.Result<[Nat8], Text> { // We need to use a Nat allocation_id because we need to extract its bytes
         #ok(Util.derive_backend_subaccount(principal, allocation_id))
     };
 
 
     // Activate an allocation
-    public shared({caller}) func activate_allocation(allocation_id: Text) : async Result.Result<(), Text> {
+    public shared({caller}) func activate_allocation(allocation_id: Nat) : async Result.Result<(), Text> {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous principal not allowed");
         };
@@ -3497,10 +3497,12 @@ actor {
             allocation_id,
             allocations,
             allocation_statuses,
-            fee_config
+            fee_config,
+            icrc1_actor,
+            backend_id,
         )) {
             case (#ok(_)) {
-                allocation_statuses.put(allocation_id, #Active);
+                //allocation_statuses.put(Nat.toText(allocation_id), #Active);
                 #ok(())
             };
             case (#err(msg)) #err(msg);

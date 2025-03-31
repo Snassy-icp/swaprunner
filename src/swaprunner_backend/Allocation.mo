@@ -6,6 +6,7 @@ import TrieMap "mo:base/TrieMap";
 import Buffer "mo:base/Buffer";
 import Nat "mo:base/Nat";
 import Nat8 "mo:base/Nat8";
+import Nat32 "mo:base/Nat32";
 import Int "mo:base/Int";
 import Debug "mo:base/Debug";
 import Error "mo:base/Error";
@@ -18,7 +19,7 @@ import Util "./Util";
 
 module {
     // Helper function to derive subaccount for allocation
-    public func derive_backend_subaccount(principal: Principal, allocation_id: Text) : [Nat8] {
+    public func derive_backend_subaccount(principal: Principal, allocation_id: Nat) : [Nat8] {
         let subaccount = Array.init<Nat8>(32, 0);
         
         // Convert principal to bytes for the base subaccount
@@ -29,11 +30,11 @@ module {
             subaccount[i] := principalBytes[i];
         };
         
-        // Convert allocation ID to number and write to last 3 bytes
-        let idNum = Text.toNat(allocation_id);
-        subaccount[29] := Nat8.fromNat((idNum >> 16) & 0xFF);
-        subaccount[30] := Nat8.fromNat((idNum >> 8) & 0xFF);
-        subaccount[31] := Nat8.fromNat(idNum & 0xFF);
+        // Convert allocation ID to number using hash and write to last 3 bytes
+        let idNum = Nat32.fromNat(allocation_id);
+        subaccount[29] := Nat8.fromNat(Nat32.toNat((idNum >> 16) & 0xFF));
+        subaccount[30] := Nat8.fromNat(Nat32.toNat((idNum >> 8) & 0xFF));
+        subaccount[31] := Nat8.fromNat(Nat32.toNat(idNum & 0xFF));
         
         Array.freeze(subaccount)
     };
@@ -85,15 +86,14 @@ module {
     // Activate an allocation to allow claims
     public func activate_allocation(
         caller: Principal,
-        allocation_id: Text,
+        allocation_id: Nat,
         allocations: HashMap.HashMap<Text, T.Allocation>,
         allocation_statuses: HashMap.HashMap<Text, T.AllocationStatus>,
         fee_config: T.AllocationFeeConfig,
-        icrc1_actor: T.ICRC1Actor,
         backend_id: Principal,
     ) : async Result.Result<(), Text> {
         // Get allocation
-        let allocation = switch (allocations.get(allocation_id)) {
+        let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
             case null return #err("Allocation not found");
             case (?a) a;
         };
@@ -104,7 +104,7 @@ module {
         };
 
         // Verify current status
-        switch (allocation_statuses.get(allocation_id)) {
+        switch (allocation_statuses.get(Nat.toText(allocation_id))) {
             case (?#Draft) {};  // This is the only valid state
             case (?status) return #err("Allocation must be in Draft status");
             case null return #err("Allocation status not found");
@@ -122,17 +122,16 @@ module {
             allocation_id
         );
 
+        let icrc1_actor = switch (T.ICRC1Interface.get(backend_id)) {
+            case null return #err("ICRC1 actor not found");
+            case (?a) a;
+        };
+
         // Check payment balance
-        let payment_balance = await icrc1_actor.icrc1_balance_of({
-            owner = backend_id;
-            subaccount = ?payment_subaccount;
-        });
+        let payment_balance = await icrc1_actor.icrc1_balance_of(backend_id, ?payment_subaccount);
 
         // Check funding balance
-        let funding_balance = await icrc1_actor.icrc1_balance_of({
-            owner = backend_id;
-            subaccount = ?funding_subaccount;
-        });
+        let funding_balance = await icrc1_actor.icrc1_balance_of(backend_id, ?funding_subaccount);
 
         // Verify payment is complete
         if (payment_balance < fee_config.icp_fee_e8s) {

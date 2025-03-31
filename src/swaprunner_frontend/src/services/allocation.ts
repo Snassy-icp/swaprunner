@@ -100,7 +100,7 @@ class AllocationService {
      */
     async activateAllocation(allocationId: string): Promise<void> {
         const actor = await backendService.getActor();
-        const result = await actor.activate_allocation(allocationId);
+        const result = await actor.activate_allocation(BigInt(allocationId));
         
         if ('err' in result) {
             throw new Error(result.err);
