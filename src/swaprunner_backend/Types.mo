@@ -398,6 +398,7 @@ module {
 
     public type AllocationStatus = {
         #Draft;              // Just created
+        #Paid;              // ICP payment tokens transferred to backend
         #Funded;            // Tokens transferred to backend
         #Active;            // Ready for claims
         #Depleted;          // All funds claimed
