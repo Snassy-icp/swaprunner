@@ -604,7 +604,9 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
         try {
             await allocationService.cancelAllocation(allocationToCancel);
             // Refresh allocations after cancellation
-            await loadAllocations();
+            if (onStatusChange) {
+                onStatusChange();
+            }
         } catch (error) {
             console.error('Error cancelling allocation:', error);
             setError('Failed to cancel allocation');
@@ -616,12 +618,6 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     };
 
     const showCancelButton = isAdmin || allocationWithStatus.status === 'Draft';
-
-    const loadAllocations = async () => {
-        if (onStatusChange) {
-            onStatusChange();
-        }
-    };
 
     return (
         <div className="allocation-card">
@@ -886,12 +882,16 @@ export const AllocationsSection: React.FC = () => {
     const [allocationToCancel, setAllocationToCancel] = useState<string | null>(null);
 
     const loadAllocations = async () => {
+        setLoading(true);
         try {
             const allocations = await allocationService.getMyCreatedAllocations();
             setAllocations(allocations);
+            setError(null);
         } catch (error) {
             console.error('Error loading allocations:', error);
             setError('Failed to load allocations');
+        } finally {
+            setLoading(false);
         }
     };
 
