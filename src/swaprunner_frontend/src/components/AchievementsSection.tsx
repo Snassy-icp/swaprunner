@@ -135,7 +135,7 @@ interface ConfettiProps {
     count?: number;
 }
 
-const Confetti: React.FC<ConfettiProps> = ({ count = 150 }) => {
+const Confetti: React.FC<ConfettiProps> = ({ count = 50 }) => {
     const [confetti, setConfetti] = useState<Array<{
         id: number;
         color: string;
@@ -143,26 +143,50 @@ const Confetti: React.FC<ConfettiProps> = ({ count = 150 }) => {
         x: number;
         fallDuration: number;
         shakeDistance: number;
+        delay: number;
     }>>([]);
 
     useEffect(() => {
-        // Create confetti pieces
-        const pieces = Array.from({ length: count }, (_, i) => ({
-            id: i,
-            color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-            shape: CONFETTI_SHAPES[Math.floor(Math.random() * CONFETTI_SHAPES.length)],
-            x: Math.random() * 100, // Random starting X position (0-100%)
-            fallDuration: 2 + Math.random() * 2, // Random fall duration (2-4s)
-            shakeDistance: 15 + Math.random() * 30, // Random shake distance (15-45px)
-        }));
-        setConfetti(pieces);
+        let batchCount = 0;
+        const maxBatches = 8; // Will create 8 batches of confetti
+        const batchInterval = 800; // New batch every 800ms
+        
+        const createConfettiBatch = (batchId: number) => {
+            const pieces = Array.from({ length: count }, (_, i) => ({
+                id: batchId * count + i,
+                color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+                shape: CONFETTI_SHAPES[Math.floor(Math.random() * CONFETTI_SHAPES.length)],
+                x: Math.random() * 100,
+                fallDuration: 2 + Math.random() * 2,
+                shakeDistance: 15 + Math.random() * 30,
+                delay: Math.random() * 0.5, // Random delay within each batch
+            }));
 
-        // Clean up after longest possible animation
-        const timer = setTimeout(() => {
+            setConfetti(prev => [...prev, ...pieces]);
+        };
+
+        // Create initial batch
+        createConfettiBatch(0);
+
+        // Create subsequent batches
+        const intervalId = setInterval(() => {
+            batchCount++;
+            if (batchCount < maxBatches) {
+                createConfettiBatch(batchCount);
+            } else {
+                clearInterval(intervalId);
+            }
+        }, batchInterval);
+
+        // Clean up all confetti after the last batch has fallen
+        const cleanupTimer = setTimeout(() => {
             setConfetti([]);
-        }, 4000);
+        }, (maxBatches * batchInterval) + 4000); // Wait for all batches plus fall duration
 
-        return () => clearTimeout(timer);
+        return () => {
+            clearInterval(intervalId);
+            clearTimeout(cleanupTimer);
+        };
     }, [count]);
 
     return (
@@ -202,7 +226,8 @@ const Confetti: React.FC<ConfettiProps> = ({ count = 150 }) => {
                         style={{
                             left: `${piece.x}%`,
                             '--fall-duration': `${piece.fallDuration}s`,
-                            '--shake-distance': `${piece.shakeDistance}px`
+                            '--shake-distance': `${piece.shakeDistance}px`,
+                            animationDelay: `${piece.delay}s`
                         } as React.CSSProperties}
                     >
                         {shape}

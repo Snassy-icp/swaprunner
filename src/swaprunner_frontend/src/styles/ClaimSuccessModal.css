@@ -201,13 +201,15 @@
     height: 10px;
     opacity: 0;
     animation: confetti-animation var(--fall-duration, 3s) linear forwards;
+    animation-delay: var(--delay, 0s);
     transform-origin: center;
+    will-change: transform, opacity;
 }
 
 @keyframes confetti-animation {
     0% {
         opacity: 1;
-        transform: translateY(-10px) rotate(0deg);
+        transform: translateY(-20px) rotate(0deg);
     }
     25% {
         opacity: 1;
@@ -218,12 +220,12 @@
         transform: translateY(50vh) translateX(calc(var(--shake-distance, 15px) * -1)) rotate(180deg);
     }
     75% {
-        opacity: 1;
+        opacity: 0.8;
         transform: translateY(75vh) translateX(var(--shake-distance, 15px)) rotate(270deg);
     }
     100% {
         opacity: 0;
-        transform: translateY(100vh) translateX(0) rotate(360deg);
+        transform: translateY(105vh) translateX(0) rotate(360deg);
     }
 }
 
