@@ -444,4 +444,73 @@ module {
 
         Buffer.toArray(results)
     };
+
+    // Get all available claims for a user's achievements
+    public func get_available_claims(
+        caller: Principal,
+        allocations: HashMap.HashMap<Text, T.Allocation>,
+        allocation_statuses: HashMap.HashMap<Text, T.AllocationStatus>,
+        allocation_claims: HashMap.HashMap<Text, T.AllocationClaim>,
+        user_achievements: HashMap.HashMap<Text, [T.UserAchievement]>,
+    ) : [{
+        achievement_id: Text;
+        allocation_id: Text;
+        claimable_amount: {
+            min_e8s: Nat;
+            max_e8s: Nat;
+        };
+    }] {
+        let results = Buffer.Buffer<{
+            achievement_id: Text;
+            allocation_id: Text;
+            claimable_amount: {
+                min_e8s: Nat;
+                max_e8s: Nat;
+            };
+        }>(0);
+
+        // Get user's achievements
+        let user_achievements_arr = switch (user_achievements.get(Principal.toText(caller))) {
+            case null { [] };
+            case (?ua) { ua };
+        };
+
+        // Create a set of achievement IDs for faster lookup
+        let achievement_ids = HashMap.HashMap<Text, Bool>(user_achievements_arr.size(), Text.equal, Text.hash);
+        for (achievement in user_achievements_arr.vals()) {
+            achievement_ids.put(achievement.achievement_id, true);
+        };
+
+        // Check each allocation
+        for ((id, allocation) in allocations.entries()) {
+            // Skip if user doesn't have the achievement
+            switch (achievement_ids.get(allocation.achievement_id)) {
+                case null continue;
+                case (?_) {};
+            };
+
+            // Verify allocation is active
+            switch (allocation_statuses.get(id)) {
+                case (?#Active) {};
+                case (?_) continue;
+                case null continue;
+            };
+
+            // Skip if user has already claimed
+            let claim_key = get_claim_key(caller, id);
+            switch (allocation_claims.get(claim_key)) {
+                case (?_) continue;
+                case null {};
+            };
+
+            // Add to results
+            results.add({
+                achievement_id = allocation.achievement_id;
+                allocation_id = id;
+                claimable_amount = allocation.token.per_user;
+            });
+        };
+
+        Buffer.toArray(results)
+    };
 }

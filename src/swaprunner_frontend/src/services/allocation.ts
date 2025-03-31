@@ -133,11 +133,10 @@ class AllocationService {
         };
     }[]> {
         const actor = await backendService.getActor();
-        console.log('Calling scan_for_new_achievements...');
-        const result = await actor.scan_for_new_achievements();
-        console.log('Scan result:', result);
-        console.log('Available claims:', result.available_claims);
-        return result.available_claims;
+        console.log('Getting available claims...');
+        const claims = await actor.get_available_claims();
+        console.log('Available claims:', claims);
+        return claims;
     }
 
     /**

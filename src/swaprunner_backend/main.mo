@@ -3729,5 +3729,26 @@ shared (deployer) actor class SwapRunner() = this {
 
         Buffer.toArray(results)
     };
-    
+
+    // Get all available claims for the current user
+    public query({caller}) func get_available_claims() : async [{
+        achievement_id: Text;
+        allocation_id: Text;
+        claimable_amount: {
+            min_e8s: Nat;
+            max_e8s: Nat;
+        };
+    }] {
+        if (Principal.isAnonymous(caller)) {
+            return [];
+        };
+
+        Allocation.get_available_claims(
+            caller,
+            allocations,
+            allocation_statuses,
+            allocation_claims,
+            userAchievements,
+        )
+    };
 }
