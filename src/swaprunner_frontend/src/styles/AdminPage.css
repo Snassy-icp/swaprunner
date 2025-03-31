@@ -197,4 +197,85 @@
 
 .price-button:hover:not(:disabled) {
   background-color: #357abd;
+}
+
+.fee-config-section {
+  background: #1A1D26;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 24px 0;
+}
+
+.fee-config-section h2 {
+  color: #fff;
+  font-size: 18px;
+  margin: 0 0 16px;
+}
+
+.fee-config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fee-config-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fee-config-form label {
+  color: #8F96A1;
+  font-size: 14px;
+}
+
+.fee-config-form input {
+  background: #2A2E3A;
+  border: 1px solid #363B47;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 14px;
+  font-family: 'Roboto Mono', monospace;
+  width: 100%;
+  max-width: 200px;
+}
+
+.fee-config-form input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.fee-config-form .update-button {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+}
+
+.fee-config-form .update-button:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.fee-config-form .update-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fee-config-form .spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 } 

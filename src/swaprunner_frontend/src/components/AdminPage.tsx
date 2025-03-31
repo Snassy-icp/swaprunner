@@ -4,7 +4,14 @@ import { Principal } from '@dfinity/principal';
 import { adminService } from '../services/admin';
 import { authService } from '../services/auth';
 import { priceService } from '../services/price';
+import { backendService } from '../services/backend';
 import '../styles/AdminPage.css';
+import { FiLoader } from 'react-icons/fi';
+
+interface AllocationFeeConfig {
+  icp_fee_e8s: bigint;
+  cut_basis_points: bigint;
+}
 
 export const AdminPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -16,6 +23,9 @@ export const AdminPage: React.FC = () => {
   const [icpPrice, setIcpPrice] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState<string | null>(null);
+  const [feeConfig, setFeeConfig] = useState<AllocationFeeConfig | null>(null);
+  const [feeLoading, setFeeLoading] = useState(false);
+  const [feeError, setFeeError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,6 +40,7 @@ export const AdminPage: React.FC = () => {
         if (adminStatus) {
           const adminList = await adminService.getAdmins();
           setAdmins(adminList);
+          await loadFeeConfig();
         }
       } catch (err) {
         console.error('Error initializing admin page:', err);
@@ -102,6 +113,42 @@ export const AdminPage: React.FC = () => {
     }
   };
 
+  const loadFeeConfig = async () => {
+    try {
+      setFeeLoading(true);
+      setFeeError(null);
+      const actor = await backendService.getActor();
+      const config = await actor.get_allocation_fee_config();
+      setFeeConfig(config);
+    } catch (err) {
+      setFeeError('Failed to load fee configuration: ' + (err instanceof Error ? err.message : String(err)));
+      console.error('Failed to load fee config:', err);
+    } finally {
+      setFeeLoading(false);
+    }
+  };
+
+  const handleUpdateFeeConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!feeConfig) return;
+
+    try {
+      setFeeLoading(true);
+      setFeeError(null);
+      const actor = await backendService.getActor();
+      await actor.update_allocation_fee_config({
+        icp_fee_e8s: feeConfig.icp_fee_e8s,
+        cut_basis_points: feeConfig.cut_basis_points
+      });
+      await loadFeeConfig();
+    } catch (err) {
+      setFeeError('Failed to update fee configuration: ' + (err instanceof Error ? err.message : String(err)));
+      console.error('Failed to update fee config:', err);
+    } finally {
+      setFeeLoading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="admin-page">
@@ -149,6 +196,58 @@ export const AdminPage: React.FC = () => {
         >
           Achievement Management
         </button>
+      </div>
+
+      <div className="fee-config-section">
+        <h2>Allocation Fee Configuration</h2>
+        {feeError && <div className="error-message">{feeError}</div>}
+        {feeConfig && (
+          <form onSubmit={handleUpdateFeeConfig} className="fee-config-form">
+            <div className="form-group">
+              <label>Creation Fee (ICP)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={Number(feeConfig.icp_fee_e8s) / 100_000_000}
+                onChange={(e) => setFeeConfig({
+                  ...feeConfig,
+                  icp_fee_e8s: BigInt(Math.round(Number(e.target.value) * 100_000_000))
+                })}
+                min="0"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Platform Cut (%)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={Number(feeConfig.cut_basis_points) / 100}
+                onChange={(e) => setFeeConfig({
+                  ...feeConfig,
+                  cut_basis_points: BigInt(Math.round(Number(e.target.value) * 100))
+                })}
+                min="0"
+                max="100"
+                required
+              />
+            </div>
+            <button 
+              type="submit" 
+              className="update-button"
+              disabled={feeLoading}
+            >
+              {feeLoading ? (
+                <>
+                  <FiLoader className="spinning" />
+                  Updating...
+                </>
+              ) : (
+                'Update Fee Configuration'
+              )}
+            </button>
+          </form>
+        )}
       </div>
 
       <div className="price-test-section">
