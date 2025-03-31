@@ -11,6 +11,7 @@ import { ICPSwapExecutionService } from '../services/icpswap_execution';
 import { Principal } from '@dfinity/principal';
 import { tokenService } from '../services/token';
 import { backendService } from '../services/backend';
+import { useIsAdmin } from '../contexts/AdminContext';
 
 interface Achievement {
     id: string;
@@ -438,19 +439,19 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
 };
 
 const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, formatDate, onStatusChange }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [expanded, setExpanded] = useState(false);
     const [tokenLogo, setTokenLogo] = useState<string | null>(null);
-    const [achievementDetails, setAchievementDetails] = useState<Achievement | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [achievement, setAchievement] = useState<Achievement | null>(null);
     const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null);
-    const [isPaymentLoading, setIsPaymentLoading] = useState(false);
-    const [isFundingLoading, setIsFundingLoading] = useState(false);
-    const [isActivating, setIsActivating] = useState(false);
     const [fundingBalance, setFundingBalance] = useState<bigint>(BigInt(0));
-    const { allocation, status } = allocationWithStatus;
+    const [isCancelling, setIsCancelling] = useState(false);
+    const [isAdmin] = useIsAdmin();
     const { tokens } = useTokens();
 
     // Get token metadata
-    const tokenMetadata = tokens.find(t => t.canisterId === allocation.token.canister_id.toString())?.metadata;
+    const tokenMetadata = tokens.find(t => t.canisterId === allocationWithStatus.allocation.token.canister_id.toString())?.metadata;
 
     // Load achievement details, token logo, and payment status
     useEffect(() => {
@@ -458,9 +459,9 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
         const loadAchievementDetails = async () => {
             try {
                 const actor = await backendService.getActor();
-                const result = await actor.get_achievement_details(allocation.achievement_id);
+                const result = await actor.get_achievement_details(allocationWithStatus.allocation.achievement_id);
                 if ('ok' in result) {
-                    setAchievementDetails(result.ok);
+                    setAchievement(result.ok);
                 }
             } catch (err) {
                 console.error('Error loading achievement details:', err);
@@ -469,9 +470,9 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
 
         // Load token logo if available and expanded
         const loadLogo = async () => {
-            if (isExpanded && tokenMetadata?.hasLogo && !tokenLogo) {
+            if (expanded && tokenMetadata?.hasLogo && !tokenLogo) {
                 try {
-                    const logo = await tokenService.getTokenLogo(allocation.token.canister_id.toString());
+                    const logo = await tokenService.getTokenLogo(allocationWithStatus.allocation.token.canister_id.toString());
                     if (logo) {
                         setTokenLogo(logo);
                     }
@@ -483,9 +484,9 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
 
         // Load payment status
         const loadPaymentStatus = async () => {
-            if (isExpanded && status === 'Draft') {
+            if (expanded && allocationWithStatus.status === 'Draft') {
                 try {
-                    const status = await allocationService.getPaymentStatus(allocation.id);
+                    const status = await allocationService.getPaymentStatus(allocationWithStatus.allocation.id);
                     setPaymentStatus(status);
                 } catch (err) {
                     console.error('Error loading payment status:', err);
@@ -495,9 +496,9 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
 
         // Load funding balance
         const loadFundingBalance = async () => {
-            if (isExpanded && status === 'Draft' && paymentStatus?.is_paid) {
+            if (expanded && allocationWithStatus.status === 'Draft' && paymentStatus?.is_paid) {
                 try {
-                    const balance = await allocationService.getFundingBalance(allocation.id);
+                    const balance = await allocationService.getFundingBalance(allocationWithStatus.allocation.id);
                     setFundingBalance(balance);
                 } catch (err) {
                     console.error('Error loading funding balance:', err);
@@ -506,27 +507,27 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
         };
 
         loadAchievementDetails();
-        if (isExpanded) {
+        if (expanded) {
             loadLogo();
             loadPaymentStatus();
             loadFundingBalance();
         }
-    }, [allocation.achievement_id, isExpanded, tokenMetadata, allocation.token.canister_id, tokenLogo, allocation.id, status, paymentStatus?.is_paid]);
+    }, [allocationWithStatus.allocation.achievement_id, expanded, tokenMetadata, allocationWithStatus.allocation.token.canister_id, fundingBalance, allocationWithStatus.allocation.id, allocationWithStatus.status, paymentStatus?.is_paid]);
 
     const handlePay = async () => {
         if (!paymentStatus || paymentStatus.is_paid) return;
 
         try {
-            setIsPaymentLoading(true);
-            await allocationService.payForAllocation(allocation.id);
+            setLoading(true);
+            await allocationService.payForAllocation(allocationWithStatus.allocation.id);
             // Reload payment status after successful payment
-            const newStatus = await allocationService.getPaymentStatus(allocation.id);
+            const newStatus = await allocationService.getPaymentStatus(allocationWithStatus.allocation.id);
             setPaymentStatus(newStatus);
         } catch (err) {
             console.error('Error making payment:', err);
             // You might want to show an error message to the user here
         } finally {
-            setIsPaymentLoading(false);
+            setLoading(false);
         }
     };
 
@@ -534,16 +535,16 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
         if (!paymentStatus?.is_paid) return;
 
         try {
-            setIsFundingLoading(true);
-            await allocationService.fundAllocation(allocation.id);
+            setLoading(true);
+            await allocationService.fundAllocation(allocationWithStatus.allocation.id);
             // Reload funding status after successful funding
-            const newBalance = await allocationService.getFundingBalance(allocation.id);
+            const newBalance = await allocationService.getFundingBalance(allocationWithStatus.allocation.id);
             setFundingBalance(newBalance);
         } catch (err) {
             console.error('Error funding allocation:', err);
             // You might want to show an error message to the user here
         } finally {
-            setIsFundingLoading(false);
+            setLoading(false);
         }
     };
 
@@ -567,14 +568,14 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     };
 
     const handleActivate = async () => {
-        if (!paymentStatus || !allocation.token.total_amount_e8s || !fundingBalance || fundingBalance < allocation.token.total_amount_e8s) {
+        if (!paymentStatus || !allocationWithStatus.allocation.token.total_amount_e8s || !fundingBalance || fundingBalance < allocationWithStatus.allocation.token.total_amount_e8s) {
             console.error('Invalid activation conditions');
             return;
         }
 
         try {
-            setIsActivating(true);
-            await allocationService.activateAllocation(allocation.id);
+            setLoading(true);
+            await allocationService.activateAllocation(allocationWithStatus.allocation.id);
             // Notify parent component to refresh the allocations list
             if (onStatusChange) {
                 onStatusChange();
@@ -583,36 +584,53 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
             console.error('Error activating allocation:', err);
             // You might want to show an error message to the user here
         } finally {
-            setIsActivating(false);
+            setLoading(false);
         }
     };
+
+    const handleCancel = async () => {
+        try {
+            setIsCancelling(true);
+            setError(null);
+            await allocationService.cancelAllocation(allocationWithStatus.allocation.id);
+            if (onStatusChange) {
+                onStatusChange();
+            }
+        } catch (err: any) {
+            setError('Failed to cancel allocation: ' + (err.message || String(err)));
+        } finally {
+            setIsCancelling(false);
+        }
+    };
+
+    const showCancelButton = isAdmin || allocationWithStatus.status === 'Draft';
 
     return (
         <div className="allocation-card">
             <div 
                 className="allocation-header"
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={() => setExpanded(!expanded)}
             >
                 <div className="allocation-icon-wrapper">
                     <FiGift size={32} className="allocation-icon" />
                 </div>
                 <div className="allocation-info">
-                    <h3>{achievementDetails?.name || `Loading Achievement...`}</h3>
+                    <h3>{achievement?.name || `Loading Achievement...`}</h3>
                     <div className="allocation-date">
-                        {formatTokenAmount(allocation.token.total_amount_e8s, allocation.token.canister_id.toString())} {tokenMetadata?.symbol || 'tokens'}
+                        {formatTokenAmount(allocationWithStatus.allocation.token.total_amount_e8s, allocationWithStatus.allocation.token.canister_id.toString())} {tokenMetadata?.symbol || 'tokens'}
                     </div>
                 </div>
-                <div className="allocation-status" style={{ color: getStatusColor(status) }}>
-                    {getStatusString(status)}
+                <div className="allocation-status" style={{ color: getStatusColor(allocationWithStatus.status) }}>
+                    {getStatusString(allocationWithStatus.status)}
                 </div>
                 <div className="allocation-expand">
-                    {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+                    {expanded ? <FiChevronUp /> : <FiChevronDown />}
                 </div>
             </div>
-            {isExpanded && (
+            {expanded && (
                 <div className="allocation-details">
                     <div className="allocation-details-content">
-                        {status === 'Draft' && (
+                        {allocationWithStatus.status === 'Draft' && (
                             <div className="detail-section">
                                 <h4>Payment Status</h4>
                                 {paymentStatus ? (
@@ -648,9 +666,9 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                                         e.stopPropagation();
                                                         handlePay();
                                                     }}
-                                                    disabled={isPaymentLoading}
+                                                    disabled={loading}
                                                 >
-                                                    {isPaymentLoading ? (
+                                                    {loading ? (
                                                         <>
                                                             <FiLoader className="spinning" />
                                                             Paying...
@@ -675,37 +693,37 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                 )}
                             </div>
                         )}
-                        {status === 'Draft' && paymentStatus?.is_paid && (
+                        {allocationWithStatus.status === 'Draft' && paymentStatus?.is_paid && (
                             <div className="detail-section">
                                 <h4>Funding Status</h4>
                                 <div className="detail-content">
                                     <div className="detail-row">
                                         <span className="detail-label">Required Amount:</span>
                                         <span className="detail-value">
-                                            {formatTokenAmount(allocation.token.total_amount_e8s, allocation.token.canister_id.toString())} {tokenMetadata?.symbol || 'tokens'}
+                                            {formatTokenAmount(allocationWithStatus.allocation.token.total_amount_e8s, allocationWithStatus.allocation.token.canister_id.toString())} {tokenMetadata?.symbol || 'tokens'}
                                         </span>
                                     </div>
                                     <div className="detail-row">
                                         <span className="detail-label">Current Balance:</span>
                                         <span className="detail-value">
-                                            {formatTokenAmount(fundingBalance, allocation.token.canister_id.toString())} {tokenMetadata?.symbol || 'tokens'}
+                                            {formatTokenAmount(fundingBalance || BigInt(0), allocationWithStatus.allocation.token.canister_id.toString())} {tokenMetadata?.symbol || 'tokens'}
                                         </span>
                                     </div>
-                                    {fundingBalance < allocation.token.total_amount_e8s ? (
+                                    {fundingBalance < allocationWithStatus.allocation.token.total_amount_e8s ? (
                                         <>
                                             <div className="detail-row">
                                                 <span className="detail-label">Remaining:</span>
                                                 <span className="detail-value">
-                                                    {formatTokenAmount(allocation.token.total_amount_e8s - fundingBalance, allocation.token.canister_id.toString())} {tokenMetadata?.symbol || 'tokens'}
+                                                    {formatTokenAmount(allocationWithStatus.allocation.token.total_amount_e8s - (fundingBalance || BigInt(0)), allocationWithStatus.allocation.token.canister_id.toString())} {tokenMetadata?.symbol || 'tokens'}
                                                 </span>
                                             </div>
                                             <div className="detail-actions">
                                                 <button
                                                     className="action-button primary"
                                                     onClick={handleFund}
-                                                    disabled={isFundingLoading}
+                                                    disabled={loading}
                                                 >
-                                                    {isFundingLoading ? (
+                                                    {loading ? (
                                                         <>
                                                             <FiLoader className="spinning" />
                                                             Funding...
@@ -733,18 +751,18 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                             <div className="detail-content">
                                 <div className="detail-row">
                                     <span className="detail-label">Current Status:</span>
-                                    <span className="detail-value" style={{ color: getStatusColor(status) }}>
-                                        {getStatusString(status)}
+                                    <span className="detail-value" style={{ color: getStatusColor(allocationWithStatus.status) }}>
+                                        {getStatusString(allocationWithStatus.status)}
                                     </span>
                                 </div>
-                                {status === 'Draft' && (
+                                {allocationWithStatus.status === 'Draft' && (
                                     <div className="detail-actions">
                                         <button
                                             className="action-button primary"
                                             onClick={handleActivate}
-                                            disabled={!paymentStatus?.is_paid || fundingBalance < allocation.token.total_amount_e8s || isActivating}
+                                            disabled={!paymentStatus?.is_paid || fundingBalance < allocationWithStatus.allocation.token.total_amount_e8s || loading}
                                         >
-                                            {isActivating ? (
+                                            {loading ? (
                                                 <>
                                                     <FiLoader className="spinning" />
                                                     Activating...
@@ -753,10 +771,10 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                                 'Activate Allocation'
                                             )}
                                         </button>
-                                        {(!paymentStatus?.is_paid || fundingBalance < allocation.token.total_amount_e8s) && (
+                                        {(!paymentStatus?.is_paid || fundingBalance < allocationWithStatus.allocation.token.total_amount_e8s) && (
                                             <div className="detail-info">
                                                 {!paymentStatus?.is_paid && <div>• Payment required before activation</div>}
-                                                {fundingBalance < allocation.token.total_amount_e8s && <div>• Full funding required before activation</div>}
+                                                {fundingBalance < allocationWithStatus.allocation.token.total_amount_e8s && <div>• Full funding required before activation</div>}
                                             </div>
                                         )}
                                     </div>
@@ -765,7 +783,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                         </div>
                         <div className="detail-row">
                             <span className="detail-label">Achievement:</span>
-                            <span className="detail-value">{achievementDetails?.name || 'Loading...'}</span>
+                            <span className="detail-value">{achievement?.name || 'Loading...'}</span>
                         </div>
                         <div className="detail-row">
                             <span className="detail-label">Token:</span>
@@ -775,10 +793,6 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                         src={tokenMetadata?.symbol === 'ICP' ? '/icp_symbol.svg' : tokenLogo || '/generic_token.svg'}
                                         alt={tokenMetadata?.symbol || 'token'} 
                                         className="token-logo"
-                                        onError={(e) => {
-                                            const img = e.target as HTMLImageElement;
-                                            img.src = tokenMetadata?.symbol === 'ICP' ? '/icp_symbol.svg' : '/generic_token.svg';
-                                        }}
                                     />
                                 )}
                                 <span className="token-symbol">{tokenMetadata?.symbol || 'Unknown Token'}</span>
@@ -787,23 +801,44 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                         <div className="detail-row">
                             <span className="detail-label">Total Amount:</span>
                             <span className="detail-value">
-                                {formatTokenAmount(allocation.token.total_amount_e8s, allocation.token.canister_id.toString())} {tokenMetadata?.symbol}
+                                {formatTokenAmount(allocationWithStatus.allocation.token.total_amount_e8s, allocationWithStatus.allocation.token.canister_id.toString())} {tokenMetadata?.symbol}
                             </span>
                         </div>
                         <div className="detail-row">
                             <span className="detail-label">Per User:</span>
                             <span className="detail-value">
-                                {allocation.token.per_user.min_e8s === allocation.token.per_user.max_e8s ? (
-                                    `${formatTokenAmount(allocation.token.per_user.min_e8s, allocation.token.canister_id.toString())} ${tokenMetadata?.symbol}`
+                                {allocationWithStatus.allocation.token.per_user.min_e8s === allocationWithStatus.allocation.token.per_user.max_e8s ? (
+                                    `${formatTokenAmount(allocationWithStatus.allocation.token.per_user.min_e8s, allocationWithStatus.allocation.token.canister_id.toString())} ${tokenMetadata?.symbol}`
                                 ) : (
-                                    `${formatTokenAmount(allocation.token.per_user.min_e8s, allocation.token.canister_id.toString())} - ${formatTokenAmount(allocation.token.per_user.max_e8s, allocation.token.canister_id.toString())} ${tokenMetadata?.symbol}`
+                                    `${formatTokenAmount(allocationWithStatus.allocation.token.per_user.min_e8s, allocationWithStatus.allocation.token.canister_id.toString())} - ${formatTokenAmount(allocationWithStatus.allocation.token.per_user.max_e8s, allocationWithStatus.allocation.token.canister_id.toString())} ${tokenMetadata?.symbol}`
                                 )}
                             </span>
                         </div>
                         <div className="detail-row">
                             <span className="detail-label">Created:</span>
-                            <span className="detail-value">{formatDate(allocation.created_at)}</span>
+                            <span className="detail-value">{formatDate(allocationWithStatus.allocation.created_at)}</span>
                         </div>
+
+                        {showCancelButton && allocationWithStatus.status !== 'Cancelled' && (
+                            <div className="detail-actions">
+                                <button
+                                    className="action-button danger"
+                                    onClick={handleCancel}
+                                    disabled={isCancelling}
+                                >
+                                    {isCancelling ? (
+                                        <>
+                                            <FiLoader className="spinning" />
+                                            Cancelling...
+                                        </>
+                                    ) : (
+                                        'Cancel Allocation'
+                                    )}
+                                </button>
+                            </div>
+                        )}
+
+                        {error && <div className="error-message">{error}</div>}
                     </div>
                 </div>
             )}

@@ -319,6 +319,18 @@ class AllocationService {
             subaccount: subaccount
         });
     }
+
+    /**
+     * Cancel an allocation
+     */
+    async cancelAllocation(allocationId: string): Promise<void> {
+        const actor = await backendService.getActor();
+        const result = await actor.cancel_allocation(allocationId);
+        
+        if ('err' in result) {
+            throw new Error(result.err);
+        }
+    }
 }
 
 export const allocationService = new AllocationService(); 
