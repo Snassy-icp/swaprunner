@@ -432,16 +432,16 @@ const Fireworks: React.FC<FireworksProps> = ({ count = 8 }) => {
                     if (i !== nextFirework) return firework;
 
                     // Create explosion particles
-                    const particles: FireworkParticle[] = Array.from({ length: 30 }, () => {
+                    const particles: FireworkParticle[] = Array.from({ length: 45 }, () => {
                         const angle = Math.random() * Math.PI * 2;
-                        const velocity = 2 + Math.random() * 3;
+                        const velocity = 1 + Math.random() * 1.5; // Reduced velocity for slower movement
                         return {
                             x: firework.x,
                             y: firework.targetY,
                             vx: Math.cos(angle) * velocity,
                             vy: Math.sin(angle) * velocity,
                             color: FIREWORK_COLORS[Math.floor(Math.random() * FIREWORK_COLORS.length)],
-                            size: 2 + Math.random() * 2,
+                            size: 4 + Math.random() * 4, // Increased particle size
                             alpha: 1
                         };
                     });
@@ -449,7 +449,7 @@ const Fireworks: React.FC<FireworksProps> = ({ count = 8 }) => {
                     return { ...firework, particles, launched: true };
                 });
             });
-        }, 300); // Launch a new firework every 300ms
+        }, 400); // Slightly longer delay between launches
 
         // Animate particles
         const animationFrame = setInterval(() => {
@@ -457,11 +457,11 @@ const Fireworks: React.FC<FireworksProps> = ({ count = 8 }) => {
                 ...firework,
                 particles: firework.particles.map(particle => ({
                     ...particle,
-                    x: particle.x + particle.vx,
-                    y: particle.y + particle.vy,
-                    vy: particle.vy + 0.1, // Gravity
-                    alpha: particle.alpha * 0.98 // Fade out
-                })).filter(p => p.alpha > 0.1) // Remove faded particles
+                    x: particle.x + particle.vx * 0.7, // Slowed down horizontal movement
+                    y: particle.y + particle.vy * 0.7, // Slowed down vertical movement
+                    vy: particle.vy + 0.05, // Reduced gravity effect
+                    alpha: particle.alpha * 0.99 // Slower fade out
+                })).filter(p => p.alpha > 0.15) // Keep particles visible longer
             })));
         }, 1000 / 60); // 60fps
 
@@ -483,7 +483,7 @@ const Fireworks: React.FC<FireworksProps> = ({ count = 8 }) => {
                             style={{
                                 left: `${firework.x}%`,
                                 height: `${firework.targetY}%`,
-                                animation: `launch 0.3s ease-out forwards`
+                                animation: `launch 0.4s ease-out forwards`
                             }}
                         />
                     )}

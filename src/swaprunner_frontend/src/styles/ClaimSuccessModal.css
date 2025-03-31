@@ -378,9 +378,10 @@
 .firework-trail {
     position: absolute;
     bottom: 0;
-    width: 2px;
-    background: linear-gradient(to top, rgba(255, 255, 255, 0.8), transparent);
+    width: 3px;
+    background: linear-gradient(to top, rgba(255, 255, 255, 0.9), transparent);
     transform-origin: bottom center;
+    filter: blur(0.5px);
 }
 
 .firework-particle {
@@ -388,7 +389,9 @@
     border-radius: 50%;
     pointer-events: none;
     transform: translate(-50%, -50%);
-    box-shadow: 0 0 6px currentColor;
+    box-shadow: 0 0 12px 4px currentColor;
+    filter: blur(0.5px);
+    will-change: transform, opacity;
 }
 
 @keyframes launch {
@@ -396,7 +399,7 @@
         transform: scaleY(0);
         opacity: 1;
     }
-    50% {
+    60% {
         opacity: 1;
     }
     100% {
