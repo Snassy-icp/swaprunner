@@ -1,5 +1,6 @@
 import { Principal } from '@dfinity/principal';
 import { backendService } from './backend';
+import { ICRC1Service } from './icrc1_service';
 
 export interface Allocation {
     id: string;
@@ -50,6 +51,8 @@ export interface PaymentStatus {
 }
 
 class AllocationService {
+    private icrc1Service = new ICRC1Service();
+
     /**
      * Create a new allocation
      */
@@ -172,21 +175,26 @@ class AllocationService {
     }
 
     /**
-     * Get the payment status for an allocation
+     * Get the payment status for an allocation by checking its subaccount balance on the ICP ledger
      */
     async getPaymentStatus(allocationId: string): Promise<PaymentStatus> {
         const actor = await backendService.getActor();
-        const result = await actor.get_allocation_payment_status(allocationId);
+        const feeConfig = await this.getFeeConfig();
         
-        if ('ok' in result) {
-            return {
-                current_balance_e8s: result.ok.current_balance_e8s,
-                required_fee_e8s: result.ok.required_fee_e8s,
-                is_paid: result.ok.is_paid
-            };
-        } else {
-            throw new Error(result.err);
-        }
+        // Get the subaccount for this allocation
+        const subaccount = this.derivePaymentSubaccount(allocationId);
+
+        // Get balance using ICRC1 service
+        const { balance_e8s } = await this.icrc1Service.getBalanceWithSubaccount(
+            'ryjl3-tyaaa-aaaaa-aaaba-cai', // ICP ledger
+            Array.from(subaccount)
+        );
+
+        return {
+            current_balance_e8s: balance_e8s,
+            required_fee_e8s: feeConfig.icp_fee_e8s,
+            is_paid: balance_e8s >= feeConfig.icp_fee_e8s
+        };
     }
 
     /**
