@@ -512,7 +512,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                 <div className="allocation-info">
                     <h3>{achievementDetails?.name || `Loading Achievement...`}</h3>
                     <div className="allocation-date">
-                        Created {formatDate(allocation.created_at)}
+                        {formatTokenAmount(allocation.token.total_amount_e8s, allocation.token.canister_id.toString())} {tokenMetadata?.symbol || 'tokens'}
                     </div>
                 </div>
                 <div className="allocation-status" style={{ color: getStatusColor(status) }}>
