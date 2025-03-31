@@ -295,112 +295,6 @@ interface BalloonState {
     depthOffset: number;
 }
 
-interface BalloonProps {
-    count?: number;
-}
-
-const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
-    const [balloons, setBalloons] = useState<BalloonState[]>([]);
-
-    useEffect(() => {
-        let batchCount = 0;
-        const maxBatches = 15;
-        const batchInterval = 800;
-        
-        const createBalloonBatch = (batchId: number) => {
-            const batchSize = Math.max(
-                1,
-                Math.floor(count * Math.pow(0.85, batchId))
-            );
-            
-            const newBalloons = Array.from({ length: batchSize }, () => {
-                const depth = Math.random();
-                // Larger size range: 15px to 80px
-                const baseSize = 15 + (depth * 65);
-                
-                return {
-                    x: 10 + Math.random() * 80,
-                    y: 0,
-                    delay: batchId * (batchInterval / 1000) + Math.random() * 0.5,
-                    duration: 12 - (depth * 6), // Larger balloons (higher depth) move faster
-                    size: baseSize,
-                    color: BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)],
-                    swayAmount: 15 + (depth * 35),
-                    isPopped: false,
-                    popScale: 1,
-                    depth,
-                    depthOffset: depth * 200 - 100
-                };
-            });
-
-            setBalloons(prev => [...prev, ...newBalloons]);
-        };
-
-        createBalloonBatch(0);
-
-        const intervalId = setInterval(() => {
-            batchCount++;
-            if (batchCount < maxBatches) {
-                createBalloonBatch(batchCount);
-            } else {
-                clearInterval(intervalId);
-            }
-        }, batchInterval);
-
-        const cleanupTimer = setTimeout(() => {
-            setBalloons([]);
-        }, (maxBatches * batchInterval) + 15000);
-
-        return () => {
-            clearInterval(intervalId);
-            clearTimeout(cleanupTimer);
-        };
-    }, [count]);
-
-    return (
-        <div className="balloon-container">
-            {balloons.map((balloon, i) => {
-                // Calculate z-index based on size
-                // Smaller balloons (15-47.5px) get z-index 995-999 (behind modal)
-                // Larger balloons (47.5-80px) get z-index 1010-1015 (in front of modal at 1000)
-                const zIndex = balloon.size <= 47.5 ? 
-                    995 + Math.floor((balloon.size - 15) / 6.5) :
-                    1100 + Math.floor((balloon.size - 47.5) / 3.25);
-                
-                const shadowIntensity = 0.1 + (balloon.size / 160); // 0.1-0.6 range
-                
-                return (
-                    <div
-                        key={i}
-                        className={`balloon ${balloon.isPopped ? 'popped' : ''}`}
-                        style={{
-                            position: 'absolute',
-                            left: `${balloon.x}%`,
-                            bottom: '-100px',
-                            width: `${balloon.size}px`,
-                            height: `${balloon.size * 1.2}px`,
-                            backgroundColor: balloon.color,
-                            animation: `float ${balloon.duration}s ${balloon.delay}s ease-out forwards`,
-                            '--sway-amount': `${balloon.swayAmount}px`,
-                            '--depth-offset': `${balloon.depthOffset}px`,
-                            zIndex,
-                            boxShadow: `inset -${2 + balloon.size/20}px -${2 + balloon.size/20}px ${5 + balloon.size/8}px rgba(0,0,0,${shadowIntensity})`
-                        } as React.CSSProperties}
-                    >
-                        <div 
-                            className="balloon-string"
-                            style={{
-                                height: `${balloon.size * 1.5}px`,
-                                opacity: 0.3 + (balloon.size / 160) // 0.3-0.8 range
-                            }}
-                        />
-                    </div>
-                );
-            })}
-        </div>
-    );
-};
-
 interface FireworkParticle {
     x: number;
     y: number;
@@ -533,6 +427,22 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
     const [showFireworks] = useState(() => Math.random() < FIREWORK_PROBABILITY);
     const [balloons, setBalloons] = useState<BalloonState[]>([]);
 
+    const handlePop = (index: number) => {
+        console.log('Modal handlePop called with index:', index);
+        setBalloons(prev => {
+            console.log('Current modal balloons state:', prev);
+            const newBalloons = prev.map((balloon, i) => {
+                if (i === index) {
+                    console.log('Popping modal balloon:', i);
+                    return { ...balloon, isPopped: true };
+                }
+                return balloon;
+            });
+            console.log('New modal balloons state:', newBalloons);
+            return newBalloons;
+        });
+    };
+
     useEffect(() => {
         if (show) {
             const timer = setTimeout(() => setIsOpen(true), 1000);
@@ -645,6 +555,7 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
                                         zIndex,
                                         boxShadow: `inset -${2 + balloon.size/20}px -${2 + balloon.size/20}px ${5 + balloon.size/8}px rgba(0,0,0,${shadowIntensity})`
                                     } as React.CSSProperties}
+                                    onClick={() => handlePop(i)}
                                 >
                                     <div 
                                         className="balloon-string"
@@ -706,6 +617,7 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
                                         zIndex,
                                         boxShadow: `inset -${2 + balloon.size/20}px -${2 + balloon.size/20}px ${5 + balloon.size/8}px rgba(0,0,0,${shadowIntensity})`
                                     } as React.CSSProperties}
+                                    onClick={() => handlePop(i + balloons.filter(b => b.size <= 47.5).length)}
                                 >
                                     <div 
                                         className="balloon-string"
