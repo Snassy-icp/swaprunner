@@ -37,6 +37,7 @@ interface AllocationFormProps {
 interface AllocationCardProps {
     allocationWithStatus: AllocationWithStatus;
     formatDate: (timestamp: number) => string;
+    onStatusChange?: () => void;
 }
 
 const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) => {
@@ -436,7 +437,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
     );
 };
 
-const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, formatDate }) => {
+const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, formatDate, onStatusChange }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [tokenLogo, setTokenLogo] = useState<string | null>(null);
     const [achievementDetails, setAchievementDetails] = useState<Achievement | null>(null);
@@ -572,9 +573,10 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
 
         try {
             await allocationService.activateAllocation(allocation.id);
-            // Reload allocation status after successful activation
-            const newStatus = await allocationService.getPaymentStatus(allocation.id);
-            setPaymentStatus(newStatus);
+            // Notify parent component to refresh the allocations list
+            if (onStatusChange) {
+                onStatusChange();
+            }
         } catch (err) {
             console.error('Error activating allocation:', err);
             // You might want to show an error message to the user here
@@ -887,6 +889,7 @@ export const AllocationsSection: React.FC = () => {
                                 key={allocation.allocation.id}
                                 allocationWithStatus={allocation}
                                 formatDate={formatDate}
+                                onStatusChange={loadAllocations}
                             />
                         ))
                     )}
