@@ -132,7 +132,7 @@ module {
         icrc1_fee : shared query () -> async ?Nat;
         icrc1_decimals : shared query () -> async ?Nat8;
         icrc1_supported_standards : shared query () -> async [StandardRecord];
-        icrc1_balance_of : shared (owner: Principal, subaccount: ?[Nat8]) -> async Nat;
+        icrc1_balance_of : shared ({owner: Principal; subaccount: ?[Nat8]}) -> async Nat;
         icrc1_transfer : shared ({
             from_subaccount: ?[Nat8];
             to: Account;

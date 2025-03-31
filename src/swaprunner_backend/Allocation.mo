@@ -129,10 +129,10 @@ module {
         let icrc1_funding_actor = actor(Principal.toText(allocation.token.canister_id)) : T.ICRC1Interface;
 
         // Check payment balance
-        let payment_balance = await icrc1_payment_actor.icrc1_balance_of(this_canister_id, ?payment_subaccount);
+        let payment_balance = await icrc1_payment_actor.icrc1_balance_of({ owner = this_canister_id; subaccount = ?payment_subaccount});
 
         // Check funding balance
-        let funding_balance = await icrc1_funding_actor.icrc1_balance_of(this_canister_id, ?funding_subaccount);
+        let funding_balance = await icrc1_funding_actor.icrc1_balance_of({ owner = this_canister_id; subaccount = ?funding_subaccount});
 
         // Verify payment is complete
         if (payment_balance < fee_config.icp_fee_e8s) {
