@@ -46,6 +46,12 @@ interface AllocationFeeConfig {
     cut_basis_points: number;
 }
 
+interface TokenMetadata {
+    symbol?: string;
+    decimals?: number;
+    name?: string;
+}
+
 interface AllocationFormProps {
     onSubmit: (data: {
         achievement_id: string;
@@ -63,6 +69,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
     const [achievements, setAchievements] = useState<Achievement[]>([]);
     const [selectedAchievement, setSelectedAchievement] = useState<string>('');
     const [selectedToken, setSelectedToken] = useState<string>('');
+    const [selectedTokenMetadata, setSelectedTokenMetadata] = useState<TokenMetadata | null>(null);
     const [totalAmount, setTotalAmount] = useState<string>('');
     const [perUserMin, setPerUserMin] = useState<string>('');
     const [perUserMax, setPerUserMax] = useState<string>('');
@@ -182,7 +189,10 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                 <label>Token</label>
                 <TokenSelect
                     value={selectedToken}
-                    onChange={setSelectedToken}
+                    onChange={(tokenId: string, metadata?: TokenMetadata) => {
+                        setSelectedToken(tokenId);
+                        setSelectedTokenMetadata(metadata || null);
+                    }}
                     label="Token"
                     mode="swap"
                     isLoading={false}
@@ -254,15 +264,15 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                                 </span>
                             </div>
                             <div className="fee-row">
-                                <span className="fee-label">Platform Cut</span>
+                                <span className="fee-label">Platform Cut ({Number(feeConfig.cut_basis_points) / 100}%)</span>
                                 <span className="fee-value">
-                                    {calculateCutAmount()} {selectedToken ? 'tokens' : ''} ({Number(feeConfig.cut_basis_points) / 100}%)
+                                    {calculateCutAmount()} {selectedTokenMetadata?.symbol || 'tokens'}
                                 </span>
                             </div>
+                            <div className="fee-info-note">
+                                Note: The creation fee is paid in ICP, and the platform cut is taken from the allocation amount.
+                            </div>
                         </div>
-                    </div>
-                    <div className="fee-info-note">
-                        Note: The creation fee is paid in ICP, and the platform cut is taken from the allocation amount.
                     </div>
                 </div>
             )}
