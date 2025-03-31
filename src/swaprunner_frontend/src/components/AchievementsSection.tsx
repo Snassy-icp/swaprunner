@@ -255,7 +255,7 @@ const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
     return (
         <div className="balloon-container">
             {balloons.map((balloon, i) => {
-                const stringLength = balloon.size * 0.8;
+                const stringLength = balloon.size * 1.5; // Increased string length
                 return (
                     <div
                         key={i}
