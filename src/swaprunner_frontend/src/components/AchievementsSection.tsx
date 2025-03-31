@@ -148,18 +148,25 @@ const Confetti: React.FC<ConfettiProps> = ({ count = 50 }) => {
 
     useEffect(() => {
         let batchCount = 0;
-        const maxBatches = 8; // Will create 8 batches of confetti
-        const batchInterval = 800; // New batch every 800ms
+        const maxBatches = 20; // More batches for smoother reduction
+        const batchInterval = 500; // Half second between batches
         
         const createConfettiBatch = (batchId: number) => {
-            const pieces = Array.from({ length: count }, (_, i) => ({
+            // Exponential decay of particle count
+            const progress = batchId / maxBatches;
+            const batchSize = Math.max(
+                1, // Ensure at least 1 piece
+                Math.floor(count * Math.pow(0.85, batchId)) // Reduce by 15% each batch
+            );
+            
+            const pieces = Array.from({ length: batchSize }, (_, i) => ({
                 id: batchId * count + i,
                 color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
                 shape: CONFETTI_SHAPES[Math.floor(Math.random() * CONFETTI_SHAPES.length)],
                 x: Math.random() * 100,
                 fallDuration: 2 + Math.random() * 2,
                 shakeDistance: 15 + Math.random() * 30,
-                delay: Math.random() * 0.5, // Random delay within each batch
+                delay: Math.random() * 0.5,
             }));
 
             setConfetti(prev => [...prev, ...pieces]);
@@ -178,10 +185,10 @@ const Confetti: React.FC<ConfettiProps> = ({ count = 50 }) => {
             }
         }, batchInterval);
 
-        // Clean up all confetti after the last batch has fallen
+        // Clean up after all batches have fallen
         const cleanupTimer = setTimeout(() => {
             setConfetti([]);
-        }, (maxBatches * batchInterval) + 4000); // Wait for all batches plus fall duration
+        }, (maxBatches * batchInterval) + 4000);
 
         return () => {
             clearInterval(intervalId);
