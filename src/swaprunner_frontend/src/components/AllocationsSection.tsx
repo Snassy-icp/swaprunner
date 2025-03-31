@@ -659,40 +659,49 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                     <div className="detail-row">
                                         <span className="detail-label">Required Amount:</span>
                                         <span className="detail-value">
-                                            {formatTokenAmount(allocation.token.total_amount_e8s, allocation.token.canister_id.toString())} {tokenMetadata?.symbol}
+                                            {formatTokenAmount(allocation.token.total_amount_e8s, allocation.token.canister_id.toString())} {tokenMetadata?.symbol || 'tokens'}
                                         </span>
                                     </div>
                                     <div className="detail-row">
                                         <span className="detail-label">Current Balance:</span>
                                         <span className="detail-value">
-                                            {formatTokenAmount(fundingBalance, allocation.token.canister_id.toString())} {tokenMetadata?.symbol}
+                                            {formatTokenAmount(fundingBalance, allocation.token.canister_id.toString())} {tokenMetadata?.symbol || 'tokens'}
                                         </span>
                                     </div>
-                                    <div className="detail-row">
-                                        <span className="detail-label">Remaining:</span>
-                                        <span className="detail-value">
-                                            {formatTokenAmount(allocation.token.total_amount_e8s - fundingBalance, allocation.token.canister_id.toString())} {tokenMetadata?.symbol}
-                                        </span>
-                                    </div>
-                                    <div className="detail-actions">
-                                        <button 
-                                            className="action-button primary"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleFund();
-                                            }}
-                                            disabled={isFundingLoading}
-                                        >
-                                            {isFundingLoading ? (
-                                                <>
-                                                    <FiLoader className="spinning" />
-                                                    Funding...
-                                                </>
-                                            ) : (
-                                                'Fund Now'
-                                            )}
-                                        </button>
-                                    </div>
+                                    {fundingBalance < allocation.token.total_amount_e8s ? (
+                                        <>
+                                            <div className="detail-row">
+                                                <span className="detail-label">Remaining:</span>
+                                                <span className="detail-value">
+                                                    {formatTokenAmount(allocation.token.total_amount_e8s - fundingBalance, allocation.token.canister_id.toString())} {tokenMetadata?.symbol || 'tokens'}
+                                                </span>
+                                            </div>
+                                            <div className="detail-actions">
+                                                <button
+                                                    className="action-button primary"
+                                                    onClick={handleFund}
+                                                    disabled={isFundingLoading}
+                                                >
+                                                    {isFundingLoading ? (
+                                                        <>
+                                                            <FiLoader className="spinning" />
+                                                            Funding...
+                                                        </>
+                                                    ) : (
+                                                        'Fund Now'
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="detail-row payment-complete">
+                                            <span className="detail-label">Status:</span>
+                                            <span className="detail-value">
+                                                <FiCheck className="check-icon" />
+                                                Funding Complete
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
