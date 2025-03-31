@@ -441,7 +441,8 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
 const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, formatDate, onStatusChange }) => {
     const [expanded, setExpanded] = useState(false);
     const [tokenLogo, setTokenLogo] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [isActivating, setIsActivating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [achievement, setAchievement] = useState<Achievement | null>(null);
     const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null);
@@ -574,7 +575,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
         }
 
         try {
-            setLoading(true);
+            setIsActivating(true);
             await allocationService.activateAllocation(allocationWithStatus.allocation.id);
             // Notify parent component to refresh the allocations list
             if (onStatusChange) {
@@ -584,7 +585,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
             console.error('Error activating allocation:', err);
             // You might want to show an error message to the user here
         } finally {
-            setLoading(false);
+            setIsActivating(false);
         }
     };
 
@@ -760,9 +761,9 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                         <button
                                             className="action-button primary"
                                             onClick={handleActivate}
-                                            disabled={!paymentStatus?.is_paid || fundingBalance < allocationWithStatus.allocation.token.total_amount_e8s || loading}
+                                            disabled={!paymentStatus?.is_paid || fundingBalance < allocationWithStatus.allocation.token.total_amount_e8s || isActivating}
                                         >
-                                            {loading ? (
+                                            {isActivating ? (
                                                 <>
                                                     <FiLoader className="spinning" />
                                                     Activating...
