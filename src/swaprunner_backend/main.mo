@@ -3481,6 +3481,10 @@ actor {
         }
     };
 
+    public shared({caller}) func get_derived_subaccount(principal: Principal, allocation_id: Text) : async Result.Result<[Nat8], Text> {
+        #ok(Util.derive_backend_subaccount(principal, allocation_id))
+    };
+
 
     // Activate an allocation
     public shared({caller}) func activate_allocation(allocation_id: Text) : async Result.Result<(), Text> {
@@ -3493,6 +3497,7 @@ actor {
             allocation_id,
             allocations,
             allocation_statuses,
+            fee_config
         )) {
             case (#ok(_)) {
                 allocation_statuses.put(allocation_id, #Active);

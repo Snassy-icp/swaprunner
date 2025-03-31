@@ -5,13 +5,39 @@ import Time "mo:base/Time";
 import TrieMap "mo:base/TrieMap";
 import Buffer "mo:base/Buffer";
 import Nat "mo:base/Nat";
+import Nat8 "mo:base/Nat8";
 import Int "mo:base/Int";
 import Debug "mo:base/Debug";
 import Error "mo:base/Error";
 import HashMap "mo:base/HashMap";
+import Array "mo:base/Array";
+import Blob "mo:base/Blob";
+import Iter "mo:base/Iter";
 import T "./Types";
+import Util "./Util";
 
 module {
+    // Helper function to derive subaccount for allocation
+    public func derive_backend_subaccount(principal: Principal, allocation_id: Text) : [Nat8] {
+        let subaccount = Array.init<Nat8>(32, 0);
+        
+        // Convert principal to bytes for the base subaccount
+        let principalBytes = Util.PrincipalToSubaccount(principal);
+        
+        // Copy principal bytes into first part of subaccount (up to 29 bytes)
+        for (i in Iter.range(0, Int.min(28, principalBytes.size() - 1))) {
+            subaccount[i] := principalBytes[i];
+        };
+        
+        // Convert allocation ID to number and write to last 3 bytes
+        let idNum = Text.toNat(allocation_id);
+        subaccount[29] := Nat8.fromNat((idNum >> 16) & 0xFF);
+        subaccount[30] := Nat8.fromNat((idNum >> 8) & 0xFF);
+        subaccount[31] := Nat8.fromNat(idNum & 0xFF);
+        
+        Array.freeze(subaccount)
+    };
+
     // Create a new allocation in Draft status
     public func create_allocation(
         caller: Principal,
@@ -62,7 +88,10 @@ module {
         allocation_id: Text,
         allocations: HashMap.HashMap<Text, T.Allocation>,
         allocation_statuses: HashMap.HashMap<Text, T.AllocationStatus>,
-    ) : Result.Result<(), Text> {
+        fee_config: T.AllocationFeeConfig,
+        icrc1_actor: T.ICRC1Actor,
+        backend_id: Principal,
+    ) : async Result.Result<(), Text> {
         // Get allocation
         let allocation = switch (allocations.get(allocation_id)) {
             case null return #err("Allocation not found");
@@ -79,6 +108,40 @@ module {
             case (?#Draft) {};  // This is the only valid state
             case (?status) return #err("Allocation must be in Draft status");
             case null return #err("Allocation status not found");
+        };
+
+        // Get payment subaccount (derived from ICP ledger principal)
+        let payment_subaccount = derive_backend_subaccount(
+            Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai"), // ICP ledger
+            allocation_id
+        );
+
+        // Get funding subaccount (derived from token principal)
+        let funding_subaccount = derive_backend_subaccount(
+            allocation.token.canister_id,
+            allocation_id
+        );
+
+        // Check payment balance
+        let payment_balance = await icrc1_actor.icrc1_balance_of({
+            owner = backend_id;
+            subaccount = ?payment_subaccount;
+        });
+
+        // Check funding balance
+        let funding_balance = await icrc1_actor.icrc1_balance_of({
+            owner = backend_id;
+            subaccount = ?funding_subaccount;
+        });
+
+        // Verify payment is complete
+        if (payment_balance < fee_config.icp_fee_e8s) {
+            return #err("Allocation must be fully paid before activation");
+        };
+
+        // Verify funding is complete
+        if (funding_balance < allocation.token.total_amount_e8s) {
+            return #err("Allocation must be fully funded before activation");
         };
 
         // Return success - status update will be done in main.mo
