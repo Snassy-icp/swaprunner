@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiPlus, FiX } from 'react-icons/fi';
+import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiPlus, FiX, FiAlertCircle } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { backendService } from '../services/backend';
 import { CollapsibleSection } from '../pages/Me';
@@ -7,6 +7,7 @@ import { formatTokenAmount, parseTokenAmount } from '../utils/format';
 import { TokenSelect } from './TokenSelect';
 import '../styles/AllocationsSection.css';
 import { useTokens } from '../contexts/TokenContext';
+import { ICPSwapExecutionService } from '../services/icpswap_execution';
 
 interface Allocation {
     id: string;
@@ -80,11 +81,74 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
     const [perUserMax, setPerUserMax] = useState<string>('');
     const [feeConfig, setFeeConfig] = useState<AllocationFeeConfig | null>(null);
     const { tokens: contextTokens } = useTokens();
+    
+    // Add balance states
+    const [icpBalance, setIcpBalance] = useState<bigint>(BigInt(0));
+    const [tokenBalance, setTokenBalance] = useState<bigint>(BigInt(0));
+    const [isLoadingBalances, setIsLoadingBalances] = useState(false);
+    const [balanceError, setBalanceError] = useState<string | null>(null);
 
     useEffect(() => {
         loadAchievements();
         loadFeeConfig();
+        loadICPBalance();
     }, []);
+
+    // Add effect to load token balance when token is selected
+    useEffect(() => {
+        if (selectedToken) {
+            loadTokenBalance(selectedToken);
+        }
+    }, [selectedToken]);
+
+    const loadICPBalance = async () => {
+        try {
+            setIsLoadingBalances(true);
+            const icpSwapService = new ICPSwapExecutionService();
+            const balance = await icpSwapService.getBalance('ryjl3-tyaaa-aaaaa-aaaba-cai');
+            setIcpBalance(balance.balance_e8s);
+            setBalanceError(null);
+        } catch (err: any) {
+            setBalanceError('Failed to load ICP balance');
+            console.error('Failed to load ICP balance:', err);
+        } finally {
+            setIsLoadingBalances(false);
+        }
+    };
+
+    const loadTokenBalance = async (tokenId: string) => {
+        try {
+            setIsLoadingBalances(true);
+            const icpSwapService = new ICPSwapExecutionService();
+            const balance = await icpSwapService.getBalance(tokenId);
+            setTokenBalance(balance.balance_e8s);
+            setBalanceError(null);
+        } catch (err: any) {
+            setBalanceError('Failed to load token balance');
+            console.error('Failed to load token balance:', err);
+        } finally {
+            setIsLoadingBalances(false);
+        }
+    };
+
+    // Add function to check if user has sufficient balances
+    const checkBalances = (): { hasEnoughICP: boolean; hasEnoughTokens: boolean } => {
+        const hasEnoughICP = feeConfig ? icpBalance >= feeConfig.icp_fee_e8s : false;
+        
+        let hasEnoughTokens = false;
+        if (selectedToken && totalAmount) {
+            try {
+                const totalE8s = parseTokenAmount(totalAmount, selectedToken);
+                const cutBasisPoints = feeConfig ? BigInt(feeConfig.cut_basis_points) : BigInt(0);
+                const totalWithCut = totalE8s + ((totalE8s * cutBasisPoints) / BigInt(10000));
+                hasEnoughTokens = tokenBalance >= totalWithCut;
+            } catch {
+                hasEnoughTokens = false;
+            }
+        }
+        
+        return { hasEnoughICP, hasEnoughTokens };
+    };
 
     const loadAchievements = async () => {
         try {
@@ -130,6 +194,20 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
             setLoading(true);
             setError(null);
 
+            // Check balances first
+            const { hasEnoughICP, hasEnoughTokens } = checkBalances();
+            if (!hasEnoughICP) {
+                setError(`Insufficient ICP balance for creation fee. Required: ${formatTokenAmount(feeConfig?.icp_fee_e8s || BigInt(0), 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP`);
+                return;
+            }
+            if (!hasEnoughTokens) {
+                const totalE8s = parseTokenAmount(totalAmount, selectedToken);
+                const cutBasisPoints = feeConfig ? BigInt(feeConfig.cut_basis_points) : BigInt(0);
+                const totalWithCut = totalE8s + ((totalE8s * cutBasisPoints) / BigInt(10000));
+                setError(`Insufficient token balance. Required: ${formatTokenAmount(totalWithCut, selectedToken)} ${selectedTokenMetadata?.symbol || 'tokens'}`);
+                return;
+            }
+
             // Parse amounts using token metadata for proper decimal handling
             const total = parseTokenAmount(totalAmount, selectedToken);
             const min = parseTokenAmount(perUserMin, selectedToken);
@@ -164,6 +242,9 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
         }
     };
 
+    // Calculate if we have sufficient balances
+    const { hasEnoughICP, hasEnoughTokens } = checkBalances();
+
     return (
         <form onSubmit={handleSubmit} className="allocation-form">
             <div className="form-header">
@@ -174,6 +255,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
             </div>
 
             {error && <div className="error-message">{error}</div>}
+            {balanceError && <div className="error-message">{balanceError}</div>}
 
             <div className="form-group">
                 <label>Achievement</label>
@@ -214,6 +296,11 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                     mode="swap"
                     isLoading={false}
                 />
+                {selectedToken && (
+                    <div className="balance-info">
+                        Balance: {formatTokenAmount(tokenBalance, selectedToken)} {selectedTokenMetadata?.symbol}
+                    </div>
+                )}
             </div>
 
             <div className="form-group">
@@ -278,12 +365,24 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                                 <span className="fee-label">Creation Fee</span>
                                 <span className="fee-value">
                                     {formatTokenAmount(feeConfig.icp_fee_e8s, 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP
+                                    {!hasEnoughICP && (
+                                        <span className="balance-warning">
+                                            <FiAlertCircle /> Insufficient balance
+                                        </span>
+                                    )}
                                 </span>
                             </div>
                             <div className="fee-row">
                                 <span className="fee-label">Platform Cut ({Number(feeConfig.cut_basis_points) / 100}%)</span>
                                 <div className="fee-value">
-                                    <span>{calculateCutAmount()} {selectedTokenMetadata?.symbol || 'tokens'}</span>
+                                    <span>
+                                        {calculateCutAmount()} {selectedTokenMetadata?.symbol || 'tokens'}
+                                        {selectedToken && !hasEnoughTokens && (
+                                            <span className="balance-warning">
+                                                <FiAlertCircle /> Insufficient balance
+                                            </span>
+                                        )}
+                                    </span>
                                     {selectedToken && selectedTokenMetadata?.logo_url && (
                                         <img 
                                             src={selectedTokenMetadata.logo_url} 
@@ -302,7 +401,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
             )}
 
             <div className="form-actions">
-                <button type="submit" className="submit-button" disabled={loading}>
+                <button type="submit" className="submit-button" disabled={loading || isLoadingBalances || !hasEnoughICP || !hasEnoughTokens}>
                     {loading ? (
                         <>
                             <FiLoader className="spinning" />
