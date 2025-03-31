@@ -12,6 +12,7 @@ import { Principal } from '@dfinity/principal';
 import { tokenService } from '../services/token';
 import { backendService } from '../services/backend';
 import { useAuth } from '../contexts/AuthContext';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface Achievement {
     id: string;
@@ -450,6 +451,8 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     const [isCancelling, setIsCancelling] = useState(false);
     const { isAdmin } = useAuth();
     const { tokens } = useTokens();
+    const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
+    const [allocationToCancel, setAllocationToCancel] = useState<string | null>(null);
 
     // Get token metadata
     const tokenMetadata = tokens.find(t => t.canisterId === allocationWithStatus.allocation.token.canister_id.toString())?.metadata;
@@ -589,22 +592,36 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
         }
     };
 
-    const handleCancel = async () => {
+    const handleCancel = async (allocationId: string) => {
+        setAllocationToCancel(allocationId);
+        setShowCancelConfirmation(true);
+    };
+
+    const confirmCancel = async () => {
+        if (!allocationToCancel) return;
+
+        setLoading(true);
         try {
-            setIsCancelling(true);
-            setError(null);
-            await allocationService.cancelAllocation(allocationWithStatus.allocation.id);
-            if (onStatusChange) {
-                onStatusChange();
-            }
-        } catch (err: any) {
-            setError('Failed to cancel allocation: ' + (err.message || String(err)));
+            await allocationService.cancelAllocation(allocationToCancel);
+            // Refresh allocations after cancellation
+            await loadAllocations();
+        } catch (error) {
+            console.error('Error cancelling allocation:', error);
+            setError('Failed to cancel allocation');
         } finally {
-            setIsCancelling(false);
+            setLoading(false);
+            setShowCancelConfirmation(false);
+            setAllocationToCancel(null);
         }
     };
 
     const showCancelButton = isAdmin || allocationWithStatus.status === 'Draft';
+
+    const loadAllocations = async () => {
+        if (onStatusChange) {
+            onStatusChange();
+        }
+    };
 
     return (
         <div className="allocation-card">
@@ -824,10 +841,10 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                             <div className="detail-actions">
                                 <button
                                     className="action-button danger"
-                                    onClick={handleCancel}
-                                    disabled={isCancelling}
+                                    onClick={() => handleCancel(allocationWithStatus.allocation.id.toString())}
+                                    disabled={loading}
                                 >
-                                    {isCancelling ? (
+                                    {loading ? (
                                         <>
                                             <FiLoader className="spinning" />
                                             Cancelling...
@@ -843,6 +860,18 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                     </div>
                 </div>
             )}
+            <ConfirmationModal
+                isOpen={showCancelConfirmation}
+                onClose={() => {
+                    setShowCancelConfirmation(false);
+                    setAllocationToCancel(null);
+                }}
+                onConfirm={confirmCancel}
+                title="Cancel Allocation"
+                message="Are you sure you want to cancel this allocation? Your ICP payment fee and any funded tokens will be returned to your wallet. This action cannot be undone."
+                confirmText="Cancel Allocation"
+                isDanger={true}
+            />
         </div>
     );
 };
@@ -853,18 +882,16 @@ export const AllocationsSection: React.FC = () => {
     const [allocations, setAllocations] = useState<AllocationWithStatus[]>([]);
     const [showForm, setShowForm] = useState(false);
     const navigate = useNavigate();
+    const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
+    const [allocationToCancel, setAllocationToCancel] = useState<string | null>(null);
 
     const loadAllocations = async () => {
         try {
-            setLoading(true);
-            setError(null);
-            const result = await allocationService.getMyCreatedAllocations();
-            setAllocations(result);
-        } catch (err: any) {
-            setError('Failed to load allocations: ' + (err.message || String(err)));
-            console.error('Load error:', err);
-        } finally {
-            setLoading(false);
+            const allocations = await allocationService.getMyCreatedAllocations();
+            setAllocations(allocations);
+        } catch (error) {
+            console.error('Error loading allocations:', error);
+            setError('Failed to load allocations');
         }
     };
 
@@ -883,6 +910,29 @@ export const AllocationsSection: React.FC = () => {
             setShowForm(false);
         } catch (err: any) {
             throw err;
+        }
+    };
+
+    const handleCancel = async (allocationId: string) => {
+        setAllocationToCancel(allocationId);
+        setShowCancelConfirmation(true);
+    };
+
+    const confirmCancel = async () => {
+        if (!allocationToCancel) return;
+
+        setLoading(true);
+        try {
+            await allocationService.cancelAllocation(allocationToCancel);
+            // Refresh allocations after cancellation
+            await loadAllocations();
+        } catch (error) {
+            console.error('Error cancelling allocation:', error);
+            setError('Failed to cancel allocation');
+        } finally {
+            setLoading(false);
+            setShowCancelConfirmation(false);
+            setAllocationToCancel(null);
         }
     };
 
