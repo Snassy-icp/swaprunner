@@ -91,6 +91,8 @@ module {
         allocation_statuses: HashMap.HashMap<Text, T.AllocationStatus>,
         fee_config: T.AllocationFeeConfig,
         this_canister_id: Principal,
+        payment_account: ?T.Account,
+        cut_account: ?T.Account,
     ) : async Result.Result<(), Text> {
         // Get allocation
         let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
@@ -140,6 +142,16 @@ module {
             subaccount = ?funding_subaccount
         });
 
+        // Get tx fee for ICP and token
+        let icp_tx_fee = switch (await icrc1_payment_actor.icrc1_fee()) {
+            case null 0;
+            case (?fee) fee;
+        };
+        let token_tx_fee = switch (await icrc1_funding_actor.icrc1_fee()) {
+            case null 0;
+            case (?fee) fee;
+        };
+
         // Verify payment is complete
         if (payment_balance < fee_config.icp_fee_e8s) {
             return #err("Allocation must be fully paid before activation");
@@ -148,6 +160,72 @@ module {
         // Verify funding is complete
         if (funding_balance < allocation.token.total_amount_e8s) {
             return #err("Allocation must be fully funded before activation");
+        };
+
+        // Get payment and cut accounts
+        switch (payment_account) {
+            case null return #err("Payment account not configured");
+            case (?pa) {
+                // Send ICP payment if amount > tx fee
+                if (payment_balance > icp_tx_fee) {
+                    let payment_result = await icrc1_payment_actor.icrc1_transfer({
+                        from_subaccount = ?payment_subaccount;
+                        to = pa;
+                        amount = payment_balance - icp_tx_fee;
+                        fee = null;
+                        memo = null;
+                        created_at_time = null;
+                    });
+                    switch (payment_result) {
+                        case (#Err(e)) return #err("Failed to transfer payment: " # debug_show(e));
+                        case (#Ok(_)) {};
+                    };
+                };
+            };
+        };
+
+        // Calculate cut amount (cut_basis_points is in basis points, i.e. 1/100th of a percent)
+        let cut_amount = (allocation.token.total_amount_e8s * fee_config.cut_basis_points) / 10000;
+
+        // Send cut amount if configured and amount > tx fee
+        switch (cut_account) {
+            case (?ca) {
+                if (cut_amount > token_tx_fee) {
+                    let cut_result = await icrc1_funding_actor.icrc1_transfer({
+                        from_subaccount = ?funding_subaccount;
+                        to = ca;
+                        amount = cut_amount - token_tx_fee;
+                        fee = null;
+                        memo = null;
+                        created_at_time = null;
+                    });
+                    switch (cut_result) {
+                        case (#Err(e)) return #err("Failed to transfer cut: " # debug_show(e));
+                        case (#Ok(_)) {};
+                    };
+                };
+            };
+            case null {}; // No cut account configured, skip cut transfer
+        };
+
+        // Calculate remaining amount after cut
+        let remaining_amount = if (allocation.token.total_amount_e8s > cut_amount) { allocation.token.total_amount_e8s - cut_amount; } else { 0 };
+
+        // Send remaining amount to server subaccount if amount > tx fee
+        if (remaining_amount > token_tx_fee) {
+            let server_subaccount = derive_backend_subaccount(allocation.token.canister_id, 0);
+            let server_result = await icrc1_funding_actor.icrc1_transfer({
+                from_subaccount = ?funding_subaccount;
+                to = { owner = this_canister_id; subaccount = ?server_subaccount };
+                amount = remaining_amount - token_tx_fee;
+                fee = null;
+                memo = null;
+                created_at_time = null;
+            });
+            switch (server_result) {
+                case (#Err(e)) return #err("Failed to transfer to server: " # debug_show(e));
+                case (#Ok(_)) {};
+            };
         };
 
         // Return success - status update will be done in main.mo
