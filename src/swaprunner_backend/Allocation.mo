@@ -276,12 +276,22 @@ module {
             subaccount = ?funding_subaccount
         });
 
-        // Return payment balance if any
-        if (payment_balance > 0) {
+        // Get tx fee for ICP and token
+        let icp_tx_fee = switch (await icrc1_payment_actor.icrc1_fee()) {
+            case null 0;
+            case (?fee) fee;
+        };
+        let token_tx_fee = switch (await icrc1_funding_actor.icrc1_fee()) {
+            case null 0;
+            case (?fee) fee;
+        };
+
+        // Return payment balance if bigger than tx fee
+        if (payment_balance > icp_tx_fee) {
             let payment_result = await icrc1_payment_actor.icrc1_transfer({
                 from_subaccount = ?payment_subaccount;
                 to = { owner = caller; subaccount = null };
-                amount = payment_balance;
+                amount = payment_balance - icp_tx_fee; // here we must subtract the ICP transaction fee
                 fee = null;
                 memo = null;
                 created_at_time = null;
@@ -292,12 +302,12 @@ module {
             };
         };
 
-        // Return funding balance if any
-        if (funding_balance > 0) {
+        // Return funding balance if bigger than tx fee
+        if (funding_balance > token_tx_fee) {
             let funding_result = await icrc1_funding_actor.icrc1_transfer({
                 from_subaccount = ?funding_subaccount;
                 to = { owner = caller; subaccount = null };
-                amount = funding_balance;
+                amount = funding_balance - token_tx_fee; // here we must subtract the token transaction fee
                 fee = null;
                 memo = null;
                 created_at_time = null;
