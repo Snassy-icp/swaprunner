@@ -8,6 +8,7 @@ import { TokenSelect } from './TokenSelect';
 import '../styles/AllocationsSection.css';
 import { useTokens } from '../contexts/TokenContext';
 import { ICPSwapExecutionService } from '../services/icpswap_execution';
+import { Principal } from '@dfinity/principal';
 
 interface Achievement {
     id: string;
@@ -228,7 +229,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
 
             await onSubmit({
                 achievement_id: selectedAchievement,
-                token_canister_id: selectedToken,
+                token_canister_id: Principal.fromText(selectedToken),
                 total_amount_e8s: total,
                 per_user_min_e8s: min,
                 per_user_max_e8s: max

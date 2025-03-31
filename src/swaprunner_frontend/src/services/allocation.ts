@@ -30,7 +30,7 @@ export interface AllocationFeeConfig {
 
 export interface CreateAllocationArgs {
     achievement_id: string;
-    token_canister_id: string;
+    token_canister_id: Principal;
     total_amount_e8s: bigint;
     per_user_min_e8s: bigint;
     per_user_max_e8s: bigint;
@@ -66,7 +66,11 @@ class AllocationService {
         const result = await actor.get_my_created_allocations();
         
         if ('ok' in result) {
-            return result.ok;
+            // Convert status variants to strings
+            return result.ok.map((item: { allocation: Allocation; status: { [key: string]: null } }) => ({
+                allocation: item.allocation,
+                status: Object.keys(item.status)[0] as AllocationStatus
+            }));
         } else {
             throw new Error(result.err);
         }
