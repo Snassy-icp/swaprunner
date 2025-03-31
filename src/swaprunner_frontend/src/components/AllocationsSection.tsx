@@ -444,6 +444,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null);
     const [isPaymentLoading, setIsPaymentLoading] = useState(false);
     const [isFundingLoading, setIsFundingLoading] = useState(false);
+    const [isActivating, setIsActivating] = useState(false);
     const [fundingBalance, setFundingBalance] = useState<bigint>(BigInt(0));
     const { allocation, status } = allocationWithStatus;
     const { tokens } = useTokens();
@@ -572,6 +573,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
         }
 
         try {
+            setIsActivating(true);
             await allocationService.activateAllocation(allocation.id);
             // Notify parent component to refresh the allocations list
             if (onStatusChange) {
@@ -580,6 +582,8 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
         } catch (err) {
             console.error('Error activating allocation:', err);
             // You might want to show an error message to the user here
+        } finally {
+            setIsActivating(false);
         }
     };
 
@@ -738,9 +742,16 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                         <button
                                             className="action-button primary"
                                             onClick={handleActivate}
-                                            disabled={!paymentStatus?.is_paid || fundingBalance < allocation.token.total_amount_e8s}
+                                            disabled={!paymentStatus?.is_paid || fundingBalance < allocation.token.total_amount_e8s || isActivating}
                                         >
-                                            Activate Allocation
+                                            {isActivating ? (
+                                                <>
+                                                    <FiLoader className="spinning" />
+                                                    Activating...
+                                                </>
+                                            ) : (
+                                                'Activate Allocation'
+                                            )}
                                         </button>
                                         {(!paymentStatus?.is_paid || fundingBalance < allocation.token.total_amount_e8s) && (
                                             <div className="detail-info">
