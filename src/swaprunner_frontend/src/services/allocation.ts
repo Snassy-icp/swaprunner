@@ -1,7 +1,9 @@
 import { Principal } from '@dfinity/principal';
 import { backendService } from './backend';
 import { ICRC1Service } from './icrc1_service';
-
+import { encodeIcrcAccount } from "@dfinity/ledger-icrc";
+import { formatHex } from '../utils/subaccounts';
+import { principalToSubAccount } from '@dfinity/utils';
 export interface Allocation {
     id: string;
     creator: string;
@@ -154,12 +156,19 @@ class AllocationService {
      */
     private deriveBackendSubaccount(principal: Principal, allocationId: string): Uint8Array {
         // Convert principal to bytes for the subaccount
-        const principalBytes = principal.toUint8Array();
+
+        let principalBytes = principalToSubAccount(principal);
+
+        console.log('deriveBackendSubaccount principalBytes', principalBytes);
         const subaccount = new Uint8Array(32);
         
         // Copy principal bytes into subaccount
         subaccount.set(principalBytes.slice(0, 29), 0);
-        
+        // call service method to turn subaccount into hex
+        let hex =  formatHex(Array.from(subaccount));
+        console.log('deriveBackendSubaccount hex', hex);
+
+        console.log('deriveBackendSubaccount subaccount', subaccount);
         // Convert allocation ID to number
         const idNum = parseInt(allocationId);
         if (isNaN(idNum)) {
@@ -171,6 +180,8 @@ class AllocationService {
         subaccount[30] = (idNum >> 8) & 0xFF;
         subaccount[31] = idNum & 0xFF;
 
+        console.log('deriveBackendSubaccount2 subaccount', subaccount);
+
         return subaccount;
     }
 
@@ -178,23 +189,36 @@ class AllocationService {
      * Get the payment status for an allocation by checking its subaccount balance on the ICP ledger
      */
     async getPaymentStatus(allocationId: string): Promise<PaymentStatus> {
-        const actor = await backendService.getActor();
         const feeConfig = await this.getFeeConfig();
         
         // Get the subaccount for this allocation
         const subaccount = this.derivePaymentSubaccount(allocationId);
-
+        console.log('getPaymentStatus subaccount', subaccount);
         // Get balance using ICRC1 service
-        const { balance_e8s } = await this.icrc1Service.getBalanceWithSubaccount(
+        const { balance_e8s } = await this.icrc1Service.getOwnerBalanceWithSubaccount(
             'ryjl3-tyaaa-aaaaa-aaaba-cai', // ICP ledger
+            Principal.fromText(process.env.CANISTER_ID_SWAPRUNNER_BACKEND!),
             Array.from(subaccount)
         );
+        console.log('getPaymentStatus balance_e8s', balance_e8s);
 
         return {
             current_balance_e8s: balance_e8s,
             required_fee_e8s: feeConfig.icp_fee_e8s,
             is_paid: balance_e8s >= feeConfig.icp_fee_e8s
         };
+    }
+
+    /**
+     * Get the payment account string for an allocation
+     * Returns the long account string format that includes both the owner (ICP ledger) and subaccount
+     */
+    getPaymentAccount(allocationId: string): string {
+        const subaccount = this.derivePaymentSubaccount(allocationId);
+        return encodeIcrcAccount({
+            owner: Principal.fromText(process.env.CANISTER_ID_SWAPRUNNER_BACKEND!),
+            subaccount: Array.from(subaccount)
+        });
     }
 
     /**
