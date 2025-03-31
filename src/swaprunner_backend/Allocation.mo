@@ -129,10 +129,16 @@ module {
         let icrc1_funding_actor = actor(Principal.toText(allocation.token.canister_id)) : T.ICRC1Interface;
 
         // Check payment balance
-        let payment_balance = await icrc1_payment_actor.icrc1_balance_of({ owner = this_canister_id; subaccount = ?payment_subaccount});
+        let payment_balance = await icrc1_payment_actor.icrc1_balance_of({ 
+            owner = this_canister_id; 
+            subaccount = ?payment_subaccount
+        });
 
         // Check funding balance
-        let funding_balance = await icrc1_funding_actor.icrc1_balance_of({ owner = this_canister_id; subaccount = ?funding_subaccount});
+        let funding_balance = await icrc1_funding_actor.icrc1_balance_of({ 
+            owner = this_canister_id; 
+            subaccount = ?funding_subaccount
+        });
 
         // Verify payment is complete
         if (payment_balance < fee_config.icp_fee_e8s) {
@@ -202,6 +208,108 @@ module {
     // Helper function to generate claim key
     public func get_claim_key(user: Principal, allocation_id: Text) : Text {
         Principal.toText(user) # ":" # allocation_id
+    };
+
+    // Cancel an allocation and return funds to caller
+    public func cancel_allocation(
+        caller: Principal,
+        allocation_id: Nat,
+        allocations: HashMap.HashMap<Text, T.Allocation>,
+        allocation_statuses: HashMap.HashMap<Text, T.AllocationStatus>,
+        is_admin: Bool,
+        this_canister_id: Principal,
+    ) : async Result.Result<(), Text> {
+        // Get allocation
+        let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
+            case null return #err("Allocation not found");
+            case (?a) a;
+        };
+
+        // Verify permissions
+        if (not is_admin and allocation.creator != caller) {
+            return #err("Only the creator or an admin can cancel this allocation");
+        };
+
+        // Get current status
+        let current_status = switch (allocation_statuses.get(Nat.toText(allocation_id))) {
+            case null return #err("Allocation status not found");
+            case (?s) s;
+        };
+
+        // Non-admins can only cancel in Draft status
+        if (not is_admin and current_status != #Draft) {
+            return #err("Non-admin users can only cancel allocations in Draft status");
+        };
+
+        // Can't cancel cancelled allocations
+        if (current_status == #Cancelled) {
+            return #err("Allocation already cancelled");
+        };
+
+        // Get payment subaccount (derived from ICP ledger principal)
+        let payment_subaccount = derive_backend_subaccount(
+            Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai"), // ICP ledger
+            allocation_id
+        );
+
+        // Get funding subaccount (derived from token principal)
+        let funding_subaccount = derive_backend_subaccount(
+            allocation.token.canister_id,
+            allocation_id
+        );
+
+        // Create ICRC1 actor for ICP ledger
+        let icrc1_payment_actor = actor(Principal.toText(Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai"))) : T.ICRC1Interface;
+
+        // Create ICRC1 actor for token
+        let icrc1_funding_actor = actor(Principal.toText(allocation.token.canister_id)) : T.ICRC1Interface;
+
+        // Check payment balance
+        let payment_balance = await icrc1_payment_actor.icrc1_balance_of({ 
+            owner = this_canister_id; 
+            subaccount = ?payment_subaccount
+        });
+
+        // Check funding balance
+        let funding_balance = await icrc1_funding_actor.icrc1_balance_of({ 
+            owner = this_canister_id; 
+            subaccount = ?funding_subaccount
+        });
+
+        // Return payment balance if any
+        if (payment_balance > 0) {
+            let payment_result = await icrc1_payment_actor.icrc1_transfer({
+                from_subaccount = ?payment_subaccount;
+                to = { owner = caller; subaccount = null };
+                amount = payment_balance;
+                fee = null;
+                memo = null;
+                created_at_time = null;
+            });
+            switch (payment_result) {
+                case (#Err(e)) return #err("Failed to return payment: " # debug_show(e));
+                case (#Ok(_)) {};
+            };
+        };
+
+        // Return funding balance if any
+        if (funding_balance > 0) {
+            let funding_result = await icrc1_funding_actor.icrc1_transfer({
+                from_subaccount = ?funding_subaccount;
+                to = { owner = caller; subaccount = null };
+                amount = funding_balance;
+                fee = null;
+                memo = null;
+                created_at_time = null;
+            });
+            switch (funding_result) {
+                case (#Err(e)) return #err("Failed to return funds: " # debug_show(e));
+                case (#Ok(_)) {};
+            };
+        };
+
+        // Return success - status update will be done in main.mo
+        #ok(())
     };
 
     // Get all allocations created by a user

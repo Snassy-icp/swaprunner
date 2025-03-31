@@ -3678,4 +3678,52 @@ shared (deployer) actor class SwapRunner() = this {
 
     // ... existing code ...
 
+    // Cancel an allocation
+    public shared ({ caller }) func cancel_allocation(allocation_id: Nat) : async Result.Result<(), Text> {
+        // Check if caller is admin
+        let is_admin = isAdmin(caller);
+
+        // Call allocation module to handle cancellation
+        let cancel_result = await Allocation.cancel_allocation(
+            caller,
+            allocation_id,
+            allocations,
+            allocation_statuses,
+            is_admin,
+            Principal.fromActor(this)
+        );
+
+        // If cancellation was successful, update the status to Cancelled
+        switch (cancel_result) {
+            case (#err(e)) { return #err(e) };
+            case (#ok(_)) {
+                allocation_statuses.put(Nat.toText(allocation_id), #Cancelled);
+                #ok(())
+            };
+        }
+    };
+
+    // Get all allocations created by a user
+    public query({caller}) func get_all_user_allocations() : async [{
+        allocation: T.Allocation;
+        status: T.AllocationStatus;
+    }] {
+        let results = Buffer.Buffer<{
+            allocation: T.Allocation;
+            status: T.AllocationStatus;
+        }>(0);
+
+        for ((id, allocation) in allocations.entries()) {
+            results.add({
+                allocation = allocation;
+                status = switch (allocation_statuses.get(id)) {
+                    case (?status) status;
+                    case null #Cancelled;
+                };
+            });
+        };
+
+        Buffer.toArray(results)
+    };
+
 }
