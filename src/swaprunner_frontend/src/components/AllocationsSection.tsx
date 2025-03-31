@@ -210,6 +210,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                             });
                         }
                     }}
+                    label=""
                     mode="swap"
                     isLoading={false}
                 />
