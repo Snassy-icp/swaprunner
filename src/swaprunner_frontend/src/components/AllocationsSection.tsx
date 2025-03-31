@@ -329,11 +329,6 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                     mode="swap"
                     isLoading={false}
                 />
-                {selectedToken && (
-                    <div className="balance-info">
-                        Balance: {formatTokenAmount(tokenBalance, selectedToken)} {selectedTokenMetadata?.symbol}
-                    </div>
-                )}
             </div>
 
             <div className="form-group">
