@@ -93,6 +93,9 @@ module {
         this_canister_id: Principal,
         payment_account: ?T.Account,
         cut_account: ?T.Account,
+        getUserIndex: (Principal) -> ?Nat16,
+        addToAllocationBalance: (Nat, Nat16, Nat) -> (),
+        addToServerBalance: (Nat16, Nat) -> (),
     ) : async Result.Result<(), Text> {
         // Get allocation
         let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
@@ -224,7 +227,18 @@ module {
             });
             switch (server_result) {
                 case (#Err(e)) return #err("Failed to transfer to server: " # debug_show(e));
-                case (#Ok(_)) {};
+                case (#Ok(_)) {
+                    // Get token index for balance tracking
+                    switch (getUserIndex(allocation.token.canister_id)) {
+                        case null return #err("Token index not found");
+                        case (?token_index) {
+                            // Increase allocation balance
+                            addToAllocationBalance(allocation_id, token_index, remaining_amount - token_tx_fee);
+                            // Increase server balance
+                            addToServerBalance(token_index, remaining_amount - token_tx_fee);
+                        };
+                    };
+                };
             };
         };
 

@@ -3508,10 +3508,15 @@ shared (deployer) actor class SwapRunner() = this {
             allocations,
             allocation_statuses,
             allocation_fee_config,
-            this_canister_id()
+            this_canister_id(),
+            payment_account,
+            cut_account,
+            getUserIndex,
+            addToAllocationBalance,
+            addToServerBalance
         )) {
             case (#ok(_)) {
-                //allocation_statuses.put(Nat.toText(allocation_id), #Active);
+                allocation_statuses.put(Nat.toText(allocation_id), #Active);
                 #ok(())
             };
             case (#err(msg)) #err(msg);
