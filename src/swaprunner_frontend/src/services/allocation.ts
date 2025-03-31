@@ -325,7 +325,7 @@ class AllocationService {
      */
     async cancelAllocation(allocationId: string): Promise<void> {
         const actor = await backendService.getActor();
-        const result = await actor.cancel_allocation(allocationId);
+        const result = await actor.cancel_allocation(BigInt(allocationId));
         
         if ('err' in result) {
             throw new Error(result.err);
