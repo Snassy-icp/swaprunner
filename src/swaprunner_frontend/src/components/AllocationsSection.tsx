@@ -442,6 +442,8 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     const [achievementDetails, setAchievementDetails] = useState<Achievement | null>(null);
     const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null);
     const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+    const [isFundingLoading, setIsFundingLoading] = useState(false);
+    const [fundingBalance, setFundingBalance] = useState<bigint>(BigInt(0));
     const { allocation, status } = allocationWithStatus;
     const { tokens } = useTokens();
 
@@ -489,12 +491,25 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
             }
         };
 
+        // Load funding balance
+        const loadFundingBalance = async () => {
+            if (isExpanded && status === 'Draft' && paymentStatus?.is_paid) {
+                try {
+                    const balance = await allocationService.getFundingBalance(allocation.id);
+                    setFundingBalance(balance);
+                } catch (err) {
+                    console.error('Error loading funding balance:', err);
+                }
+            }
+        };
+
         loadAchievementDetails();
         if (isExpanded) {
             loadLogo();
             loadPaymentStatus();
+            loadFundingBalance();
         }
-    }, [allocation.achievement_id, isExpanded, tokenMetadata, allocation.token.canister_id, tokenLogo, allocation.id, status]);
+    }, [allocation.achievement_id, isExpanded, tokenMetadata, allocation.token.canister_id, tokenLogo, allocation.id, status, paymentStatus?.is_paid]);
 
     const handlePay = async () => {
         if (!paymentStatus || paymentStatus.is_paid) return;
@@ -510,6 +525,23 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
             // You might want to show an error message to the user here
         } finally {
             setIsPaymentLoading(false);
+        }
+    };
+
+    const handleFund = async () => {
+        if (!paymentStatus?.is_paid) return;
+
+        try {
+            setIsFundingLoading(true);
+            await allocationService.fundAllocation(allocation.id);
+            // Reload funding status after successful funding
+            const newBalance = await allocationService.getFundingBalance(allocation.id);
+            setFundingBalance(newBalance);
+        } catch (err) {
+            console.error('Error funding allocation:', err);
+            // You might want to show an error message to the user here
+        } finally {
+            setIsFundingLoading(false);
         }
     };
 
@@ -618,6 +650,50 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                 ) : (
                                     <div className="detail-loading">Loading payment status...</div>
                                 )}
+                            </div>
+                        )}
+                        {status === 'Draft' && paymentStatus?.is_paid && (
+                            <div className="detail-section">
+                                <h4>Funding Status</h4>
+                                <div className="detail-content">
+                                    <div className="detail-row">
+                                        <span className="detail-label">Required Amount:</span>
+                                        <span className="detail-value">
+                                            {formatTokenAmount(allocation.token.total_amount_e8s, allocation.token.canister_id.toString())} {tokenMetadata?.symbol}
+                                        </span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Current Balance:</span>
+                                        <span className="detail-value">
+                                            {formatTokenAmount(fundingBalance, allocation.token.canister_id.toString())} {tokenMetadata?.symbol}
+                                        </span>
+                                    </div>
+                                    <div className="detail-row">
+                                        <span className="detail-label">Remaining:</span>
+                                        <span className="detail-value">
+                                            {formatTokenAmount(allocation.token.total_amount_e8s - fundingBalance, allocation.token.canister_id.toString())} {tokenMetadata?.symbol}
+                                        </span>
+                                    </div>
+                                    <div className="detail-actions">
+                                        <button 
+                                            className="action-button primary"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleFund();
+                                            }}
+                                            disabled={isFundingLoading}
+                                        >
+                                            {isFundingLoading ? (
+                                                <>
+                                                    <FiLoader className="spinning" />
+                                                    Funding...
+                                                </>
+                                            ) : (
+                                                'Fund Now'
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         )}
                         <div className="detail-row">

@@ -222,6 +222,78 @@ class AllocationService {
     }
 
     /**
+     * Get the funding account string for an allocation
+     * Returns the long account string format that includes both the owner (token canister) and subaccount
+     */
+    getFundingAccount(allocationId: string, tokenId: string): string {
+        const subaccount = this.deriveBackendSubaccount(Principal.fromText(tokenId), allocationId);
+        return encodeIcrcAccount({
+            owner: Principal.fromText(process.env.CANISTER_ID_SWAPRUNNER_BACKEND!),
+            subaccount: Array.from(subaccount)
+        });
+    }
+
+    /**
+     * Get the current funding balance for an allocation
+     */
+    async getFundingBalance(allocationId: string): Promise<bigint> {
+        const allocation = await this.getAllocation(allocationId);
+        if (!allocation) {
+            throw new Error('Allocation not found');
+        }
+
+        const subaccount = this.deriveBackendSubaccount(
+            Principal.fromText(allocation.token.canister_id.toString()),
+            allocationId
+        );
+
+        const { balance_e8s } = await this.icrc1Service.getOwnerBalanceWithSubaccount(
+            allocation.token.canister_id.toString(),
+            Principal.fromText(process.env.CANISTER_ID_SWAPRUNNER_BACKEND!),
+            Array.from(subaccount)
+        );
+
+        return balance_e8s;
+    }
+
+    /**
+     * Fund an allocation by transferring tokens to its subaccount
+     */
+    async fundAllocation(allocationId: string): Promise<void> {
+        const allocation = await this.getAllocation(allocationId);
+        if (!allocation) {
+            throw new Error('Allocation not found');
+        }
+
+        const currentBalance = await this.getFundingBalance(allocationId);
+        const remainingAmount = allocation.token.total_amount_e8s - currentBalance;
+        
+        if (remainingAmount <= BigInt(0)) {
+            throw new Error('Allocation is already fully funded');
+        }
+
+        const subaccount = this.deriveBackendSubaccount(
+            Principal.fromText(allocation.token.canister_id.toString()),
+            allocationId
+        );
+
+        await this.icrc1Service.transfer({
+            tokenId: allocation.token.canister_id.toString(),
+            to: process.env.CANISTER_ID_SWAPRUNNER_BACKEND!,
+            amount_e8s: remainingAmount.toString(),
+            subaccount: subaccount
+        });
+    }
+
+    /**
+     * Helper method to get a single allocation by ID
+     */
+    private async getAllocation(allocationId: string): Promise<Allocation | null> {
+        const allocations = await this.getMyCreatedAllocations();
+        return allocations.find(a => a.allocation.id === allocationId)?.allocation || null;
+    }
+
+    /**
      * Pay for an allocation by transferring ICP to its subaccount
      */
     async payForAllocation(allocationId: string): Promise<void> {
