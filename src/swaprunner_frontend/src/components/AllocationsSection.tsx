@@ -10,6 +10,7 @@ import { useTokens } from '../contexts/TokenContext';
 import { ICPSwapExecutionService } from '../services/icpswap_execution';
 import { Principal } from '@dfinity/principal';
 import { tokenService } from '../services/token';
+import { backendService } from '../services/backend';
 
 interface Achievement {
     id: string;
@@ -437,29 +438,48 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
 
 const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, formatDate }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [tokenLogo, setTokenLogo] = useState<string | null>(null);
+    const [achievementDetails, setAchievementDetails] = useState<Achievement | null>(null);
     const { allocation, status } = allocationWithStatus;
     const { tokens } = useTokens();
-    const [tokenLogo, setTokenLogo] = useState<string | null>(null);
 
     // Get token metadata
     const tokenMetadata = tokens.find(t => t.canisterId === allocation.token.canister_id.toString())?.metadata;
 
-    // Load token logo when expanded
+    // Load achievement details and token logo when expanded
     useEffect(() => {
-        if (isExpanded && tokenMetadata?.hasLogo && !tokenLogo) {
-            const loadLogo = async () => {
+        if (isExpanded) {
+            // Load achievement details
+            const loadAchievementDetails = async () => {
                 try {
-                    const logo = await tokenService.getTokenLogo(allocation.token.canister_id.toString());
-                    if (logo) {
-                        setTokenLogo(logo);
+                    const actor = await backendService.getActor();
+                    const result = await actor.get_achievement_details(allocation.achievement_id);
+                    if ('ok' in result) {
+                        setAchievementDetails(result.ok);
                     }
                 } catch (err) {
-                    console.error('Error loading token logo:', err);
+                    console.error('Error loading achievement details:', err);
                 }
             };
+
+            // Load token logo if available
+            const loadLogo = async () => {
+                if (tokenMetadata?.hasLogo && !tokenLogo) {
+                    try {
+                        const logo = await tokenService.getTokenLogo(allocation.token.canister_id.toString());
+                        if (logo) {
+                            setTokenLogo(logo);
+                        }
+                    } catch (err) {
+                        console.error('Error loading token logo:', err);
+                    }
+                }
+            };
+
+            loadAchievementDetails();
             loadLogo();
         }
-    }, [isExpanded, tokenMetadata, allocation.token.canister_id, tokenLogo]);
+    }, [isExpanded, tokenMetadata, allocation.token.canister_id, tokenLogo, allocation.achievement_id]);
 
     const getStatusColor = (status: AllocationStatus): string => {
         switch (status) {
@@ -490,7 +510,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                     <FiGift size={32} className="allocation-icon" />
                 </div>
                 <div className="allocation-info">
-                    <h3>Achievement Allocation {allocation.id}</h3>
+                    <h3>{achievementDetails?.name || `Loading Achievement...`}</h3>
                     <div className="allocation-date">
                         Created {formatDate(allocation.created_at)}
                     </div>
@@ -506,8 +526,8 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                 <div className="allocation-details">
                     <div className="allocation-details-content">
                         <div className="detail-row">
-                            <span className="detail-label">Achievement ID:</span>
-                            <span className="detail-value">{allocation.achievement_id}</span>
+                            <span className="detail-label">Achievement:</span>
+                            <span className="detail-value">{achievementDetails?.name || 'Loading...'}</span>
                         </div>
                         <div className="detail-row">
                             <span className="detail-label">Token:</span>
@@ -523,7 +543,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                         }}
                                     />
                                 )}
-                                <span>{tokenMetadata?.symbol || 'Unknown Token'}</span>
+                                <span className="token-symbol">{tokenMetadata?.symbol || 'Unknown Token'}</span>
                             </span>
                         </div>
                         <div className="detail-row">

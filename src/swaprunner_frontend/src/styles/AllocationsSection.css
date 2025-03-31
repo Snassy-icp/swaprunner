@@ -1513,4 +1513,10 @@
     height: 20px;
     border-radius: 50%;
     object-fit: cover;
+}
+
+.allocation-details .token-info .token-symbol {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
 } 
