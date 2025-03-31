@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiPlus, FiX, FiAlertCircle } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import { backendService } from '../services/backend';
+import { allocationService, Allocation, AllocationStatus, AllocationWithStatus, AllocationFeeConfig, CreateAllocationArgs } from '../services/allocation';
 import { CollapsibleSection } from '../pages/Me';
 import { formatTokenAmount, parseTokenAmount } from '../utils/format';
 import { TokenSelect } from './TokenSelect';
@@ -9,43 +9,11 @@ import '../styles/AllocationsSection.css';
 import { useTokens } from '../contexts/TokenContext';
 import { ICPSwapExecutionService } from '../services/icpswap_execution';
 
-interface Allocation {
-    id: string;
-    creator: string;
-    achievement_id: string;
-    token: {
-        canister_id: string;
-        total_amount_e8s: bigint;
-        per_user: {
-            min_e8s: bigint;
-            max_e8s: bigint;
-        };
-    };
-    created_at: number;
-}
-
-type AllocationStatus = 'Draft' | 'Funded' | 'Active' | 'Depleted' | 'Cancelled';
-
-interface AllocationWithStatus {
-    allocation: Allocation;
-    status: AllocationStatus;
-}
-
-interface AllocationCardProps {
-    allocationWithStatus: AllocationWithStatus;
-    formatDate: (timestamp: number) => string;
-}
-
 interface Achievement {
     id: string;
     name: string;
     description: string;
     logo_url?: string;
-}
-
-interface AllocationFeeConfig {
-    icp_fee_e8s: bigint;
-    cut_basis_points: number;
 }
 
 interface TokenMetadata {
@@ -59,14 +27,13 @@ interface TokenMetadata {
 }
 
 interface AllocationFormProps {
-    onSubmit: (data: {
-        achievement_id: string;
-        token_canister_id: string;
-        total_amount_e8s: bigint;
-        per_user_min_e8s: bigint;
-        per_user_max_e8s: bigint;
-    }) => Promise<void>;
+    onSubmit: (data: CreateAllocationArgs) => Promise<void>;
     onCancel: () => void;
+}
+
+interface AllocationCardProps {
+    allocationWithStatus: AllocationWithStatus;
+    formatDate: (timestamp: number) => string;
 }
 
 const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) => {
@@ -152,8 +119,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
 
     const loadAchievements = async () => {
         try {
-            const actor = await backendService.getActor();
-            const result = await actor.get_all_achievements();
+            const result = await allocationService.getAllAchievements();
             setAchievements(result);
         } catch (err: any) {
             setError('Failed to load achievements: ' + (err.message || String(err)));
@@ -162,8 +128,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
 
     const loadFeeConfig = async () => {
         try {
-            const actor = await backendService.getActor();
-            const config = await actor.get_allocation_fee_config();
+            const config = await allocationService.getFeeConfig();
             setFeeConfig(config);
         } catch (err: any) {
             setError('Failed to load fee configuration: ' + (err.message || String(err)));
@@ -554,16 +519,8 @@ export const AllocationsSection: React.FC = () => {
         try {
             setLoading(true);
             setError(null);
-            const actor = await backendService.getActor();
-            
-            const result = await actor.get_my_created_allocations();
-            console.log('Loaded allocations:', result);
-            
-            if ('ok' in result) {
-                setAllocations(result.ok);
-            } else {
-                setError(result.err);
-            }
+            const result = await allocationService.getMyCreatedAllocations();
+            setAllocations(result);
         } catch (err: any) {
             setError('Failed to load allocations: ' + (err.message || String(err)));
             console.error('Load error:', err);
@@ -580,23 +537,11 @@ export const AllocationsSection: React.FC = () => {
         return new Date(Number(timestamp) / 1_000_000).toLocaleString();
     };
 
-    const handleCreateAllocation = async (data: {
-        achievement_id: string;
-        token_canister_id: string;
-        total_amount_e8s: bigint;
-        per_user_min_e8s: bigint;
-        per_user_max_e8s: bigint;
-    }) => {
+    const handleCreateAllocation = async (data: CreateAllocationArgs) => {
         try {
-            const actor = await backendService.getActor();
-            const result = await actor.create_allocation(data);
-            
-            if ('ok' in result) {
-                await loadAllocations();
-                setShowForm(false);
-            } else {
-                throw new Error(result.err);
-            }
+            await allocationService.createAllocation(data);
+            await loadAllocations();
+            setShowForm(false);
         } catch (err: any) {
             throw err;
         }
