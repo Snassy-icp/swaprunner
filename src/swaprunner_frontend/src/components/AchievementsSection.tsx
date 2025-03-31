@@ -531,6 +531,7 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
     const [showGlitter] = useState(() => Math.random() < GLITTER_PROBABILITY);
     const [showBalloons] = useState(() => Math.random() < BALLOON_PROBABILITY);
     const [showFireworks] = useState(() => Math.random() < FIREWORK_PROBABILITY);
+    const [balloons, setBalloons] = useState<BalloonState[]>([]);
 
     useEffect(() => {
         if (show) {
@@ -538,6 +539,62 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
             return () => clearTimeout(timer);
         }
     }, [show]);
+
+    useEffect(() => {
+        if (!showBalloons) return;
+
+        let batchCount = 0;
+        const maxBatches = 15;
+        const batchInterval = 800;
+        
+        const createBalloonBatch = (batchId: number) => {
+            const batchSize = Math.max(
+                1,
+                Math.floor(BALLOON_COUNT * Math.pow(0.85, batchId))
+            );
+            
+            const newBalloons = Array.from({ length: batchSize }, () => {
+                const depth = Math.random();
+                const baseSize = 15 + (depth * 65);
+                
+                return {
+                    x: 10 + Math.random() * 80,
+                    y: 0,
+                    delay: batchId * (batchInterval / 1000) + Math.random() * 0.5,
+                    duration: 8 + (depth * 4),
+                    size: baseSize,
+                    color: BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)],
+                    swayAmount: 15 + (depth * 35),
+                    isPopped: false,
+                    popScale: 1,
+                    depth,
+                    depthOffset: depth * 200 - 100
+                };
+            });
+
+            setBalloons(prev => [...prev, ...newBalloons]);
+        };
+
+        createBalloonBatch(0);
+
+        const intervalId = setInterval(() => {
+            batchCount++;
+            if (batchCount < maxBatches) {
+                createBalloonBatch(batchCount);
+            } else {
+                clearInterval(intervalId);
+            }
+        }, batchInterval);
+
+        const cleanupTimer = setTimeout(() => {
+            setBalloons([]);
+        }, (maxBatches * batchInterval) + 15000);
+
+        return () => {
+            clearInterval(intervalId);
+            clearTimeout(cleanupTimer);
+        };
+    }, [showBalloons]);
 
     if (!show) return null;
 
@@ -562,6 +619,45 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
         <div className="claim-success-overlay" onClick={(e) => e.stopPropagation()}>
             <Confetti />
             {showGlitter && <Glitter />}
+            {/* Small balloons container (before modal) */}
+            {showBalloons && (
+                <div className="balloon-container">
+                    {balloons
+                        .filter(balloon => balloon.size <= 47.5)
+                        .map((balloon, i) => {
+                            const zIndex = 995 + Math.floor((balloon.size - 15) / 6.5);
+                            const shadowIntensity = 0.1 + (balloon.size / 160);
+                            
+                            return (
+                                <div
+                                    key={`small-${i}`}
+                                    className={`balloon ${balloon.isPopped ? 'popped' : ''}`}
+                                    style={{
+                                        position: 'absolute',
+                                        left: `${balloon.x}%`,
+                                        bottom: '-100px',
+                                        width: `${balloon.size}px`,
+                                        height: `${balloon.size * 1.2}px`,
+                                        backgroundColor: balloon.color,
+                                        animation: `float ${balloon.duration}s ${balloon.delay}s ease-out forwards`,
+                                        '--sway-amount': `${balloon.swayAmount}px`,
+                                        '--depth-offset': `${balloon.depthOffset}px`,
+                                        zIndex,
+                                        boxShadow: `inset -${2 + balloon.size/20}px -${2 + balloon.size/20}px ${5 + balloon.size/8}px rgba(0,0,0,${shadowIntensity})`
+                                    } as React.CSSProperties}
+                                >
+                                    <div 
+                                        className="balloon-string"
+                                        style={{
+                                            height: `${balloon.size * 1.5}px`,
+                                            opacity: 0.3 + (balloon.size / 160)
+                                        }}
+                                    />
+                                </div>
+                            );
+                        })}
+                </div>
+            )}
             <div className="claim-success-modal" onClick={e => e.stopPropagation()}>
                 <div className="claim-success-content">
                     <div className="claim-success-icon-wrapper">
@@ -584,7 +680,45 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
                     </button>
                 </div>
             </div>
-            {showBalloons && <Balloon />}
+            {/* Large balloons container (after modal) */}
+            {showBalloons && (
+                <div className="balloon-container">
+                    {balloons
+                        .filter(balloon => balloon.size > 47.5)
+                        .map((balloon, i) => {
+                            const zIndex = 1100 + Math.floor((balloon.size - 47.5) / 3.25);
+                            const shadowIntensity = 0.1 + (balloon.size / 160);
+                            
+                            return (
+                                <div
+                                    key={`large-${i}`}
+                                    className={`balloon ${balloon.isPopped ? 'popped' : ''}`}
+                                    style={{
+                                        position: 'absolute',
+                                        left: `${balloon.x}%`,
+                                        bottom: '-100px',
+                                        width: `${balloon.size}px`,
+                                        height: `${balloon.size * 1.2}px`,
+                                        backgroundColor: balloon.color,
+                                        animation: `float ${balloon.duration}s ${balloon.delay}s ease-out forwards`,
+                                        '--sway-amount': `${balloon.swayAmount}px`,
+                                        '--depth-offset': `${balloon.depthOffset}px`,
+                                        zIndex,
+                                        boxShadow: `inset -${2 + balloon.size/20}px -${2 + balloon.size/20}px ${5 + balloon.size/8}px rgba(0,0,0,${shadowIntensity})`
+                                    } as React.CSSProperties}
+                                >
+                                    <div 
+                                        className="balloon-string"
+                                        style={{
+                                            height: `${balloon.size * 1.5}px`,
+                                            opacity: 0.3 + (balloon.size / 160)
+                                        }}
+                                    />
+                                </div>
+                            );
+                        })}
+                </div>
+            )}
             {showFireworks && <Fireworks />}
         </div>
     );
