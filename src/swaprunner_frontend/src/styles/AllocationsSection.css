@@ -1744,4 +1744,44 @@
 .action-button.danger:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.allocation-details .status-requirements {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 12px;
+}
+
+.allocation-details .status-requirements ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.allocation-details .status-requirements li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #8F96A1;
+    font-size: 13px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.allocation-details .status-requirements li:last-child {
+    border-bottom: none;
+}
+
+.allocation-details .status-requirements li svg {
+    flex-shrink: 0;
+    color: #6c757d;
+}
+
+.allocation-details .status-requirements li.completed {
+    color: #28a745;
+}
+
+.allocation-details .status-requirements li.completed svg {
+    color: #28a745;
 } 

@@ -815,28 +815,36 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                     </span>
                                 </div>
                                 {allocationWithStatus.status === 'Draft' && (
-                                    <div className="detail-actions">
-                                        <button
-                                            className="action-button primary"
-                                            onClick={() => setShowActivateConfirmation(true)}
-                                            disabled={!paymentStatus?.is_paid || fundingBalance < allocationWithStatus.allocation.token.total_amount_e8s || isActivating}
-                                        >
-                                            {isActivating ? (
-                                                <>
-                                                    <FiLoader className="spinning" />
-                                                    Activating...
-                                                </>
-                                            ) : (
-                                                'Activate Allocation'
-                                            )}
-                                        </button>
-                                        {(!paymentStatus?.is_paid || fundingBalance < allocationWithStatus.allocation.token.total_amount_e8s) && (
-                                            <div className="detail-info">
-                                                {!paymentStatus?.is_paid && <div>• Payment required before activation</div>}
-                                                {fundingBalance < allocationWithStatus.allocation.token.total_amount_e8s && <div>• Full funding required before activation</div>}
-                                            </div>
-                                        )}
-                                    </div>
+                                    <>
+                                        <div className="status-requirements">
+                                            <ul>
+                                                <li className={paymentStatus?.is_paid ? 'completed' : ''}>
+                                                    {paymentStatus?.is_paid ? <FiCheck /> : <FiAlertCircle />}
+                                                    Payment required before activation
+                                                </li>
+                                                <li className={fundingBalance >= allocationWithStatus.allocation.token.total_amount_e8s ? 'completed' : ''}>
+                                                    {fundingBalance >= allocationWithStatus.allocation.token.total_amount_e8s ? <FiCheck /> : <FiAlertCircle />}
+                                                    Full funding required before activation
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <div className="detail-actions">
+                                            <button
+                                                className="action-button primary"
+                                                onClick={() => setShowActivateConfirmation(true)}
+                                                disabled={!paymentStatus?.is_paid || fundingBalance < allocationWithStatus.allocation.token.total_amount_e8s || isActivating}
+                                            >
+                                                {isActivating ? (
+                                                    <>
+                                                        <FiLoader className="spinning" />
+                                                        Activating...
+                                                    </>
+                                                ) : (
+                                                    'Activate Allocation'
+                                                )}
+                                            </button>
+                                        </div>
+                                    </>
                                 )}
                             </div>
                         </div>
