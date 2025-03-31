@@ -272,7 +272,6 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 1003;
     overflow: visible;
     perspective: 1200px;
     transform-style: preserve-3d;
@@ -282,10 +281,10 @@
     position: absolute;
     border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
     transform-origin: center bottom;
-    box-shadow: inset -5px -5px 15px rgba(0,0,0,0.2);
     will-change: transform;
     pointer-events: all;
     backface-visibility: hidden;
+    transition: transform 0.3s ease-out;
 }
 
 .balloon:hover {
@@ -319,11 +318,9 @@
 @keyframes float {
     0% {
         transform: translate3d(0, 0, var(--depth-offset, 0)) rotate(0deg);
-        opacity: var(--balloon-opacity, 1);
     }
     100% {
         transform: translate3d(0, -120vh, var(--depth-offset, 0)) rotate(15deg);
-        opacity: 0;
     }
 }
 
@@ -342,19 +339,16 @@
 @keyframes pop {
     0% {
         transform: scale(1) translateZ(var(--depth-offset, 0));
-        opacity: var(--balloon-opacity, 1);
     }
     25% {
         transform: scale(1.2) translateZ(var(--depth-offset, 0));
-        opacity: calc(var(--balloon-opacity, 1) * 0.8);
     }
     50% {
         transform: scale(0.8) translateZ(var(--depth-offset, 0));
-        opacity: calc(var(--balloon-opacity, 1) * 0.6);
     }
     100% {
         transform: scale(0) translateZ(var(--depth-offset, 0));
-        opacity: 0;
+        visibility: hidden;
     }
 }
 

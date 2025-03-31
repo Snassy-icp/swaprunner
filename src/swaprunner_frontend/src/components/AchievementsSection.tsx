@@ -304,46 +304,40 @@ const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
 
     useEffect(() => {
         let batchCount = 0;
-        const maxBatches = 15; // Number of batches
-        const batchInterval = 800; // Time between batches in ms
+        const maxBatches = 15;
+        const batchInterval = 800;
         
         const createBalloonBatch = (batchId: number) => {
-            // Calculate how many balloons in this batch (decreasing over time)
             const batchSize = Math.max(
-                1, // Ensure at least 1 balloon
-                Math.floor(count * Math.pow(0.85, batchId)) // Reduce by 15% each batch
+                1,
+                Math.floor(count * Math.pow(0.85, batchId))
             );
             
             const newBalloons = Array.from({ length: batchSize }, () => {
                 const depth = Math.random();
-                const baseSize = depth < 0.5 ? 
-                    10 + (depth * 40) :
-                    40 + ((depth - 0.5) * 40);
+                // Larger size range: 15px to 80px
+                const baseSize = 15 + (depth * 65);
                 
                 return {
                     x: 10 + Math.random() * 80,
-                    y: 0, // This will be used in the transform
-                    delay: batchId * (batchInterval / 1000) + Math.random() * 0.5, // Delay based on batch
-                    duration: 8 + (depth * 4), // Slower for background balloons
+                    y: 0,
+                    delay: batchId * (batchInterval / 1000) + Math.random() * 0.5,
+                    duration: 8 + (depth * 4),
                     size: baseSize,
                     color: BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)],
                     swayAmount: 15 + (depth * 35),
                     isPopped: false,
                     popScale: 1,
                     depth,
-                    depthOffset: depth < 0.5 ? 
-                        -100 + (depth * 200) :
-                        0 + ((depth - 0.5) * 200)
+                    depthOffset: depth * 200 - 100
                 };
             });
 
             setBalloons(prev => [...prev, ...newBalloons]);
         };
 
-        // Create initial batch
         createBalloonBatch(0);
 
-        // Create subsequent batches
         const intervalId = setInterval(() => {
             batchCount++;
             if (batchCount < maxBatches) {
@@ -353,10 +347,9 @@ const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
             }
         }, batchInterval);
 
-        // Clean up after all batches have floated away
         const cleanupTimer = setTimeout(() => {
             setBalloons([]);
-        }, (maxBatches * batchInterval) + 15000); // Allow time for last batch to float away
+        }, (maxBatches * batchInterval) + 15000);
 
         return () => {
             clearInterval(intervalId);
@@ -367,8 +360,17 @@ const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
     return (
         <div className="balloon-container">
             {balloons.map((balloon, i) => {
-                const opacity = 0.7 + (balloon.depth * 0.3);
-                const zIndex = balloon.depth > 0.5 ? 1001 + Math.floor(balloon.depth * 4) : 995 + Math.floor(balloon.depth * 8);
+                // Calculate z-index based on size
+                // Smaller balloons (15-40px) get z-index 995-998
+                // Medium balloons (41-60px) get z-index 999-1002
+                // Large balloons (61-80px) get z-index 1003-1005
+                const zIndex = balloon.size <= 40 ? 
+                    995 + Math.floor((balloon.size - 15) / 8) :
+                    balloon.size <= 60 ?
+                        999 + Math.floor((balloon.size - 41) / 6) :
+                        1003 + Math.floor((balloon.size - 61) / 6);
+                
+                const shadowIntensity = 0.1 + (balloon.size / 160); // 0.1-0.6 range
                 
                 return (
                     <div
@@ -384,17 +386,15 @@ const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
                             animation: `float ${balloon.duration}s ${balloon.delay}s ease-out forwards`,
                             '--sway-amount': `${balloon.swayAmount}px`,
                             '--depth-offset': `${balloon.depthOffset}px`,
-                            '--balloon-opacity': opacity,
-                            opacity,
                             zIndex,
-                            boxShadow: `inset -${2 + balloon.depth * 3}px -${2 + balloon.depth * 3}px ${5 + balloon.depth * 10}px rgba(0,0,0,0.2)`
+                            boxShadow: `inset -${2 + balloon.size/20}px -${2 + balloon.size/20}px ${5 + balloon.size/8}px rgba(0,0,0,${shadowIntensity})`
                         } as React.CSSProperties}
                     >
                         <div 
                             className="balloon-string"
                             style={{
                                 height: `${balloon.size * 1.5}px`,
-                                opacity: opacity * 0.7
+                                opacity: 0.3 + (balloon.size / 160) // 0.3-0.8 range
                             }}
                         />
                     </div>
