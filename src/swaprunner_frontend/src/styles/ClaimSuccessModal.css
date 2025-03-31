@@ -273,23 +273,25 @@
     height: 100%;
     pointer-events: none;
     z-index: 1003;
-    overflow: hidden;
+    overflow: visible;
+    perspective: 1200px;
+    transform-style: preserve-3d;
 }
 
 .balloon {
-    position: absolute;
-    bottom: 0;
+    position: fixed;
     border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
-    transform-origin: bottom center;
-    opacity: 0.9;
+    transform-origin: center bottom;
     box-shadow: inset -5px -5px 15px rgba(0,0,0,0.2);
-    will-change: transform;
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform, opacity;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: all;
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
 }
 
 .balloon:hover {
-    transform: scale(1.1);
+    transform: scale(1.1) translateZ(30px);
 }
 
 .balloon.popped {
@@ -306,6 +308,7 @@
     transform-origin: top center;
     pointer-events: none;
     transition: opacity 0.15s;
+    will-change: transform;
 }
 
 .balloon-particle {
@@ -315,48 +318,45 @@
     z-index: 1004;
 }
 
-@keyframes pop {
-    0% {
-        transform: scale(1);
-        opacity: 1;
-    }
-    25% {
-        transform: scale(1.2);
-        opacity: 0.8;
-    }
-    50% {
-        transform: scale(0.8);
-        opacity: 0.6;
-    }
-    100% {
-        transform: scale(0);
-        opacity: 0;
-    }
-}
-
 @keyframes float {
     0% {
-        transform: translateY(0) rotate(0deg);
-        opacity: 0;
-    }
-    10% {
-        opacity: 1;
-    }
-    80% {
-        opacity: 1;
+        transform: translate3d(0, 100vh, var(--depth-offset, 0)) rotate(0deg);
+        opacity: var(--balloon-opacity, 1);
     }
     100% {
-        transform: translateY(-120vh) rotate(15deg);
+        transform: translate3d(0, -120vh, var(--depth-offset, 0)) rotate(15deg);
         opacity: 0;
     }
 }
 
 @keyframes sway {
-    0%, 100% {
-        margin-left: 0;
+    0% {
+        transform: translateX(0) translateZ(var(--depth-offset, 0));
     }
     50% {
-        margin-left: var(--sway-amount, 30px);
+        transform: translateX(var(--sway-amount, 30px)) translateZ(var(--depth-offset, 0));
+    }
+    100% {
+        transform: translateX(0) translateZ(var(--depth-offset, 0));
+    }
+}
+
+@keyframes pop {
+    0% {
+        transform: scale(1) translateZ(var(--depth-offset, 0));
+        opacity: var(--balloon-opacity, 1);
+    }
+    25% {
+        transform: scale(1.2) translateZ(var(--depth-offset, 0));
+        opacity: calc(var(--balloon-opacity, 1) * 0.8);
+    }
+    50% {
+        transform: scale(0.8) translateZ(var(--depth-offset, 0));
+        opacity: calc(var(--balloon-opacity, 1) * 0.6);
+    }
+    100% {
+        transform: scale(0) translateZ(var(--depth-offset, 0));
+        opacity: 0;
     }
 }
 

@@ -281,9 +281,9 @@ const Glitter: React.FC<GlitterProps> = ({ count = GLITTER_COUNT }) => {
     );
 };
 
-// Add this interface before the Balloon component
 interface BalloonState {
     x: number;
+    y: number;
     delay: number;
     duration: number;
     size: number;
@@ -291,6 +291,8 @@ interface BalloonState {
     swayAmount: number;
     isPopped: boolean;
     popScale: number;
+    depth: number;
+    depthOffset: number;
 }
 
 interface BalloonProps {
@@ -298,121 +300,103 @@ interface BalloonProps {
 }
 
 const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
-    const [balloons, setBalloons] = useState<BalloonState[]>(() => 
-        Array.from({ length: count }, () => ({
-            x: 10 + Math.random() * 80,
-            delay: Math.random() * 1,
-            duration: 6 + Math.random() * 2,
-            size: 30 + Math.random() * 20,
-            color: BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)],
-            swayAmount: 30 + Math.random() * 40,
-            isPopped: false,
-            popScale: 1
-        }))
-    );
+    const [balloons, setBalloons] = useState<BalloonState[]>([]);
 
-    const popBalloon = (index: number) => {
-        console.log('Popping balloon:', index);
-        if (balloons[index].isPopped) return;
-        console.log('Popping balloon found:', index);
-
-        // Play pop sound
-        //const audio = new Audio('/pop.mp3');
-        //audio.volume = 0.4;
-        //audio.play().catch(() => {}); // Ignore errors if sound can't play
-
-        // Create mini confetti burst
-        const confettiCount = 10;
-        const confettiColors = [balloons[index].color, '#ffffff'];
+    useEffect(() => {
+        let batchCount = 0;
+        const maxBatches = 15; // Number of batches
+        const batchInterval = 800; // Time between batches in ms
         
-        // Update balloon state
-        setBalloons(prev => prev.map((balloon, i) => 
-            i === index ? { ...balloon, isPopped: true } : balloon
-        ));
+        const createBalloonBatch = (batchId: number) => {
+            // Calculate how many balloons in this batch (decreasing over time)
+            const batchSize = Math.max(
+                1, // Ensure at least 1 balloon
+                Math.floor(count * Math.pow(0.85, batchId)) // Reduce by 15% each batch
+            );
+            
+            const newBalloons = Array.from({ length: batchSize }, () => {
+                const depth = Math.random();
+                const baseSize = depth < 0.5 ? 
+                    10 + (depth * 40) :
+                    40 + ((depth - 0.5) * 40);
+                
+                return {
+                    x: 10 + Math.random() * 80,
+                    y: 0,
+                    delay: batchId * (batchInterval / 1000) + Math.random() * 0.5, // Delay based on batch
+                    duration: 8 + Math.random() * 4,
+                    size: baseSize,
+                    color: BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)],
+                    swayAmount: 15 + (depth * 35),
+                    isPopped: false,
+                    popScale: 1,
+                    depth,
+                    depthOffset: depth < 0.5 ? 
+                        -100 + (depth * 200) :
+                        0 + ((depth - 0.5) * 200)
+                };
+            });
 
-        // Create particles at balloon position
-        const balloon = document.querySelector(`[data-balloon-index="${index}"]`);
-        if (balloon) {
-            const rect = balloon.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
+            setBalloons(prev => [...prev, ...newBalloons]);
+        };
 
-            // Create particle elements
-            for (let i = 0; i < 12; i++) {
-                const particle = document.createElement('div');
-                const angle = (i / 12) * Math.PI * 2;
-                const velocity = 2 + Math.random() * 2;
-                const size = 4 + Math.random() * 4;
+        // Create initial batch
+        createBalloonBatch(0);
 
-                particle.className = 'balloon-particle';
-                particle.style.backgroundColor = confettiColors[Math.floor(Math.random() * confettiColors.length)];
-                particle.style.width = `${size}px`;
-                particle.style.height = `${size}px`;
-                particle.style.left = `${centerX}px`;
-                particle.style.top = `${centerY}px`;
-                particle.style.transform = `translate(-50%, -50%)`;
-
-                document.body.appendChild(particle);
-
-                // Animate particle
-                const animation = particle.animate([
-                    { 
-                        transform: 'translate(-50%, -50%) scale(1)',
-                        opacity: 1 
-                    },
-                    { 
-                        transform: `translate(
-                            calc(-50% + ${Math.cos(angle) * 100 * velocity}px), 
-                            calc(-50% + ${Math.sin(angle) * 100 * velocity}px)
-                        ) scale(0)`,
-                        opacity: 0 
-                    }
-                ], {
-                    duration: 500,
-                    easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                });
-
-                // Clean up particle after animation
-                animation.onfinish = () => particle.remove();
+        // Create subsequent batches
+        const intervalId = setInterval(() => {
+            batchCount++;
+            if (batchCount < maxBatches) {
+                createBalloonBatch(batchCount);
+            } else {
+                clearInterval(intervalId);
             }
-        }
-    };
+        }, batchInterval);
+
+        // Clean up after all batches have floated away
+        const cleanupTimer = setTimeout(() => {
+            setBalloons([]);
+        }, (maxBatches * batchInterval) + 15000); // Allow time for last batch to float away
+
+        return () => {
+            clearInterval(intervalId);
+            clearTimeout(cleanupTimer);
+        };
+    }, [count]);
 
     return (
-        <div className="balloon-container" onClick={e => e.stopPropagation()}>
+        <div className="balloon-container">
             {balloons.map((balloon, i) => {
-                const stringLength = balloon.size * 1.5;
+                const opacity = 0.7 + (balloon.depth * 0.3);
+                const zIndex = balloon.depth > 0.5 ? 1001 + Math.floor(balloon.depth * 4) : 995 + Math.floor(balloon.depth * 8);
+                
                 return (
                     <div
                         key={i}
-                        data-balloon-index={i}
                         className={`balloon ${balloon.isPopped ? 'popped' : ''}`}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            popBalloon(i);
-                        }}
                         style={{
                             left: `${balloon.x}%`,
+                            bottom: '0',
                             width: `${balloon.size}px`,
                             height: `${balloon.size * 1.2}px`,
                             backgroundColor: balloon.color,
-                            animation: balloon.isPopped ? 'none' : 
-                                `float ${balloon.duration}s ${balloon.delay}s ease-out forwards, 
-                                 sway ${balloon.duration * 0.5}s ${balloon.delay}s ease-in-out infinite`,
+                            animation: `float ${balloon.duration}s ${balloon.delay}s ease-out forwards, 
+                                      sway ${balloon.duration * 0.5}s ${balloon.delay}s ease-in-out infinite`,
                             '--sway-amount': `${balloon.swayAmount}px`,
-                            cursor: balloon.isPopped ? 'default' : 'pointer',
-                            pointerEvents: 'auto'
+                            '--depth-offset': `${balloon.depthOffset}px`,
+                            '--balloon-opacity': opacity,
+                            opacity,
+                            zIndex,
+                            boxShadow: `inset -${2 + balloon.depth * 3}px -${2 + balloon.depth * 3}px ${5 + balloon.depth * 10}px rgba(0,0,0,0.2)`
                         } as React.CSSProperties}
                     >
-                        {!balloon.isPopped && (
-                            <div 
-                                className="balloon-string"
-                                style={{
-                                    height: `${stringLength}px`
-                                }}
-                                onClick={e => e.stopPropagation()}
-                            />
-                        )}
+                        <div 
+                            className="balloon-string"
+                            style={{
+                                height: `${balloon.size * 1.5}px`,
+                                opacity: opacity * 0.7
+                            }}
+                        />
                     </div>
                 );
             })}
