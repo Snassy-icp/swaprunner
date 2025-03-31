@@ -246,15 +246,15 @@ module {
         #ok(())
     };
 
-    // Process a claim request
-    public func process_claim(
+    // Check if a user is eligible to claim from an allocation
+    public func check_claim_eligibility(
         caller: Principal,
         allocation_id: Text,
         allocations: HashMap.HashMap<Text, T.Allocation>,
         allocation_statuses: HashMap.HashMap<Text, T.AllocationStatus>,
         allocation_claims: HashMap.HashMap<Text, T.AllocationClaim>,
         user_achievements: HashMap.HashMap<Text, [T.UserAchievement]>,
-    ) : Result.Result<Nat, Text> {
+    ) : Result.Result<T.Allocation, Text> {
         // Get allocation
         let allocation = switch (allocations.get(allocation_id)) {
             case null return #err("Allocation not found");
@@ -286,15 +286,40 @@ module {
         };
 
         // Verify user hasn't already claimed
-        let claim_key = Principal.toText(caller) # ":" # allocation_id;
+        let claim_key = get_claim_key(caller, allocation_id);
         switch (allocation_claims.get(claim_key)) {
             case (?_) return #err("User has already claimed from this allocation");
             case null {};
         };
 
-        // For now, just return the minimum amount
-        // In future versions we could implement more sophisticated distribution logic
-        #ok(allocation.token.per_user.min_e8s)
+        #ok(allocation)
+    };
+
+    // Process a claim request
+    public func process_claim(
+        caller: Principal,
+        allocation_id: Text,
+        allocations: HashMap.HashMap<Text, T.Allocation>,
+        allocation_statuses: HashMap.HashMap<Text, T.AllocationStatus>,
+        allocation_claims: HashMap.HashMap<Text, T.AllocationClaim>,
+        user_achievements: HashMap.HashMap<Text, [T.UserAchievement]>,
+    ) : Result.Result<Nat, Text> {
+        // Check eligibility
+        switch(check_claim_eligibility(
+            caller,
+            allocation_id,
+            allocations,
+            allocation_statuses,
+            allocation_claims,
+            user_achievements
+        )) {
+            case (#err(msg)) return #err(msg);
+            case (#ok(allocation)) {
+                // For now, just return the minimum amount
+                // In future versions we could implement more sophisticated distribution logic
+                #ok(allocation.token.per_user.min_e8s)
+            };
+        }
     };
 
     // Helper function to generate claim key
@@ -483,32 +508,32 @@ module {
 
         // Check each allocation
         for ((id, allocation) in allocations.entries()) {
-            // Skip if user doesn't have the achievement
+            // Check if user has the achievement
             switch (achievement_ids.get(allocation.achievement_id)) {
-                case null continue;
-                case (?_) {};
-            };
-
-            // Verify allocation is active
-            switch (allocation_statuses.get(id)) {
-                case (?#Active) {};
-                case (?_) continue;
-                case null continue;
-            };
-
-            // Skip if user has already claimed
-            let claim_key = get_claim_key(caller, id);
-            switch (allocation_claims.get(claim_key)) {
-                case (?_) continue;
                 case null {};
+                case (?_) {
+                    // Check if allocation is active
+                    switch (allocation_statuses.get(id)) {
+                        case (?#Active) {
+                            // Check if user hasn't claimed yet
+                            let claim_key = get_claim_key(caller, id);
+                            switch (allocation_claims.get(claim_key)) {
+                                case (?_) {};
+                                case null {
+                                    // All conditions met, add to results
+                                    results.add({
+                                        achievement_id = allocation.achievement_id;
+                                        allocation_id = id;
+                                        claimable_amount = allocation.token.per_user;
+                                    });
+                                };
+                            };
+                        };
+                        case (?_) {};
+                        case null {};
+                    };
+                };
             };
-
-            // Add to results
-            results.add({
-                achievement_id = allocation.achievement_id;
-                allocation_id = id;
-                claimable_amount = allocation.token.per_user;
-            });
         };
 
         Buffer.toArray(results)
