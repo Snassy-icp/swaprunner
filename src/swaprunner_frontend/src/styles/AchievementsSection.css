@@ -175,6 +175,101 @@
     color: #888;
     font-size: 0.85em;
     font-style: italic;
+    margin-bottom: 20px;
+}
+
+.achievement-rewards {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rewards-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #888;
+    font-size: 0.9em;
+}
+
+.rewards-loading .spinning {
+    animation: spin 1s linear infinite;
+}
+
+.rewards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.reward-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.reward-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.reward-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.reward-icon {
+    color: #ffd700;
+    font-size: 1.2em;
+}
+
+.reward-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.reward-amount {
+    color: #fff;
+    font-size: 0.95em;
+    font-weight: 500;
+}
+
+.claim-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+}
+
+.claim-button:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.claim-button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.claim-button .spinning {
+    animation: spin 1s linear infinite;
+}
+
+.no-rewards {
+    color: #888;
+    font-size: 0.9em;
+    text-align: center;
+    padding: 20px;
 }
 
 .no-achievements {

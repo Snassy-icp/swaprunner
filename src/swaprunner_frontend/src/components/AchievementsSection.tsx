@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FiAward, FiRefreshCw, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiAward, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiGift } from 'react-icons/fi';
 import { backendService } from '../services/backend';
 import { CollapsibleSection } from '../pages/Me';
 import '../styles/AchievementsSection.css';
+import { allocationService } from '../services/allocation';
+import { formatTokenAmount } from '../utils/format';
+import { useTokens } from '../contexts/TokenContext';
 
 interface Achievement {
     id: string;
@@ -17,14 +20,69 @@ interface UserAchievement {
     discovered_at: number;
 }
 
+interface ClaimableReward {
+    achievement_id: string;
+    allocation_id: string;
+    claimable_amount: {
+        min_e8s: bigint;
+        max_e8s: bigint;
+    };
+}
+
 interface AchievementCardProps {
     achievement: UserAchievement;
     details: Achievement;
     formatDate: (timestamp: number) => string;
+    onClaimSuccess?: () => void;
 }
 
-const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details, formatDate }) => {
+const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details, formatDate, onClaimSuccess }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [availableClaims, setAvailableClaims] = useState<ClaimableReward[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const { tokens } = useTokens();
+
+    useEffect(() => {
+        if (isExpanded) {
+            loadAvailableClaims();
+        }
+    }, [isExpanded]);
+
+    const loadAvailableClaims = async () => {
+        try {
+            setLoading(true);
+            console.log('Loading available claims for achievement:', achievement.achievement_id);
+            const claims = await allocationService.getAvailableClaims();
+            console.log('All available claims:', claims);
+            // Filter claims for this achievement
+            const filteredClaims = claims.filter(claim => claim.achievement_id === achievement.achievement_id);
+            console.log('Filtered claims for achievement:', filteredClaims);
+            setAvailableClaims(filteredClaims);
+        } catch (err: any) {
+            console.error('Error in loadAvailableClaims:', err);
+            setError('Failed to load available claims: ' + (err.message || String(err)));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleClaim = async (allocationId: string) => {
+        try {
+            setLoading(true);
+            await allocationService.claimAllocation(achievement.achievement_id, allocationId);
+            // Reload claims after successful claim
+            await loadAvailableClaims();
+            if (onClaimSuccess) {
+                onClaimSuccess();
+            }
+        } catch (err: any) {
+            setError('Failed to claim reward: ' + (err.message || String(err)));
+            console.error('Error claiming reward:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="achievement-card">
@@ -60,6 +118,61 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                         <p>{details.description}</p>
                         <div className="achievement-details-date">
                             Earned on {formatDate(achievement.discovered_at)}
+                        </div>
+
+                        <div className="achievement-rewards">
+                            <h4>Available Rewards</h4>
+                            {loading ? (
+                                <div className="rewards-loading">
+                                    <FiLoader className="spinning" /> Loading rewards...
+                                </div>
+                            ) : error ? (
+                                <div className="error-message">{error}</div>
+                            ) : availableClaims.length > 0 ? (
+                                <div className="rewards-list">
+                                    {availableClaims.map((claim) => {
+                                        const allocation = tokens.find(t => t.canisterId === claim.allocation_id);
+                                        return (
+                                            <div key={claim.allocation_id} className="reward-item">
+                                                <div className="reward-info">
+                                                    <FiGift className="reward-icon" />
+                                                    <div className="reward-details">
+                                                        <span className="reward-amount">
+                                                            {claim.claimable_amount.min_e8s === claim.claimable_amount.max_e8s ? (
+                                                                formatTokenAmount(claim.claimable_amount.min_e8s, claim.allocation_id)
+                                                            ) : (
+                                                                `${formatTokenAmount(claim.claimable_amount.min_e8s, claim.allocation_id)} - ${formatTokenAmount(claim.claimable_amount.max_e8s, claim.allocation_id)}`
+                                                            )}
+                                                            {allocation?.metadata?.symbol || ' tokens'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    className="claim-button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleClaim(claim.allocation_id);
+                                                    }}
+                                                    disabled={loading}
+                                                >
+                                                    {loading ? (
+                                                        <>
+                                                            <FiLoader className="spinning" />
+                                                            Claiming...
+                                                        </>
+                                                    ) : (
+                                                        'Claim Reward'
+                                                    )}
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="no-rewards">
+                                    No rewards available to claim
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -171,6 +284,7 @@ export const AchievementsSection: React.FC = () => {
                                     achievement={achievement}
                                     details={details}
                                     formatDate={formatDate}
+                                    onClaimSuccess={loadAchievements}
                                 />
                             );
                         })
