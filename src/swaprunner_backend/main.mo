@@ -194,6 +194,10 @@ shared (deployer) actor class SwapRunner() = this {
         cut_basis_points = 100; // Default 1%
     };
 
+    // Add after other stable variables and before runtime state
+    private stable var payment_account : ?T.Account = null;
+    private stable var cut_account : ?T.Account = null;
+
     // Public query to get allocation fee config
     public query func get_allocation_fee_config() : async T.AllocationFeeConfig {
         allocation_fee_config
@@ -3645,5 +3649,33 @@ shared (deployer) actor class SwapRunner() = this {
             allocation_statuses,
         ))
     };
+
+    // ... existing code ...
+    // Add before system_started()
+    public shared query func get_payment_account() : async ?T.Account {
+        payment_account
+    };
+
+    public shared query func get_cut_account() : async ?T.Account {
+        cut_account
+    };
+
+    public shared({caller}) func update_payment_account(account: T.Account) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        payment_account := ?account;
+        #ok()
+    };
+
+    public shared({caller}) func update_cut_account(account: T.Account) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        cut_account := ?account;
+        #ok()
+    };
+
+    // ... existing code ...
 
 }
