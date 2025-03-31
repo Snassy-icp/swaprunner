@@ -322,7 +322,7 @@ const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
                     x: 10 + Math.random() * 80,
                     y: 0,
                     delay: batchId * (batchInterval / 1000) + Math.random() * 0.5,
-                    duration: 8 + (depth * 4),
+                    duration: 12 - (depth * 6), // Larger balloons (higher depth) move faster
                     size: baseSize,
                     color: BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)],
                     swayAmount: 15 + (depth * 35),
@@ -561,7 +561,7 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
                     x: 10 + Math.random() * 80,
                     y: 0,
                     delay: batchId * (batchInterval / 1000) + Math.random() * 0.5,
-                    duration: 8 + (depth * 4),
+                    duration: 12 - (depth * 6), // Larger balloons (higher depth) move faster
                     size: baseSize,
                     color: BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)],
                     swayAmount: 15 + (depth * 35),
