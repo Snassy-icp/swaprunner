@@ -214,9 +214,8 @@ shared (deployer) actor class SwapRunner() = this {
 
     // Helper function to get next allocation ID
     private func getNextAllocationId() : Nat {
-        let id = nextAllocationId;
         nextAllocationId += 1;
-        id
+        nextAllocationId;
     };
 
     // Helper function to check if a token is whitelisted
@@ -3726,4 +3725,17 @@ shared (deployer) actor class SwapRunner() = this {
         Buffer.toArray(results)
     };
 
+    public shared func delete_all_allocations() : async () {
+
+        nextAllocationId := 0;
+        for ((id, _) in allocations.entries()) {
+            allocations.delete(id);
+        };
+        for ((id, _) in allocation_statuses.entries()) {
+            allocation_statuses.delete(id);
+        };
+        for ((id, _) in allocation_claims.entries()) {
+            allocation_claims.delete(id);
+        };
+    }
 }

@@ -752,7 +752,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                 )}
                             </div>
                         )}
-                        {allocationWithStatus.status === 'Draft' && paymentStatus?.is_paid && (
+                        {allocationWithStatus.status === 'Draft' && (
                             <div className="detail-section">
                                 <h4>Funding Status</h4>
                                 <div className="detail-content">
