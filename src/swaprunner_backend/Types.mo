@@ -397,9 +397,7 @@ module {
     };
 
     public type AllocationStatus = {
-        #Draft;              // Just created
-        #Paid;              // ICP payment tokens transferred to backend
-        #Funded;            // Tokens transferred to backend
+        #Draft;             // Just created
         #Active;            // Ready for claims
         #Depleted;          // All funds claimed
         #Cancelled;         // Cancelled by creator

@@ -56,35 +56,6 @@ module {
         #ok(allocation)
     };
 
-    // Fund an allocation by verifying the transfer of tokens
-    public func fund_allocation(
-        caller: Principal,
-        allocation_id: Text,
-        allocations: HashMap.HashMap<Text, T.Allocation>,
-        allocation_statuses: HashMap.HashMap<Text, T.AllocationStatus>,
-    ) : Result.Result<(), Text> {
-        // Get allocation
-        let allocation = switch (allocations.get(allocation_id)) {
-            case null return #err("Allocation not found");
-            case (?a) a;
-        };
-
-        // Verify caller is creator
-        if (caller != allocation.creator) {
-            return #err("Only the creator can fund this allocation");
-        };
-
-        // Verify current status
-        switch (allocation_statuses.get(allocation_id)) {
-            case (?#Draft) {};  // This is the only valid state
-            case (?status) return #err("Allocation is not in Draft status");
-            case null return #err("Allocation status not found");
-        };
-
-        // Return success - actual token transfer verification will be done in main.mo
-        #ok(())
-    };
-
     // Activate an allocation to allow claims
     public func activate_allocation(
         caller: Principal,
@@ -105,8 +76,8 @@ module {
 
         // Verify current status
         switch (allocation_statuses.get(allocation_id)) {
-            case (?#Funded) {};  // This is the only valid state
-            case (?status) return #err("Allocation must be in Funded status");
+            case (?#Draft) {};  // This is the only valid state
+            case (?status) return #err("Allocation must be in Draft status");
             case null return #err("Allocation status not found");
         };
 
