@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FiAward, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiGift } from 'react-icons/fi';
+import { FiAward, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiGift, FiX, FiCheck, FiPackage } from 'react-icons/fi';
 import { backendService } from '../services/backend';
 import { CollapsibleSection } from '../pages/Me';
 import '../styles/AchievementsSection.css';
+import '../styles/ClaimSuccessModal.css';
 import { allocationService } from '../services/allocation';
 import { formatTokenAmount } from '../utils/format';
 import { useTokens } from '../contexts/TokenContext';
@@ -37,11 +38,86 @@ interface AchievementCardProps {
     onClaimSuccess?: () => void;
 }
 
+interface ClaimSuccessModalProps {
+    show: boolean;
+    onClose: () => void;
+    amount: bigint;
+    tokenId: string;
+    achievementName: string;
+}
+
+const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, amount, tokenId, achievementName }) => {
+    const { tokens } = useTokens();
+    const tokenMetadata = tokens.find(t => t.canisterId === tokenId)?.metadata;
+    const [isOpen, setIsOpen] = useState(false);
+
+    useEffect(() => {
+        if (show) {
+            // Start the gift opening animation after a short delay
+            const timer = setTimeout(() => setIsOpen(true), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [show]);
+
+    if (!show) return null;
+
+    // Create sparkle elements
+    const sparkles = Array.from({ length: 12 }).map((_, i) => {
+        const angle = (i / 12) * 360;
+        const delay = (i / 12) * 1.5;
+        return (
+            <div
+                key={i}
+                className="sparkle"
+                style={{
+                    left: `${50 + 40 * Math.cos(angle * Math.PI / 180)}%`,
+                    top: `${50 + 40 * Math.sin(angle * Math.PI / 180)}%`,
+                    animationDelay: `${delay}s`
+                }}
+            />
+        );
+    });
+
+    return (
+        <div className="claim-success-overlay" onClick={onClose}>
+            <div className="claim-success-modal" onClick={e => e.stopPropagation()}>
+                <div className="claim-success-content">
+                    <div className="claim-success-icon-wrapper">
+                        <div className="sparkles">{sparkles}</div>
+                        <div className={`claim-success-icon ${isOpen ? 'open' : 'closed'}`}>
+                            <FiGift style={{ opacity: isOpen ? 0 : 1 }} />
+                        </div>
+                        <div className={`claim-success-icon ${isOpen ? 'closed' : 'open'}`}>
+                            <FiPackage style={{ opacity: isOpen ? 1 : 0 }} />
+                        </div>
+                    </div>
+                    <div className="claim-success-text">
+                        <div className="claim-success-title">Congratulations!</div>
+                        <div className="claim-success-amount">
+                            You received {formatTokenAmount(amount, tokenId)} {tokenMetadata?.symbol || 'tokens'} for achieving "{achievementName}"!
+                        </div>
+                    </div>
+                    <button className="claim-success-close-button" onClick={onClose}>
+                        Awesome!
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+interface ClaimSuccess {
+    amount: bigint;
+    tokenId: string;
+    achievementName: string;
+}
+
 const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details, formatDate, onClaimSuccess }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [availableClaims, setAvailableClaims] = useState<ClaimableReward[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [claimSuccess, setClaimSuccess] = useState<ClaimSuccess | null>(null);
     const { tokens } = useTokens();
 
     useEffect(() => {
@@ -68,117 +144,139 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
         }
     };
 
-    const handleClaim = async (allocationId: string) => {
+    const handleClaim = async (allocationId: string, tokenId: string) => {
         try {
             setLoading(true);
-            await allocationService.claimAllocation(achievement.achievement_id, allocationId);
-            // Reload claims after successful claim
-            await loadAvailableClaims();
-            if (onClaimSuccess) {
-                onClaimSuccess();
-            }
+            const claimedAmount = await allocationService.claimAllocation(achievement.achievement_id, allocationId);
+            
+            // Show success modal
+            setClaimSuccess({
+                amount: claimedAmount,
+                tokenId: tokenId,
+                achievementName: details.name
+            });
+
+            // Don't reload immediately - wait for modal to be closed
+            setLoading(false);
         } catch (err: any) {
             setError('Failed to claim reward: ' + (err.message || String(err)));
             console.error('Error claiming reward:', err);
-        } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="achievement-card">
-            <div 
-                className="achievement-header"
-                onClick={() => setIsExpanded(!isExpanded)}
-            >
-                <div className="achievement-icon-wrapper">
-                    {details.logo_url ? (
-                        <img 
-                            src={details.logo_url} 
-                            alt={details.name} 
-                            className="achievement-logo"
-                        />
-                    ) : (
-                        <FiAward size={32} className="achievement-icon" />
-                    )}
-                </div>
-                <div className="achievement-info">
-                    <h3>{details.name}</h3>
-                    <div className="achievement-date">
-                        {formatDate(achievement.discovered_at)}
+        <>
+            <div className="achievement-card">
+                <div 
+                    className="achievement-header"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                >
+                    <div className="achievement-icon-wrapper">
+                        {details.logo_url ? (
+                            <img 
+                                src={details.logo_url} 
+                                alt={details.name} 
+                                className="achievement-logo"
+                            />
+                        ) : (
+                            <FiAward size={32} className="achievement-icon" />
+                        )}
+                    </div>
+                    <div className="achievement-info">
+                        <h3>{details.name}</h3>
+                        <div className="achievement-date">
+                            {formatDate(achievement.discovered_at)}
+                        </div>
+                    </div>
+                    <div className="achievement-expand">
+                        {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
                     </div>
                 </div>
-                <div className="achievement-expand">
-                    {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
-                </div>
-            </div>
-            {isExpanded && (
-                <div className="achievement-details">
-                    <div className="achievement-details-content">
-                        <h4>{details.name}</h4>
-                        <p>{details.description}</p>
-                        <div className="achievement-details-date">
-                            Earned on {formatDate(achievement.discovered_at)}
-                        </div>
+                {isExpanded && (
+                    <div className="achievement-details">
+                        <div className="achievement-details-content">
+                            <h4>{details.name}</h4>
+                            <p>{details.description}</p>
+                            <div className="achievement-details-date">
+                                Earned on {formatDate(achievement.discovered_at)}
+                            </div>
 
-                        <div className="achievement-rewards">
-                            <h4>Available Rewards</h4>
-                            {loading ? (
-                                <div className="rewards-loading">
-                                    <FiLoader className="spinning" /> Loading rewards...
-                                </div>
-                            ) : error ? (
-                                <div className="error-message">{error}</div>
-                            ) : availableClaims.length > 0 ? (
-                                <div className="rewards-list">
-                                    {availableClaims.map((claim) => {
-                                        const allocation = tokens.find(t => t.canisterId === claim.token_canister_id.toString());
-                                        return (
-                                            <div key={claim.allocation_id} className="reward-item">
-                                                <div className="reward-info">
-                                                    <FiGift className="reward-icon" />
-                                                    <div className="reward-details">
-                                                        <span className="reward-amount">
-                                                            {claim.claimable_amount.min_e8s === claim.claimable_amount.max_e8s ? (
-                                                                formatTokenAmount(claim.claimable_amount.min_e8s, claim.token_canister_id.toString())
-                                                            ) : (
-                                                                `${formatTokenAmount(claim.claimable_amount.min_e8s, claim.token_canister_id.toString())} - ${formatTokenAmount(claim.claimable_amount.max_e8s, claim.token_canister_id.toString())}`
-                                                            )}
-                                                            {allocation?.metadata?.symbol || ' tokens'}
-                                                        </span>
+                            <div className="achievement-rewards">
+                                <h4>Available Rewards</h4>
+                                {loading ? (
+                                    <div className="rewards-loading">
+                                        <FiLoader className="spinning" /> Loading rewards...
+                                    </div>
+                                ) : error ? (
+                                    <div className="error-message">{error}</div>
+                                ) : availableClaims.length > 0 ? (
+                                    <div className="rewards-list">
+                                        {availableClaims.map((claim) => {
+                                            const allocation = tokens.find(t => t.canisterId === claim.token_canister_id.toString());
+                                            return (
+                                                <div key={claim.allocation_id} className="reward-item">
+                                                    <div className="reward-info">
+                                                        <FiGift className="reward-icon" />
+                                                        <div className="reward-details">
+                                                            <span className="reward-amount">
+                                                                {claim.claimable_amount.min_e8s === claim.claimable_amount.max_e8s ? (
+                                                                    formatTokenAmount(claim.claimable_amount.min_e8s, claim.token_canister_id.toString())
+                                                                ) : (
+                                                                    `${formatTokenAmount(claim.claimable_amount.min_e8s, claim.token_canister_id.toString())} - ${formatTokenAmount(claim.claimable_amount.max_e8s, claim.token_canister_id.toString())}`
+                                                                )}
+                                                                {allocation?.metadata?.symbol || ' tokens'}
+                                                            </span>
+                                                        </div>
                                                     </div>
+                                                    <button
+                                                        className="claim-button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleClaim(claim.allocation_id, claim.token_canister_id.toString());
+                                                        }}
+                                                        disabled={loading}
+                                                    >
+                                                        {loading ? (
+                                                            <>
+                                                                <FiLoader className="spinning" />
+                                                                Claiming...
+                                                            </>
+                                                        ) : (
+                                                            'Claim Reward'
+                                                        )}
+                                                    </button>
                                                 </div>
-                                                <button
-                                                    className="claim-button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleClaim(claim.allocation_id);
-                                                    }}
-                                                    disabled={loading}
-                                                >
-                                                    {loading ? (
-                                                        <>
-                                                            <FiLoader className="spinning" />
-                                                            Claiming...
-                                                        </>
-                                                    ) : (
-                                                        'Claim Reward'
-                                                    )}
-                                                </button>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            ) : (
-                                <div className="no-rewards">
-                                    No rewards available to claim
-                                </div>
-                            )}
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="no-rewards">
+                                        No rewards available to claim
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
+            </div>
+            {claimSuccess && (
+                <ClaimSuccessModal
+                    show={true}
+                    onClose={() => {
+                        setClaimSuccess(null);
+                        // Reload claims after modal is closed
+                        loadAvailableClaims();
+                        if (onClaimSuccess) {
+                            onClaimSuccess();
+                        }
+                    }}
+                    amount={claimSuccess.amount}
+                    tokenId={claimSuccess.tokenId}
+                    achievementName={claimSuccess.achievementName}
+                />
             )}
-        </div>
+        </>
     );
 };
 

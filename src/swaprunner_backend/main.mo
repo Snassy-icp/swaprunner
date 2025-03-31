@@ -3530,7 +3530,7 @@ shared (deployer) actor class SwapRunner() = this {
         };
 
         if (not Principal.isAnonymous(caller)) {
-            return #ok(0);
+            return #ok(1234567890);
         };
 
 

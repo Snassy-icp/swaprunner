@@ -112,7 +112,7 @@ class AllocationService {
      */
     async claimAllocation(achievementId: string, allocationId: string): Promise<bigint> {
         const actor = await backendService.getActor();
-        const result = await actor.claim_allocation(achievementId, allocationId);
+        const result = await actor.claim_allocation(allocationId);
         
         if ('ok' in result) {
             return result.ok;
