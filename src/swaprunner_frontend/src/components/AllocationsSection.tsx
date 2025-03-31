@@ -183,6 +183,39 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
         }
     };
 
+    // Calculate potential number of users
+    const calculatePotentialUsers = (): { min: number; max: number; avg: number } | null => {
+        if (!totalAmount || !perUserMin || !perUserMax || !selectedToken) {
+            return null;
+        }
+
+        try {
+            const total = parseTokenAmount(totalAmount, selectedToken);
+            const min = parseTokenAmount(perUserMin, selectedToken);
+            const max = parseTokenAmount(perUserMax, selectedToken);
+
+            if (min === BigInt(0) || max === BigInt(0) || total === BigInt(0)) {
+                return null;
+            }
+
+            // Calculate platform cut
+            const cutBasisPoints = feeConfig ? BigInt(feeConfig.cut_basis_points) : BigInt(0);
+            const totalAfterCut = total - ((total * cutBasisPoints) / BigInt(10000));
+
+            const maxUsers = Number(totalAfterCut / min);
+            const minUsers = Number(totalAfterCut / max);
+            const avgUsers = Math.floor((minUsers + maxUsers) / 2);
+
+            return {
+                min: Math.floor(minUsers),
+                max: Math.floor(maxUsers),
+                avg: avgUsers
+            };
+        } catch {
+            return null;
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedAchievement || !selectedToken || !totalAmount || !perUserMin || !perUserMax) {
@@ -355,6 +388,27 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                     />
                 </div>
             </div>
+
+            {/* Add potential users info */}
+            {(() => {
+                const potentialUsers = calculatePotentialUsers();
+                if (!potentialUsers) return null;
+
+                if (perUserMin === perUserMax) {
+                    return (
+                        <div className="potential-users-info">
+                            This allocation will be able to support exactly {potentialUsers.min} users
+                        </div>
+                    );
+                }
+
+                return (
+                    <div className="potential-users-info">
+                        This allocation will be able to support between {potentialUsers.min} and {potentialUsers.max} users
+                        (average: {potentialUsers.avg} users)
+                    </div>
+                );
+            })()}
 
             {feeConfig && (
                 <div className="fee-info">
