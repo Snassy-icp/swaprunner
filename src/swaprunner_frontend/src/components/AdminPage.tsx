@@ -6,6 +6,7 @@ import { authService } from '../services/auth';
 import { priceService } from '../services/price';
 import { backendService } from '../services/backend';
 import { accountService, Account } from '../services/account';
+import { AccountParser, ParsedAccount } from '../utils/account';
 import '../styles/AdminPage.css';
 import { FiLoader } from 'react-icons/fi';
 
@@ -182,8 +183,17 @@ export const AdminPage: React.FC = () => {
     try {
       setAccountsLoading(true);
       setAccountsError(null);
-      const principal = Principal.fromText(newPaymentAccount.trim());
-      await accountService.updatePaymentAccount(principal);
+      
+      // Try parsing as long account string first
+      const parsed = AccountParser.parseLongAccountString(newPaymentAccount.trim());
+      if (parsed) {
+        await accountService.updatePaymentAccount(parsed.principal, parsed.subaccount?.resolved ? Array.from(parsed.subaccount.resolved) : undefined);
+      } else {
+        // If not a long account string, try as principal
+        const principal = Principal.fromText(newPaymentAccount.trim());
+        await accountService.updatePaymentAccount(principal);
+      }
+      
       await loadAccounts();
       setNewPaymentAccount('');
     } catch (err) {
@@ -201,8 +211,17 @@ export const AdminPage: React.FC = () => {
     try {
       setAccountsLoading(true);
       setAccountsError(null);
-      const principal = Principal.fromText(newCutAccount.trim());
-      await accountService.updateCutAccount(principal);
+      
+      // Try parsing as long account string first
+      const parsed = AccountParser.parseLongAccountString(newCutAccount.trim());
+      if (parsed) {
+        await accountService.updateCutAccount(parsed.principal, parsed.subaccount?.resolved ? Array.from(parsed.subaccount.resolved) : undefined);
+      } else {
+        // If not a long account string, try as principal
+        const principal = Principal.fromText(newCutAccount.trim());
+        await accountService.updateCutAccount(principal);
+      }
+      
       await loadAccounts();
       setNewCutAccount('');
     } catch (err) {
@@ -269,14 +288,20 @@ export const AdminPage: React.FC = () => {
         <div className="account-forms">
           <form onSubmit={handleUpdatePaymentAccount} className="account-form">
             <h3>Payment Account</h3>
-            {paymentAccount && (
+            {paymentAccount ? (
               <div className="current-account">
-                <strong>Current:</strong> {paymentAccount.owner?.toString()}
-                {paymentAccount.subaccount?.[0] && (
-                  <div className="subaccount">
-                    Subaccount: {paymentAccount.subaccount[0].join(', ')}
-                  </div>
-                )}
+                <strong>Current:</strong> {AccountParser.encodeLongAccount({
+                  principal: paymentAccount.owner,
+                  subaccount: paymentAccount.subaccount?.[0] ? {
+                    type: 'bytes',
+                    value: '',
+                    resolved: Uint8Array.from(paymentAccount.subaccount[0])
+                  } : undefined
+                })}
+              </div>
+            ) : (
+              <div className="current-account">
+                <strong>Current:</strong> Not set
               </div>
             )}
             <div className="form-group">
@@ -285,7 +310,7 @@ export const AdminPage: React.FC = () => {
                 className="principal-input"
                 value={newPaymentAccount}
                 onChange={(e) => setNewPaymentAccount(e.target.value)}
-                placeholder="Enter Principal ID"
+                placeholder="Enter Principal ID or Account String"
                 disabled={accountsLoading}
               />
               <button 
@@ -307,14 +332,20 @@ export const AdminPage: React.FC = () => {
 
           <form onSubmit={handleUpdateCutAccount} className="account-form">
             <h3>Cut Account</h3>
-            {cutAccount && (
+            {cutAccount ? (
               <div className="current-account">
-                <strong>Current:</strong> {cutAccount.owner?.toString()}
-                {cutAccount.subaccount?.[0] && (
-                  <div className="subaccount">
-                    Subaccount: {cutAccount.subaccount[0].join(', ')}
-                  </div>
-                )}
+                <strong>Current:</strong> {AccountParser.encodeLongAccount({
+                  principal: cutAccount.owner,
+                  subaccount: cutAccount.subaccount?.[0] ? {
+                    type: 'bytes',
+                    value: '',
+                    resolved: Uint8Array.from(cutAccount.subaccount[0])
+                  } : undefined
+                })}
+              </div>
+            ) : (
+              <div className="current-account">
+                <strong>Current:</strong> Not set
               </div>
             )}
             <div className="form-group">
@@ -323,7 +354,7 @@ export const AdminPage: React.FC = () => {
                 className="principal-input"
                 value={newCutAccount}
                 onChange={(e) => setNewCutAccount(e.target.value)}
-                placeholder="Enter Principal ID"
+                placeholder="Enter Principal ID or Account String"
                 disabled={accountsLoading}
               />
               <button 

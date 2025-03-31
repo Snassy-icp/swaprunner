@@ -7,12 +7,16 @@ export type { Account };
 class AccountService {
     async getPaymentAccount(): Promise<Account | null> {
         const actor = await backendService.getActor();
-        return await actor.get_payment_account();
+        const result = await actor.get_payment_account();
+        // Handle the optional Account from backend
+        return result[0] ?? null;
     }
 
     async getCutAccount(): Promise<Account | null> {
         const actor = await backendService.getActor();
-        return await actor.get_cut_account();
+        const result = await actor.get_cut_account();
+        // Handle the optional Account from backend
+        return result[0] ?? null;
     }
 
     async updatePaymentAccount(owner: Principal, subaccount?: number[]): Promise<void> {
