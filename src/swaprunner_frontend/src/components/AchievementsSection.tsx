@@ -361,14 +361,11 @@ const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
         <div className="balloon-container">
             {balloons.map((balloon, i) => {
                 // Calculate z-index based on size
-                // Smaller balloons (15-40px) get z-index 995-998
-                // Medium balloons (41-60px) get z-index 999-1002
-                // Large balloons (61-80px) get z-index 1003-1005
-                const zIndex = balloon.size <= 40 ? 
-                    995 + Math.floor((balloon.size - 15) / 8) :
-                    balloon.size <= 60 ?
-                        999 + Math.floor((balloon.size - 41) / 6) :
-                        1003 + Math.floor((balloon.size - 61) / 6);
+                // Smaller balloons (15-47.5px) get z-index 995-999 (behind modal)
+                // Larger balloons (47.5-80px) get z-index 1010-1015 (in front of modal at 1000)
+                const zIndex = balloon.size <= 47.5 ? 
+                    995 + Math.floor((balloon.size - 15) / 6.5) :
+                    1010 + Math.floor((balloon.size - 47.5) / 6.5);
                 
                 const shadowIntensity = 0.1 + (balloon.size / 160); // 0.1-0.6 range
                 
