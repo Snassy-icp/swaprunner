@@ -104,6 +104,20 @@ const GLITTER_COLORS = [
 
 const GLITTER_COUNT = 30; // Number of glitter particles
 
+// Add after GLITTER_COUNT constant
+const BALLOON_PROBABILITY = 1; //0.5; // 50% chance of balloons appearing
+const BALLOON_COUNT = 12; // Number of balloons
+const BALLOON_COLORS = [
+    '#ff6b6b', // Red
+    '#4ecdc4', // Teal
+    '#45b7d1', // Light Blue
+    '#96ceb4', // Mint
+    '#ffeead', // Light Yellow
+    '#ff9999', // Pink
+    '#87ceeb', // Sky Blue
+    '#d4a5a5', // Mauve
+];
+
 interface ConfettiProps {
     count?: number;
 }
@@ -222,6 +236,50 @@ const Glitter: React.FC<GlitterProps> = ({ count = GLITTER_COUNT }) => {
     );
 };
 
+interface BalloonProps {
+    count?: number;
+}
+
+const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
+    const [balloons] = useState(() => 
+        Array.from({ length: count }, () => ({
+            x: 10 + Math.random() * 80, // Keep balloons within 10-90% of screen width
+            delay: Math.random() * 2,
+            duration: 4 + Math.random() * 3, // 4-7 seconds to float up
+            size: 30 + Math.random() * 20, // 30-50px balloons
+            color: BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)],
+            swayAmount: 30 + Math.random() * 40, // 30-70px sway
+        }))
+    );
+
+    return (
+        <div className="balloon-container">
+            {balloons.map((balloon, i) => (
+                <div
+                    key={i}
+                    className="balloon"
+                    style={{
+                        left: `${balloon.x}%`,
+                        width: `${balloon.size}px`,
+                        height: `${balloon.size * 1.2}px`,
+                        backgroundColor: balloon.color,
+                        animation: `float ${balloon.duration}s ${balloon.delay}s ease-out forwards, sway ${balloon.duration * 0.8}s ${balloon.delay}s ease-in-out infinite`,
+                        '--sway-amount': `${balloon.swayAmount}px`
+                    } as React.CSSProperties}
+                >
+                    <div 
+                        className="balloon-string"
+                        style={{
+                            height: `${balloon.size * 0.8}px`,
+                            animation: `sway ${balloon.duration * 0.8}s ${balloon.delay}s ease-in-out infinite`
+                        }}
+                    />
+                </div>
+            ))}
+        </div>
+    );
+};
+
 const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, amount, tokenId, achievementName }) => {
     const { tokens } = useTokens();
     const tokenMetadata = tokens.find(t => t.canisterId === tokenId)?.metadata;
@@ -229,8 +287,8 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
     const [celebrationWord] = useState(() => 
         CELEBRATION_WORDS[Math.floor(Math.random() * CELEBRATION_WORDS.length)]
     );
-    // Add state for glitter
     const [showGlitter] = useState(() => Math.random() < GLITTER_PROBABILITY);
+    const [showBalloons] = useState(() => Math.random() < BALLOON_PROBABILITY);
 
     useEffect(() => {
         if (show) {
@@ -262,6 +320,7 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
         <div className="claim-success-overlay" onClick={onClose}>
             <Confetti />
             {showGlitter && <Glitter />}
+            {showBalloons && <Balloon />}
             <div className="claim-success-modal" onClick={e => e.stopPropagation()}>
                 <div className="claim-success-content">
                     <div className="claim-success-icon-wrapper">
