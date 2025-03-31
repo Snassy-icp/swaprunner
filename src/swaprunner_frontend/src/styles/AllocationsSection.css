@@ -1500,4 +1500,17 @@
     color: #8F96A1;
     line-height: 1.4;
     font-size: 12px;
+}
+
+.allocation-details .token-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.allocation-details .token-info .token-logo {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
 } 

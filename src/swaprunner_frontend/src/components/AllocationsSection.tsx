@@ -9,6 +9,7 @@ import '../styles/AllocationsSection.css';
 import { useTokens } from '../contexts/TokenContext';
 import { ICPSwapExecutionService } from '../services/icpswap_execution';
 import { Principal } from '@dfinity/principal';
+import { tokenService } from '../services/token';
 
 interface Achievement {
     id: string;
@@ -437,6 +438,28 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
 const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, formatDate }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const { allocation, status } = allocationWithStatus;
+    const { tokens } = useTokens();
+    const [tokenLogo, setTokenLogo] = useState<string | null>(null);
+
+    // Get token metadata
+    const tokenMetadata = tokens.find(t => t.canisterId === allocation.token.canister_id.toString())?.metadata;
+
+    // Load token logo when expanded
+    useEffect(() => {
+        if (isExpanded && tokenMetadata?.hasLogo && !tokenLogo) {
+            const loadLogo = async () => {
+                try {
+                    const logo = await tokenService.getTokenLogo(allocation.token.canister_id.toString());
+                    if (logo) {
+                        setTokenLogo(logo);
+                    }
+                } catch (err) {
+                    console.error('Error loading token logo:', err);
+                }
+            };
+            loadLogo();
+        }
+    }, [isExpanded, tokenMetadata, allocation.token.canister_id, tokenLogo]);
 
     const getStatusColor = (status: AllocationStatus): string => {
         switch (status) {
@@ -488,21 +511,34 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                         </div>
                         <div className="detail-row">
                             <span className="detail-label">Token:</span>
-                            <span className="detail-value">{allocation.token.canister_id.toString()}</span>
+                            <span className="detail-value token-info">
+                                {(tokenMetadata?.symbol === 'ICP' || tokenLogo) && (
+                                    <img 
+                                        src={tokenMetadata?.symbol === 'ICP' ? '/icp_symbol.svg' : tokenLogo || '/generic_token.svg'}
+                                        alt={tokenMetadata?.symbol || 'token'} 
+                                        className="token-logo"
+                                        onError={(e) => {
+                                            const img = e.target as HTMLImageElement;
+                                            img.src = tokenMetadata?.symbol === 'ICP' ? '/icp_symbol.svg' : '/generic_token.svg';
+                                        }}
+                                    />
+                                )}
+                                <span>{tokenMetadata?.symbol || 'Unknown Token'}</span>
+                            </span>
                         </div>
                         <div className="detail-row">
                             <span className="detail-label">Total Amount:</span>
                             <span className="detail-value">
-                                {formatTokenAmount(allocation.token.total_amount_e8s, allocation.token.canister_id.toString())}
+                                {formatTokenAmount(allocation.token.total_amount_e8s, allocation.token.canister_id.toString())} {tokenMetadata?.symbol}
                             </span>
                         </div>
                         <div className="detail-row">
                             <span className="detail-label">Per User:</span>
                             <span className="detail-value">
                                 {allocation.token.per_user.min_e8s === allocation.token.per_user.max_e8s ? (
-                                    formatTokenAmount(allocation.token.per_user.min_e8s, allocation.token.canister_id.toString())
+                                    `${formatTokenAmount(allocation.token.per_user.min_e8s, allocation.token.canister_id.toString())} ${tokenMetadata?.symbol}`
                                 ) : (
-                                    `${formatTokenAmount(allocation.token.per_user.min_e8s, allocation.token.canister_id.toString())} - ${formatTokenAmount(allocation.token.per_user.max_e8s, allocation.token.canister_id.toString())}`
+                                    `${formatTokenAmount(allocation.token.per_user.min_e8s, allocation.token.canister_id.toString())} - ${formatTokenAmount(allocation.token.per_user.max_e8s, allocation.token.canister_id.toString())} ${tokenMetadata?.symbol}`
                                 )}
                             </span>
                         </div>
