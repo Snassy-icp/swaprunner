@@ -11,7 +11,7 @@ import { ICPSwapExecutionService } from '../services/icpswap_execution';
 import { Principal } from '@dfinity/principal';
 import { tokenService } from '../services/token';
 import { backendService } from '../services/backend';
-import { useIsAdmin } from '../contexts/AdminContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Achievement {
     id: string;
@@ -447,7 +447,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null);
     const [fundingBalance, setFundingBalance] = useState<bigint>(BigInt(0));
     const [isCancelling, setIsCancelling] = useState(false);
-    const [isAdmin] = useIsAdmin();
+    const { isAdmin } = useAuth();
     const { tokens } = useTokens();
 
     // Get token metadata
