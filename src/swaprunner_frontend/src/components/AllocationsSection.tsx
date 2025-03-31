@@ -392,14 +392,14 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                 if (perUserMin === perUserMax) {
                     return (
                         <div className="potential-users-info">
-                            This allocation will be able to support exactly {potentialUsers.min} users
+                            This allocation will be able to support exactly {potentialUsers.min} users (after platform cut)
                         </div>
                     );
                 }
 
                 return (
                     <div className="potential-users-info">
-                        This allocation will be able to support between {potentialUsers.min} and {potentialUsers.max} users
+                        This allocation will be able to support between {potentialUsers.min} and {potentialUsers.max} users (after platform cut)
                         (average: {potentialUsers.avg} users)
                     </div>
                 );
