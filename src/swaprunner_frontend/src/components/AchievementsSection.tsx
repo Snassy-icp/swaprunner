@@ -75,18 +75,165 @@ const CELEBRATION_WORDS = [
     "Remarkable"
 ];
 
+// Add these color constants after the CELEBRATION_WORDS array
+const CONFETTI_COLORS = [
+    '#ffd700', // Gold
+    '#ff3e41', // Red
+    '#3498db', // Blue
+    '#2ecc71', // Green
+    '#e67e22', // Orange
+    '#9b59b6', // Purple
+    '#f1c40f', // Yellow
+    '#e056fd', // Pink
+    '#686de0', // Indigo
+    '#badc58', // Lime
+];
+
+const CONFETTI_SHAPES = ['square', 'circle', 'triangle'] as const;
+
+// Add this constant after the CONFETTI_SHAPES array
+const GLITTER_PROBABILITY = 1; //0.5; // 50% chance of glitter appearing
+
+// Add these glitter-related constants
+const GLITTER_COLORS = [
+    'rgba(255, 215, 0, 0.8)',  // Gold
+    'rgba(255, 255, 255, 0.8)', // White
+    'rgba(255, 192, 203, 0.8)', // Pink
+    'rgba(135, 206, 235, 0.8)', // Sky Blue
+];
+
+const GLITTER_COUNT = 30; // Number of glitter particles
+
+interface ConfettiProps {
+    count?: number;
+}
+
+const Confetti: React.FC<ConfettiProps> = ({ count = 150 }) => {
+    const [confetti, setConfetti] = useState<Array<{
+        id: number;
+        color: string;
+        shape: typeof CONFETTI_SHAPES[number];
+        x: number;
+        fallDuration: number;
+        shakeDistance: number;
+    }>>([]);
+
+    useEffect(() => {
+        // Create confetti pieces
+        const pieces = Array.from({ length: count }, (_, i) => ({
+            id: i,
+            color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+            shape: CONFETTI_SHAPES[Math.floor(Math.random() * CONFETTI_SHAPES.length)],
+            x: Math.random() * 100, // Random starting X position (0-100%)
+            fallDuration: 2 + Math.random() * 2, // Random fall duration (2-4s)
+            shakeDistance: 15 + Math.random() * 30, // Random shake distance (15-45px)
+        }));
+        setConfetti(pieces);
+
+        // Clean up after longest possible animation
+        const timer = setTimeout(() => {
+            setConfetti([]);
+        }, 4000);
+
+        return () => clearTimeout(timer);
+    }, [count]);
+
+    return (
+        <div className="confetti-container">
+            {confetti.map((piece) => {
+                let shape;
+                switch (piece.shape) {
+                    case 'circle':
+                        shape = <div style={{
+                            width: '100%',
+                            height: '100%',
+                            borderRadius: '50%',
+                            background: piece.color
+                        }} />;
+                        break;
+                    case 'triangle':
+                        shape = <div style={{
+                            width: 0,
+                            height: 0,
+                            borderLeft: '5px solid transparent',
+                            borderRight: '5px solid transparent',
+                            borderBottom: `10px solid ${piece.color}`
+                        }} />;
+                        break;
+                    default: // square
+                        shape = <div style={{
+                            width: '100%',
+                            height: '100%',
+                            background: piece.color
+                        }} />;
+                }
+
+                return (
+                    <div
+                        key={piece.id}
+                        className="confetti"
+                        style={{
+                            left: `${piece.x}%`,
+                            '--fall-duration': `${piece.fallDuration}s`,
+                            '--shake-distance': `${piece.shakeDistance}px`
+                        } as React.CSSProperties}
+                    >
+                        {shape}
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+interface GlitterProps {
+    count?: number;
+}
+
+const Glitter: React.FC<GlitterProps> = ({ count = GLITTER_COUNT }) => {
+    const [particles] = useState(() => 
+        Array.from({ length: count }, () => ({
+            x: Math.random() * 100,
+            y: Math.random() * 100,
+            size: 2 + Math.random() * 4,
+            color: GLITTER_COLORS[Math.floor(Math.random() * GLITTER_COLORS.length)],
+            duration: 1 + Math.random() * 2,
+            delay: Math.random() * 2
+        }))
+    );
+
+    return (
+        <div className="glitter-container">
+            {particles.map((particle, i) => (
+                <div
+                    key={i}
+                    className="glitter-particle"
+                    style={{
+                        left: `${particle.x}%`,
+                        top: `${particle.y}%`,
+                        width: `${particle.size}px`,
+                        height: `${particle.size}px`,
+                        backgroundColor: particle.color,
+                        animation: `glitter ${particle.duration}s ${particle.delay}s infinite`
+                    }}
+                />
+            ))}
+        </div>
+    );
+};
+
 const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, amount, tokenId, achievementName }) => {
     const { tokens } = useTokens();
     const tokenMetadata = tokens.find(t => t.canisterId === tokenId)?.metadata;
     const [isOpen, setIsOpen] = useState(false);
-    // Add state for the celebration word
     const [celebrationWord] = useState(() => 
         CELEBRATION_WORDS[Math.floor(Math.random() * CELEBRATION_WORDS.length)]
     );
+    // Add state for glitter
+    const [showGlitter] = useState(() => Math.random() < GLITTER_PROBABILITY);
 
     useEffect(() => {
         if (show) {
-            // Start the gift opening animation after a short delay
             const timer = setTimeout(() => setIsOpen(true), 1000);
             return () => clearTimeout(timer);
         }
@@ -113,6 +260,8 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
 
     return (
         <div className="claim-success-overlay" onClick={onClose}>
+            <Confetti />
+            {showGlitter && <Glitter />}
             <div className="claim-success-modal" onClick={e => e.stopPropagation()}>
                 <div className="claim-success-content">
                     <div className="claim-success-icon-wrapper">
