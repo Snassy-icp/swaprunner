@@ -446,40 +446,40 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     // Get token metadata
     const tokenMetadata = tokens.find(t => t.canisterId === allocation.token.canister_id.toString())?.metadata;
 
-    // Load achievement details and token logo when expanded
+    // Load achievement details and token logo
     useEffect(() => {
-        if (isExpanded) {
-            // Load achievement details
-            const loadAchievementDetails = async () => {
+        // Load achievement details
+        const loadAchievementDetails = async () => {
+            try {
+                const actor = await backendService.getActor();
+                const result = await actor.get_achievement_details(allocation.achievement_id);
+                if ('ok' in result) {
+                    setAchievementDetails(result.ok);
+                }
+            } catch (err) {
+                console.error('Error loading achievement details:', err);
+            }
+        };
+
+        // Load token logo if available and expanded
+        const loadLogo = async () => {
+            if (isExpanded && tokenMetadata?.hasLogo && !tokenLogo) {
                 try {
-                    const actor = await backendService.getActor();
-                    const result = await actor.get_achievement_details(allocation.achievement_id);
-                    if ('ok' in result) {
-                        setAchievementDetails(result.ok);
+                    const logo = await tokenService.getTokenLogo(allocation.token.canister_id.toString());
+                    if (logo) {
+                        setTokenLogo(logo);
                     }
                 } catch (err) {
-                    console.error('Error loading achievement details:', err);
+                    console.error('Error loading token logo:', err);
                 }
-            };
+            }
+        };
 
-            // Load token logo if available
-            const loadLogo = async () => {
-                if (tokenMetadata?.hasLogo && !tokenLogo) {
-                    try {
-                        const logo = await tokenService.getTokenLogo(allocation.token.canister_id.toString());
-                        if (logo) {
-                            setTokenLogo(logo);
-                        }
-                    } catch (err) {
-                        console.error('Error loading token logo:', err);
-                    }
-                }
-            };
-
-            loadAchievementDetails();
+        loadAchievementDetails();
+        if (isExpanded) {
             loadLogo();
         }
-    }, [isExpanded, tokenMetadata, allocation.token.canister_id, tokenLogo, allocation.achievement_id]);
+    }, [allocation.achievement_id, isExpanded, tokenMetadata, allocation.token.canister_id, tokenLogo]);
 
     const getStatusColor = (status: AllocationStatus): string => {
         switch (status) {
