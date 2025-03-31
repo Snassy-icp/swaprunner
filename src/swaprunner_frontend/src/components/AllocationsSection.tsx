@@ -453,11 +453,45 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     const { tokens } = useTokens();
     const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
     const [allocationToCancel, setAllocationToCancel] = useState<string | null>(null);
+    const [showActivateConfirmation, setShowActivateConfirmation] = useState(false);
+    const [feeConfig, setFeeConfig] = useState<AllocationFeeConfig | null>(null);
 
     // Get token metadata
     const tokenMetadata = tokens.find(t => t.canisterId === allocationWithStatus.allocation.token.canister_id.toString())?.metadata;
 
-    // Load achievement details, token logo, and payment status
+    // Calculate platform cut
+    const calculatePlatformCut = (): bigint => {
+        if (!feeConfig || !allocationWithStatus.allocation.token.total_amount_e8s) return BigInt(0);
+        const cutBasisPoints = BigInt(feeConfig.cut_basis_points);
+        return (allocationWithStatus.allocation.token.total_amount_e8s * cutBasisPoints) / BigInt(10000);
+    };
+
+    // Calculate potential number of users
+    const calculatePotentialUsers = (): { min: number; max: number; avg: number } | null => {
+        const total = allocationWithStatus.allocation.token.total_amount_e8s;
+        const min = allocationWithStatus.allocation.token.per_user.min_e8s;
+        const max = allocationWithStatus.allocation.token.per_user.max_e8s;
+
+        if (min === BigInt(0) || max === BigInt(0) || total === BigInt(0)) {
+            return null;
+        }
+
+        // Calculate platform cut
+        const cutBasisPoints = feeConfig ? BigInt(feeConfig.cut_basis_points) : BigInt(0);
+        const totalAfterCut = total - ((total * cutBasisPoints) / BigInt(10000));
+
+        const maxUsers = Number(totalAfterCut / min);
+        const minUsers = Number(totalAfterCut / max);
+        const avgUsers = Math.floor((minUsers + maxUsers) / 2);
+
+        return {
+            min: Math.floor(minUsers),
+            max: Math.floor(maxUsers),
+            avg: avgUsers
+        };
+    };
+
+    // Load achievement details, token logo, payment status, and fee config
     useEffect(() => {
         // Load achievement details
         const loadAchievementDetails = async () => {
@@ -498,6 +532,16 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
             }
         };
 
+        // Load fee config
+        const loadFeeConfig = async () => {
+            try {
+                const config = await allocationService.getFeeConfig();
+                setFeeConfig(config);
+            } catch (err) {
+                console.error('Error loading fee config:', err);
+            }
+        };
+
         // Load funding balance
         const loadFundingBalance = async () => {
             if (expanded && allocationWithStatus.status === 'Draft' && paymentStatus?.is_paid) {
@@ -511,6 +555,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
         };
 
         loadAchievementDetails();
+        loadFeeConfig();
         if (expanded) {
             loadLogo();
             loadPaymentStatus();
@@ -773,7 +818,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                     <div className="detail-actions">
                                         <button
                                             className="action-button primary"
-                                            onClick={handleActivate}
+                                            onClick={() => setShowActivateConfirmation(true)}
                                             disabled={!paymentStatus?.is_paid || fundingBalance < allocationWithStatus.allocation.token.total_amount_e8s || isActivating}
                                         >
                                             {isActivating ? (
@@ -867,6 +912,24 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                 message="Are you sure you want to cancel this allocation? Your ICP payment fee and any funded tokens will be returned to your wallet. This action cannot be undone."
                 confirmText="Cancel Allocation"
                 isDanger={true}
+            />
+            <ConfirmationModal
+                isOpen={showActivateConfirmation}
+                onClose={() => setShowActivateConfirmation(false)}
+                onConfirm={handleActivate}
+                title="Activate Allocation"
+                message={`Are you sure you want to activate this allocation? This action cannot be undone.
+
+Payment Fee: ${formatTokenAmount(paymentStatus?.required_fee_e8s || BigInt(0), 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP
+Total Fund Amount: ${formatTokenAmount(allocationWithStatus.allocation.token.total_amount_e8s, allocationWithStatus.allocation.token.canister_id)} ${tokenMetadata?.symbol}
+Platform Cut (${Number(feeConfig?.cut_basis_points || 0) / 100}%): ${formatTokenAmount(calculatePlatformCut(), allocationWithStatus.allocation.token.canister_id)} ${tokenMetadata?.symbol}
+${calculatePotentialUsers() ? `User Capacity: ${calculatePotentialUsers()?.min === calculatePotentialUsers()?.max ? 
+    `${calculatePotentialUsers()?.min} users` : 
+    `${calculatePotentialUsers()?.min} to ${calculatePotentialUsers()?.max} users (avg: ${calculatePotentialUsers()?.avg})`}` : ''}
+
+Warning: Once activated, the payment fee will be drawn and funds will be transferred.`}
+                confirmText="Activate"
+                isDanger={false}
             />
         </div>
     );
