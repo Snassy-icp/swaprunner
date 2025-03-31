@@ -1702,4 +1702,21 @@
 .detail-row.payment-complete .check-icon {
     color: #28a745;
     font-size: 16px;
+}
+
+.detail-info {
+    margin-top: 12px;
+    color: #8F96A1;
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.detail-info div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.detail-info div:not(:last-child) {
+    margin-bottom: 4px;
 } 

@@ -564,6 +564,23 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
         return String(status);
     };
 
+    const handleActivate = async () => {
+        if (!paymentStatus || !allocation.token.total_amount_e8s || !fundingBalance || fundingBalance < allocation.token.total_amount_e8s) {
+            console.error('Invalid activation conditions');
+            return;
+        }
+
+        try {
+            await allocationService.activateAllocation(allocation.id);
+            // Reload allocation status after successful activation
+            const newStatus = await allocationService.getPaymentStatus(allocation.id);
+            setPaymentStatus(newStatus);
+        } catch (err) {
+            console.error('Error activating allocation:', err);
+            // You might want to show an error message to the user here
+        }
+    };
+
     return (
         <div className="allocation-card">
             <div 
@@ -705,6 +722,34 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                 </div>
                             </div>
                         )}
+                        <div className="detail-section">
+                            <h4>Status</h4>
+                            <div className="detail-content">
+                                <div className="detail-row">
+                                    <span className="detail-label">Current Status:</span>
+                                    <span className="detail-value" style={{ color: getStatusColor(status) }}>
+                                        {getStatusString(status)}
+                                    </span>
+                                </div>
+                                {status === 'Draft' && (
+                                    <div className="detail-actions">
+                                        <button
+                                            className="action-button primary"
+                                            onClick={handleActivate}
+                                            disabled={!paymentStatus?.is_paid || fundingBalance < allocation.token.total_amount_e8s}
+                                        >
+                                            Activate Allocation
+                                        </button>
+                                        {(!paymentStatus?.is_paid || fundingBalance < allocation.token.total_amount_e8s) && (
+                                            <div className="detail-info">
+                                                {!paymentStatus?.is_paid && <div>• Payment required before activation</div>}
+                                                {fundingBalance < allocation.token.total_amount_e8s && <div>• Full funding required before activation</div>}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                         <div className="detail-row">
                             <span className="detail-label">Achievement:</span>
                             <span className="detail-value">{achievementDetails?.name || 'Loading...'}</span>
