@@ -279,15 +279,13 @@
 }
 
 .balloon {
-    position: fixed;
+    position: absolute;
     border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
     transform-origin: center bottom;
     box-shadow: inset -5px -5px 15px rgba(0,0,0,0.2);
-    will-change: transform, opacity;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
     pointer-events: all;
     backface-visibility: hidden;
-    transform-style: preserve-3d;
 }
 
 .balloon:hover {
@@ -320,7 +318,7 @@
 
 @keyframes float {
     0% {
-        transform: translate3d(0, 100vh, var(--depth-offset, 0)) rotate(0deg);
+        transform: translate3d(0, 0, var(--depth-offset, 0)) rotate(0deg);
         opacity: var(--balloon-opacity, 1);
     }
     100% {

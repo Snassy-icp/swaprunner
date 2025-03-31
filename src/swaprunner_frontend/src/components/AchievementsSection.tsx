@@ -322,9 +322,9 @@ const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
                 
                 return {
                     x: 10 + Math.random() * 80,
-                    y: 0,
+                    y: 0, // This will be used in the transform
                     delay: batchId * (batchInterval / 1000) + Math.random() * 0.5, // Delay based on batch
-                    duration: 8 + Math.random() * 4,
+                    duration: 8 + (depth * 4), // Slower for background balloons
                     size: baseSize,
                     color: BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)],
                     swayAmount: 15 + (depth * 35),
@@ -375,13 +375,13 @@ const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
                         key={i}
                         className={`balloon ${balloon.isPopped ? 'popped' : ''}`}
                         style={{
+                            position: 'absolute',
                             left: `${balloon.x}%`,
-                            bottom: '0',
+                            bottom: '-100px',
                             width: `${balloon.size}px`,
                             height: `${balloon.size * 1.2}px`,
                             backgroundColor: balloon.color,
-                            animation: `float ${balloon.duration}s ${balloon.delay}s ease-out forwards, 
-                                      sway ${balloon.duration * 0.5}s ${balloon.delay}s ease-in-out infinite`,
+                            animation: `float ${balloon.duration}s ${balloon.delay}s ease-out forwards`,
                             '--sway-amount': `${balloon.swayAmount}px`,
                             '--depth-offset': `${balloon.depthOffset}px`,
                             '--balloon-opacity': opacity,
