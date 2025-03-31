@@ -282,6 +282,16 @@
     opacity: 0.9;
     box-shadow: inset -5px -5px 15px rgba(0,0,0,0.2);
     will-change: transform;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: all;
+}
+
+.balloon:hover {
+    transform: scale(1.1);
+}
+
+.balloon.popped {
+    animation: pop 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
 }
 
 .balloon-string {
@@ -293,6 +303,33 @@
     bottom: -100%;
     transform-origin: top center;
     pointer-events: none;
+    transition: opacity 0.15s;
+}
+
+.balloon-particle {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1004;
+}
+
+@keyframes pop {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    25% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(0.8);
+        opacity: 0.6;
+    }
+    100% {
+        transform: scale(0);
+        opacity: 0;
+    }
 }
 
 @keyframes float {

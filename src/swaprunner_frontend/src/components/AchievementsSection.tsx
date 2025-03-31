@@ -236,45 +236,138 @@ const Glitter: React.FC<GlitterProps> = ({ count = GLITTER_COUNT }) => {
     );
 };
 
+// Add this interface before the Balloon component
+interface BalloonState {
+    x: number;
+    delay: number;
+    duration: number;
+    size: number;
+    color: string;
+    swayAmount: number;
+    isPopped: boolean;
+    popScale: number;
+}
+
 interface BalloonProps {
     count?: number;
 }
 
 const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
-    const [balloons] = useState(() => 
+    const [balloons, setBalloons] = useState<BalloonState[]>(() => 
         Array.from({ length: count }, () => ({
-            x: 10 + Math.random() * 80, // Keep balloons within 10-90% of screen width
-            delay: Math.random() * 1, // Reduced delay for quicker start
-            duration: 6 + Math.random() * 2, // 6-8 seconds to float up
-            size: 30 + Math.random() * 20, // 30-50px balloons
+            x: 10 + Math.random() * 80,
+            delay: Math.random() * 1,
+            duration: 6 + Math.random() * 2,
+            size: 30 + Math.random() * 20,
             color: BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)],
-            swayAmount: 30 + Math.random() * 40, // 30-70px sway
+            swayAmount: 30 + Math.random() * 40,
+            isPopped: false,
+            popScale: 1
         }))
     );
 
+    const popBalloon = (index: number) => {
+        console.log('Popping balloon:', index);
+        if (balloons[index].isPopped) return;
+        console.log('Popping balloon found:', index);
+
+        // Play pop sound
+        //const audio = new Audio('/pop.mp3');
+        //audio.volume = 0.4;
+        //audio.play().catch(() => {}); // Ignore errors if sound can't play
+
+        // Create mini confetti burst
+        const confettiCount = 10;
+        const confettiColors = [balloons[index].color, '#ffffff'];
+        
+        // Update balloon state
+        setBalloons(prev => prev.map((balloon, i) => 
+            i === index ? { ...balloon, isPopped: true } : balloon
+        ));
+
+        // Create particles at balloon position
+        const balloon = document.querySelector(`[data-balloon-index="${index}"]`);
+        if (balloon) {
+            const rect = balloon.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            // Create particle elements
+            for (let i = 0; i < 12; i++) {
+                const particle = document.createElement('div');
+                const angle = (i / 12) * Math.PI * 2;
+                const velocity = 2 + Math.random() * 2;
+                const size = 4 + Math.random() * 4;
+
+                particle.className = 'balloon-particle';
+                particle.style.backgroundColor = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${centerX}px`;
+                particle.style.top = `${centerY}px`;
+                particle.style.transform = `translate(-50%, -50%)`;
+
+                document.body.appendChild(particle);
+
+                // Animate particle
+                const animation = particle.animate([
+                    { 
+                        transform: 'translate(-50%, -50%) scale(1)',
+                        opacity: 1 
+                    },
+                    { 
+                        transform: `translate(
+                            calc(-50% + ${Math.cos(angle) * 100 * velocity}px), 
+                            calc(-50% + ${Math.sin(angle) * 100 * velocity}px)
+                        ) scale(0)`,
+                        opacity: 0 
+                    }
+                ], {
+                    duration: 500,
+                    easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                });
+
+                // Clean up particle after animation
+                animation.onfinish = () => particle.remove();
+            }
+        }
+    };
+
     return (
-        <div className="balloon-container">
+        <div className="balloon-container" onClick={e => e.stopPropagation()}>
             {balloons.map((balloon, i) => {
-                const stringLength = balloon.size * 1.5; // Increased string length
+                const stringLength = balloon.size * 1.5;
                 return (
                     <div
                         key={i}
-                        className="balloon"
+                        data-balloon-index={i}
+                        className={`balloon ${balloon.isPopped ? 'popped' : ''}`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            popBalloon(i);
+                        }}
                         style={{
                             left: `${balloon.x}%`,
                             width: `${balloon.size}px`,
                             height: `${balloon.size * 1.2}px`,
                             backgroundColor: balloon.color,
-                            animation: `float ${balloon.duration}s ${balloon.delay}s ease-out forwards, sway ${balloon.duration * 0.5}s ${balloon.delay}s ease-in-out infinite`,
-                            '--sway-amount': `${balloon.swayAmount}px`
+                            animation: balloon.isPopped ? 'none' : 
+                                `float ${balloon.duration}s ${balloon.delay}s ease-out forwards, 
+                                 sway ${balloon.duration * 0.5}s ${balloon.delay}s ease-in-out infinite`,
+                            '--sway-amount': `${balloon.swayAmount}px`,
+                            cursor: balloon.isPopped ? 'default' : 'pointer',
+                            pointerEvents: 'auto'
                         } as React.CSSProperties}
                     >
-                        <div 
-                            className="balloon-string"
-                            style={{
-                                height: `${stringLength}px`
-                            }}
-                        />
+                        {!balloon.isPopped && (
+                            <div 
+                                className="balloon-string"
+                                style={{
+                                    height: `${stringLength}px`
+                                }}
+                                onClick={e => e.stopPropagation()}
+                            />
+                        )}
                     </div>
                 );
             })}
@@ -319,7 +412,7 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
     });
 
     return (
-        <div className="claim-success-overlay" onClick={onClose}>
+        <div className="claim-success-overlay" onClick={(e) => e.stopPropagation()}>
             <Confetti />
             {showGlitter && <Glitter />}
             {showBalloons && <Balloon />}
