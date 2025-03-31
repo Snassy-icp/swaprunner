@@ -449,6 +449,14 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
         }
     };
 
+    // Convert status variant to string
+    const getStatusString = (status: any): string => {
+        if (typeof status === 'object' && status !== null) {
+            return Object.keys(status)[0];
+        }
+        return String(status);
+    };
+
     return (
         <div className="allocation-card">
             <div 
@@ -465,7 +473,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                     </div>
                 </div>
                 <div className="allocation-status" style={{ color: getStatusColor(status) }}>
-                    {status}
+                    {getStatusString(status)}
                 </div>
                 <div className="allocation-expand">
                     {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
@@ -480,21 +488,21 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                         </div>
                         <div className="detail-row">
                             <span className="detail-label">Token:</span>
-                            <span className="detail-value">{allocation.token.canister_id}</span>
+                            <span className="detail-value">{allocation.token.canister_id.toString()}</span>
                         </div>
                         <div className="detail-row">
                             <span className="detail-label">Total Amount:</span>
                             <span className="detail-value">
-                                {formatTokenAmount(allocation.token.total_amount_e8s, allocation.token.canister_id)}
+                                {formatTokenAmount(allocation.token.total_amount_e8s, allocation.token.canister_id.toString())}
                             </span>
                         </div>
                         <div className="detail-row">
                             <span className="detail-label">Per User:</span>
                             <span className="detail-value">
                                 {allocation.token.per_user.min_e8s === allocation.token.per_user.max_e8s ? (
-                                    formatTokenAmount(allocation.token.per_user.min_e8s, allocation.token.canister_id)
+                                    formatTokenAmount(allocation.token.per_user.min_e8s, allocation.token.canister_id.toString())
                                 ) : (
-                                    `${formatTokenAmount(allocation.token.per_user.min_e8s, allocation.token.canister_id)} - ${formatTokenAmount(allocation.token.per_user.max_e8s, allocation.token.canister_id)}`
+                                    `${formatTokenAmount(allocation.token.per_user.min_e8s, allocation.token.canister_id.toString())} - ${formatTokenAmount(allocation.token.per_user.max_e8s, allocation.token.canister_id.toString())}`
                                 )}
                             </span>
                         </div>
