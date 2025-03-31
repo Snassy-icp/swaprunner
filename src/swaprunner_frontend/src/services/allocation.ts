@@ -127,6 +127,7 @@ class AllocationService {
     async getAvailableClaims(): Promise<{
         achievement_id: string;
         allocation_id: string;
+        token_canister_id: string;
         claimable_amount: {
             min_e8s: bigint;
             max_e8s: bigint;

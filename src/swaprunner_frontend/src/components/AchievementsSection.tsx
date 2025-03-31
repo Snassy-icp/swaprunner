@@ -23,6 +23,7 @@ interface UserAchievement {
 interface ClaimableReward {
     achievement_id: string;
     allocation_id: string;
+    token_canister_id: string;
     claimable_amount: {
         min_e8s: bigint;
         max_e8s: bigint;
@@ -131,7 +132,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                             ) : availableClaims.length > 0 ? (
                                 <div className="rewards-list">
                                     {availableClaims.map((claim) => {
-                                        const allocation = tokens.find(t => t.canisterId === claim.allocation_id);
+                                        const allocation = tokens.find(t => t.canisterId === claim.token_canister_id.toString());
                                         return (
                                             <div key={claim.allocation_id} className="reward-item">
                                                 <div className="reward-info">
@@ -139,9 +140,9 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                                                     <div className="reward-details">
                                                         <span className="reward-amount">
                                                             {claim.claimable_amount.min_e8s === claim.claimable_amount.max_e8s ? (
-                                                                formatTokenAmount(claim.claimable_amount.min_e8s, claim.allocation_id)
+                                                                formatTokenAmount(claim.claimable_amount.min_e8s, claim.token_canister_id.toString())
                                                             ) : (
-                                                                `${formatTokenAmount(claim.claimable_amount.min_e8s, claim.allocation_id)} - ${formatTokenAmount(claim.claimable_amount.max_e8s, claim.allocation_id)}`
+                                                                `${formatTokenAmount(claim.claimable_amount.min_e8s, claim.token_canister_id.toString())} - ${formatTokenAmount(claim.claimable_amount.max_e8s, claim.token_canister_id.toString())}`
                                                             )}
                                                             {allocation?.metadata?.symbol || ' tokens'}
                                                         </span>
