@@ -45,6 +45,59 @@
   padding: 24px;
 }
 
+.accounts-section {
+  background: var(--bg-darker);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.accounts-section h2 {
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.account-forms {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.account-form {
+  background: var(--bg-lighter);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.account-form h3 {
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.current-account {
+  background: var(--bg-darker);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.current-account strong {
+  color: var(--text-primary);
+  margin-right: 8px;
+}
+
+.subaccount {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
 .init-admin-section {
   background: var(--bg-darker);
   padding: 24px;
@@ -113,6 +166,41 @@
   background: var(--bg-darker);
   border-radius: 12px;
   padding: 16px;
+}
+
+.update-button {
+  padding: 8px 16px;
+  background: var(--primary-color);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.update-button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.update-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.update-button .spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .admin-list h2 {

@@ -5,6 +5,7 @@ import { adminService } from '../services/admin';
 import { authService } from '../services/auth';
 import { priceService } from '../services/price';
 import { backendService } from '../services/backend';
+import { accountService, Account } from '../services/account';
 import '../styles/AdminPage.css';
 import { FiLoader } from 'react-icons/fi';
 
@@ -26,6 +27,12 @@ export const AdminPage: React.FC = () => {
   const [feeConfig, setFeeConfig] = useState<AllocationFeeConfig | null>(null);
   const [feeLoading, setFeeLoading] = useState(false);
   const [feeError, setFeeError] = useState<string | null>(null);
+  const [paymentAccount, setPaymentAccount] = useState<Account | null>(null);
+  const [cutAccount, setCutAccount] = useState<Account | null>(null);
+  const [accountsLoading, setAccountsLoading] = useState(false);
+  const [accountsError, setAccountsError] = useState<string | null>(null);
+  const [newPaymentAccount, setNewPaymentAccount] = useState('');
+  const [newCutAccount, setNewCutAccount] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,6 +48,7 @@ export const AdminPage: React.FC = () => {
           const adminList = await adminService.getAdmins();
           setAdmins(adminList);
           await loadFeeConfig();
+          await loadAccounts();
         }
       } catch (err) {
         console.error('Error initializing admin page:', err);
@@ -149,6 +157,62 @@ export const AdminPage: React.FC = () => {
     }
   };
 
+  const loadAccounts = async () => {
+    try {
+      setAccountsLoading(true);
+      setAccountsError(null);
+      const [payment, cut] = await Promise.all([
+        accountService.getPaymentAccount(),
+        accountService.getCutAccount()
+      ]);
+      setPaymentAccount(payment);
+      setCutAccount(cut);
+    } catch (err) {
+      setAccountsError('Failed to load accounts: ' + (err instanceof Error ? err.message : String(err)));
+      console.error('Failed to load accounts:', err);
+    } finally {
+      setAccountsLoading(false);
+    }
+  };
+
+  const handleUpdatePaymentAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPaymentAccount.trim()) return;
+
+    try {
+      setAccountsLoading(true);
+      setAccountsError(null);
+      const principal = Principal.fromText(newPaymentAccount.trim());
+      await accountService.updatePaymentAccount(principal);
+      await loadAccounts();
+      setNewPaymentAccount('');
+    } catch (err) {
+      setAccountsError('Failed to update payment account: ' + (err instanceof Error ? err.message : String(err)));
+      console.error('Failed to update payment account:', err);
+    } finally {
+      setAccountsLoading(false);
+    }
+  };
+
+  const handleUpdateCutAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCutAccount.trim()) return;
+
+    try {
+      setAccountsLoading(true);
+      setAccountsError(null);
+      const principal = Principal.fromText(newCutAccount.trim());
+      await accountService.updateCutAccount(principal);
+      await loadAccounts();
+      setNewCutAccount('');
+    } catch (err) {
+      setAccountsError('Failed to update cut account: ' + (err instanceof Error ? err.message : String(err)));
+      console.error('Failed to update cut account:', err);
+    } finally {
+      setAccountsLoading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="admin-page">
@@ -196,6 +260,89 @@ export const AdminPage: React.FC = () => {
         >
           Achievement Management
         </button>
+      </div>
+
+      <div className="accounts-section">
+        <h2>Account Management</h2>
+        {accountsError && <div className="error-message">{accountsError}</div>}
+        
+        <div className="account-forms">
+          <form onSubmit={handleUpdatePaymentAccount} className="account-form">
+            <h3>Payment Account</h3>
+            {paymentAccount && (
+              <div className="current-account">
+                <strong>Current:</strong> {paymentAccount.owner?.toString()}
+                {paymentAccount.subaccount?.[0] && (
+                  <div className="subaccount">
+                    Subaccount: {paymentAccount.subaccount[0].join(', ')}
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="form-group">
+              <input
+                type="text"
+                className="principal-input"
+                value={newPaymentAccount}
+                onChange={(e) => setNewPaymentAccount(e.target.value)}
+                placeholder="Enter Principal ID"
+                disabled={accountsLoading}
+              />
+              <button 
+                type="submit" 
+                className="update-button"
+                disabled={accountsLoading || !newPaymentAccount.trim()}
+              >
+                {accountsLoading ? (
+                  <>
+                    <FiLoader className="spinning" />
+                    Updating...
+                  </>
+                ) : (
+                  'Update Payment Account'
+                )}
+              </button>
+            </div>
+          </form>
+
+          <form onSubmit={handleUpdateCutAccount} className="account-form">
+            <h3>Cut Account</h3>
+            {cutAccount && (
+              <div className="current-account">
+                <strong>Current:</strong> {cutAccount.owner?.toString()}
+                {cutAccount.subaccount?.[0] && (
+                  <div className="subaccount">
+                    Subaccount: {cutAccount.subaccount[0].join(', ')}
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="form-group">
+              <input
+                type="text"
+                className="principal-input"
+                value={newCutAccount}
+                onChange={(e) => setNewCutAccount(e.target.value)}
+                placeholder="Enter Principal ID"
+                disabled={accountsLoading}
+              />
+              <button 
+                type="submit" 
+                className="update-button"
+                disabled={accountsLoading || !newCutAccount.trim()}
+              >
+                {accountsLoading ? (
+                  <>
+                    <FiLoader className="spinning" />
+                    Updating...
+                  </>
+                ) : (
+                  'Update Cut Account'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
 
       <div className="fee-config-section">
