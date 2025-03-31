@@ -321,6 +321,18 @@ class AllocationService {
     }
 
     /**
+     * Get the remaining balance for an allocation
+     */
+    async getAllocationBalance(allocationId: string): Promise<bigint> {
+        const actor = await backendService.getActor();
+        const allocation = await this.getAllocation(allocationId);
+        if (!allocation) {
+            throw new Error('Allocation not found');
+        }
+        return await actor.get_allocation_balance(BigInt(allocationId), Principal.fromText(allocation.token.canister_id.toString()));
+    }
+
+    /**
      * Cancel an allocation
      */
     async cancelAllocation(allocationId: string): Promise<void> {

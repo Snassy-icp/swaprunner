@@ -448,6 +448,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     const [achievement, setAchievement] = useState<Achievement | null>(null);
     const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null);
     const [fundingBalance, setFundingBalance] = useState<bigint>(BigInt(0));
+    const [allocationBalance, setAllocationBalance] = useState<bigint>(BigInt(0));
     const [isCancelling, setIsCancelling] = useState(false);
     const { isAdmin } = useAuth();
     const { tokens } = useTokens();
@@ -554,12 +555,25 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
             }
         };
 
+        // Load allocation balance for non-draft allocations
+        const loadAllocationBalance = async () => {
+            if (expanded && allocationWithStatus.status !== 'Draft') {
+                try {
+                    const balance = await allocationService.getAllocationBalance(allocationWithStatus.allocation.id);
+                    setAllocationBalance(balance);
+                } catch (err) {
+                    console.error('Error loading allocation balance:', err);
+                }
+            }
+        };
+
         loadAchievementDetails();
         loadFeeConfig();
         if (expanded) {
             loadLogo();
             loadPaymentStatus();
             loadFundingBalance();
+            loadAllocationBalance();
         }
     }, [allocationWithStatus.allocation.achievement_id, expanded, tokenMetadata, allocationWithStatus.allocation.token.canister_id, fundingBalance, allocationWithStatus.allocation.id, allocationWithStatus.status, paymentStatus?.is_paid]);
 
@@ -902,6 +916,20 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                         'Cancel Allocation'
                                     )}
                                 </button>
+                            </div>
+                        )}
+
+                        {allocationWithStatus.status !== 'Draft' && (
+                            <div className="detail-section">
+                                <h4>Allocation Balance</h4>
+                                <div className="detail-content">
+                                    <div className="detail-row">
+                                        <span className="detail-label">Remaining Balance:</span>
+                                        <span className="detail-value">
+                                            {formatTokenAmount(allocationBalance, allocationWithStatus.allocation.token.canister_id.toString())} {tokenMetadata?.symbol || 'tokens'}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
