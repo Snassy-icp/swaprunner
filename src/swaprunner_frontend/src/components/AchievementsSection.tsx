@@ -118,6 +118,19 @@ const BALLOON_COLORS = [
     '#d4a5a5', // Mauve
 ];
 
+// Add fireworks constants
+const FIREWORK_PROBABILITY = 1; //0.5; // 50% chance of fireworks appearing
+const FIREWORK_COLORS = [
+    '#ff0000', // Red
+    '#ffd700', // Gold
+    '#00ff00', // Green
+    '#0000ff', // Blue
+    '#ff00ff', // Magenta
+    '#00ffff', // Cyan
+    '#ff8c00', // Dark Orange
+    '#ff1493', // Deep Pink
+];
+
 interface ConfettiProps {
     count?: number;
 }
@@ -375,6 +388,126 @@ const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
     );
 };
 
+interface FireworkParticle {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    color: string;
+    size: number;
+    alpha: number;
+}
+
+interface FireworksProps {
+    count?: number;
+}
+
+const Fireworks: React.FC<FireworksProps> = ({ count = 8 }) => {
+    const [fireworks, setFireworks] = useState<{
+        id: number;
+        particles: FireworkParticle[];
+        x: number;
+        targetY: number;
+        launched: boolean;
+    }[]>([]);
+
+    useEffect(() => {
+        // Create initial fireworks
+        const initialFireworks = Array.from({ length: count }, (_, i) => ({
+            id: i,
+            particles: [],
+            x: 20 + Math.random() * 60, // Random x position (20-80%)
+            targetY: 30 + Math.random() * 40, // Random target height (30-70%)
+            launched: false
+        }));
+        setFireworks(initialFireworks);
+
+        // Launch fireworks sequence
+        const launchInterval = setInterval(() => {
+            setFireworks(prev => {
+                const nextFirework = prev.findIndex(f => !f.launched);
+                if (nextFirework === -1) return prev;
+
+                return prev.map((firework, i) => {
+                    if (i !== nextFirework) return firework;
+
+                    // Create explosion particles
+                    const particles: FireworkParticle[] = Array.from({ length: 30 }, () => {
+                        const angle = Math.random() * Math.PI * 2;
+                        const velocity = 2 + Math.random() * 3;
+                        return {
+                            x: firework.x,
+                            y: firework.targetY,
+                            vx: Math.cos(angle) * velocity,
+                            vy: Math.sin(angle) * velocity,
+                            color: FIREWORK_COLORS[Math.floor(Math.random() * FIREWORK_COLORS.length)],
+                            size: 2 + Math.random() * 2,
+                            alpha: 1
+                        };
+                    });
+
+                    return { ...firework, particles, launched: true };
+                });
+            });
+        }, 300); // Launch a new firework every 300ms
+
+        // Animate particles
+        const animationFrame = setInterval(() => {
+            setFireworks(prev => prev.map(firework => ({
+                ...firework,
+                particles: firework.particles.map(particle => ({
+                    ...particle,
+                    x: particle.x + particle.vx,
+                    y: particle.y + particle.vy,
+                    vy: particle.vy + 0.1, // Gravity
+                    alpha: particle.alpha * 0.98 // Fade out
+                })).filter(p => p.alpha > 0.1) // Remove faded particles
+            })));
+        }, 1000 / 60); // 60fps
+
+        // Cleanup
+        return () => {
+            clearInterval(launchInterval);
+            clearInterval(animationFrame);
+        };
+    }, [count]);
+
+    return (
+        <div className="fireworks-container">
+            {fireworks.map(firework => (
+                <div key={firework.id} className="firework">
+                    {/* Trail effect */}
+                    {!firework.launched && (
+                        <div 
+                            className="firework-trail"
+                            style={{
+                                left: `${firework.x}%`,
+                                height: `${firework.targetY}%`,
+                                animation: `launch 0.3s ease-out forwards`
+                            }}
+                        />
+                    )}
+                    {/* Explosion particles */}
+                    {firework.particles.map((particle, i) => (
+                        <div
+                            key={i}
+                            className="firework-particle"
+                            style={{
+                                left: `${particle.x}%`,
+                                top: `${particle.y}%`,
+                                width: `${particle.size}px`,
+                                height: `${particle.size}px`,
+                                backgroundColor: particle.color,
+                                opacity: particle.alpha
+                            }}
+                        />
+                    ))}
+                </div>
+            ))}
+        </div>
+    );
+};
+
 const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, amount, tokenId, achievementName }) => {
     const { tokens } = useTokens();
     const tokenMetadata = tokens.find(t => t.canisterId === tokenId)?.metadata;
@@ -384,6 +517,7 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
     );
     const [showGlitter] = useState(() => Math.random() < GLITTER_PROBABILITY);
     const [showBalloons] = useState(() => Math.random() < BALLOON_PROBABILITY);
+    const [showFireworks] = useState(() => Math.random() < FIREWORK_PROBABILITY);
 
     useEffect(() => {
         if (show) {
@@ -416,6 +550,7 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
             <Confetti />
             {showGlitter && <Glitter />}
             {showBalloons && <Balloon />}
+            {showFireworks && <Fireworks />}
             <div className="claim-success-modal" onClick={e => e.stopPropagation()}>
                 <div className="claim-success-content">
                     <div className="claim-success-icon-wrapper">
