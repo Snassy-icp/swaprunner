@@ -365,7 +365,7 @@ const Balloon: React.FC<BalloonProps> = ({ count = BALLOON_COUNT }) => {
                 // Larger balloons (47.5-80px) get z-index 1010-1015 (in front of modal at 1000)
                 const zIndex = balloon.size <= 47.5 ? 
                     995 + Math.floor((balloon.size - 15) / 6.5) :
-                    1010 + Math.floor((balloon.size - 47.5) / 6.5);
+                    1100 + Math.floor((balloon.size - 47.5) / 3.25);
                 
                 const shadowIntensity = 0.1 + (balloon.size / 160); // 0.1-0.6 range
                 
@@ -562,8 +562,6 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
         <div className="claim-success-overlay" onClick={(e) => e.stopPropagation()}>
             <Confetti />
             {showGlitter && <Glitter />}
-            {showBalloons && <Balloon />}
-            {showFireworks && <Fireworks />}
             <div className="claim-success-modal" onClick={e => e.stopPropagation()}>
                 <div className="claim-success-content">
                     <div className="claim-success-icon-wrapper">
@@ -586,6 +584,8 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
                     </button>
                 </div>
             </div>
+            {showBalloons && <Balloon />}
+            {showFireworks && <Fireworks />}
         </div>
     );
 };
