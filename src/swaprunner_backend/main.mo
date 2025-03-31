@@ -3481,53 +3481,6 @@ actor {
         }
     };
 
-    // Fund an allocation
-    public shared({caller}) func fund_allocation(allocation_id: Text) : async Result.Result<(), Text> {
-        if (Principal.isAnonymous(caller)) {
-            return #err("Anonymous principal not allowed");
-        };
-
-        switch(Allocation.fund_allocation(
-            caller,
-            allocation_id,
-            allocations,
-            allocation_statuses,
-        )) {
-            case (#ok(_)) {
-                // Get allocation and token index
-                let allocation = switch (allocations.get(allocation_id)) {
-                    case null return #err("Allocation not found");
-                    case (?a) a;
-                };
-
-                let token_index = switch (getUserIndex(allocation.token.canister_id)) {
-                    case null return #err("Token not found");
-                    case (?idx) idx;
-                };
-
-                // Verify server has enough balance
-                if (getServerBalance(token_index) < allocation.token.total_amount_e8s) {
-                    return #err("Insufficient server balance");
-                };
-
-                // Move tokens from server balance to allocation balance
-                if (not subtractFromServerBalance(token_index, allocation.token.total_amount_e8s)) {
-                    return #err("Failed to subtract from server balance");
-                };
-
-                let allocation_id_nat = switch (Nat.fromText(allocation_id)) {
-                    case null return #err("Invalid allocation ID");
-                    case (?n) n;
-                };
-                addToAllocationBalance(allocation_id_nat, token_index, allocation.token.total_amount_e8s);
-
-                // Update status
-                allocation_statuses.put(allocation_id, #Funded);
-                #ok(())
-            };
-            case (#err(msg)) #err(msg);
-        }
-    };
 
     // Activate an allocation
     public shared({caller}) func activate_allocation(allocation_id: Text) : async Result.Result<(), Text> {
