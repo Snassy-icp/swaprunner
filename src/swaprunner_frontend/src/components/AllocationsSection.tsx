@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiPlus, FiX, FiAlertCircle } from 'react-icons/fi';
+import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiPlus, FiX, FiAlertCircle, FiCheck } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { allocationService, Allocation, AllocationStatus, AllocationWithStatus, AllocationFeeConfig, CreateAllocationArgs, PaymentStatus } from '../services/allocation';
 import { CollapsibleSection } from '../pages/Me';
@@ -585,8 +585,8 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                                 </span>
                                             </div>
                                         )}
-                                        <div className="detail-actions">
-                                            {!paymentStatus.is_paid && (
+                                        {!paymentStatus.is_paid && (
+                                            <div className="detail-actions">
                                                 <button 
                                                     className="action-button primary"
                                                     onClick={(e) => {
@@ -604,8 +604,16 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                                         'Pay Now'
                                                     )}
                                                 </button>
-                                            )}
-                                        </div>
+                                            </div>
+                                        )}
+                                        {paymentStatus.is_paid && (
+                                            <div className="detail-row payment-complete">
+                                                <span className="detail-label">Status:</span>
+                                                <span className="detail-value">
+                                                    <FiCheck className="check-icon" /> Payment Complete
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="detail-loading">Loading payment status...</div>

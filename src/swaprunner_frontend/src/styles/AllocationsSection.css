@@ -1684,4 +1684,22 @@
 @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+}
+
+.detail-row.payment-complete {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail-row.payment-complete .detail-value {
+    color: #28a745;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.detail-row.payment-complete .check-icon {
+    color: #28a745;
+    font-size: 16px;
 } 
