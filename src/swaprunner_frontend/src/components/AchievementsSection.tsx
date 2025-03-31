@@ -46,10 +46,43 @@ interface ClaimSuccessModalProps {
     achievementName: string;
 }
 
+// Add this array near the top of the file, after imports
+const CELEBRATION_WORDS = [
+    "Awesome",
+    "Amazing",
+    "Fantastic",
+    "Excellent",
+    "Wonderful",
+    "Brilliant",
+    "Incredible",
+    "Superb",
+    "Outstanding",
+    "Magnificent",
+    "Splendid",
+    "Epic",
+    "Stellar",
+    "Phenomenal",
+    "Marvelous",
+    "Spectacular",
+    "Terrific",
+    "Rad",
+    "Sweet",
+    "Perfect",
+    "Legendary",
+    "Glorious",
+    "Divine",
+    "Sublime",
+    "Remarkable"
+];
+
 const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, amount, tokenId, achievementName }) => {
     const { tokens } = useTokens();
     const tokenMetadata = tokens.find(t => t.canisterId === tokenId)?.metadata;
     const [isOpen, setIsOpen] = useState(false);
+    // Add state for the celebration word
+    const [celebrationWord] = useState(() => 
+        CELEBRATION_WORDS[Math.floor(Math.random() * CELEBRATION_WORDS.length)]
+    );
 
     useEffect(() => {
         if (show) {
@@ -98,7 +131,7 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
                         </div>
                     </div>
                     <button className="claim-success-close-button" onClick={onClose}>
-                        Awesome!
+                        {celebrationWord}!
                     </button>
                 </div>
             </div>
