@@ -1455,6 +1455,16 @@
     color: #fff;
     font-size: 12px;
     font-family: 'Roboto Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.fee-value .token-logo {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
 .fee-info-note {

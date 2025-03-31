@@ -6,6 +6,7 @@ import { CollapsibleSection } from '../pages/Me';
 import { formatTokenAmount, parseTokenAmount } from '../utils/format';
 import { TokenSelect } from './TokenSelect';
 import '../styles/AllocationsSection.css';
+import { useTokens } from '../contexts/TokenContext';
 
 interface Allocation {
     id: string;
@@ -50,6 +51,10 @@ interface TokenMetadata {
     symbol?: string;
     decimals?: number;
     name?: string;
+    fee?: bigint;
+    hasLogo?: boolean;
+    standard?: string;
+    logo_url?: string;
 }
 
 interface AllocationFormProps {
@@ -74,6 +79,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
     const [perUserMin, setPerUserMin] = useState<string>('');
     const [perUserMax, setPerUserMax] = useState<string>('');
     const [feeConfig, setFeeConfig] = useState<AllocationFeeConfig | null>(null);
+    const { tokens: contextTokens } = useTokens();
 
     useEffect(() => {
         loadAchievements();
@@ -189,11 +195,21 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                 <label>Token</label>
                 <TokenSelect
                     value={selectedToken}
-                    onChange={(tokenId: string, metadata?: TokenMetadata) => {
+                    onChange={(tokenId: string) => {
                         setSelectedToken(tokenId);
-                        setSelectedTokenMetadata(metadata || null);
+                        // Get the token metadata from the tokens list
+                        const token = contextTokens.find(t => t.canisterId === tokenId);
+                        if (token?.metadata) {
+                            setSelectedTokenMetadata({
+                                symbol: token.metadata.symbol,
+                                decimals: token.metadata.decimals,
+                                name: token.metadata.name,
+                                fee: token.metadata.fee,
+                                hasLogo: token.metadata.hasLogo,
+                                standard: token.metadata.standard
+                            });
+                        }
                     }}
-                    label="Token"
                     mode="swap"
                     isLoading={false}
                 />
@@ -265,9 +281,16 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                             </div>
                             <div className="fee-row">
                                 <span className="fee-label">Platform Cut ({Number(feeConfig.cut_basis_points) / 100}%)</span>
-                                <span className="fee-value">
-                                    {calculateCutAmount()} {selectedTokenMetadata?.symbol || 'tokens'}
-                                </span>
+                                <div className="fee-value">
+                                    <span>{calculateCutAmount()} {selectedTokenMetadata?.symbol || 'tokens'}</span>
+                                    {selectedToken && selectedTokenMetadata?.logo_url && (
+                                        <img 
+                                            src={selectedTokenMetadata.logo_url} 
+                                            alt={selectedTokenMetadata.symbol || 'token'} 
+                                            className="token-logo"
+                                        />
+                                    )}
+                                </div>
                             </div>
                             <div className="fee-info-note">
                                 Note: The creation fee is paid in ICP, and the platform cut is taken from the allocation amount.
