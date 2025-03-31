@@ -25,9 +25,13 @@ import Achievement "./Achievement";
 import Allocation "./Allocation";
 import Util "./Util";
 
-actor class SwapRunner() = this {
-    type This = SwapRunner;
+shared (deployer) actor class SwapRunner() = this {
+    //type This = SwapRunner;
 
+    private func this_canister_id() : Principal {
+        Principal.fromActor(this);
+    };
+    
     // Constants
     private let ICPSWAP_TOKEN_CANISTER_ID = "k37c6-riaaa-aaaag-qcyza-cai"; // ICPSwap trusted token list canister ID
     let ICP_PRINCIPAL = Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai");
@@ -3485,7 +3489,7 @@ actor class SwapRunner() = this {
     };
 
     public shared({caller}) func get_derived_subaccount(principal: Principal, allocation_id: Nat) : async Result.Result<[Nat8], Text> { // We need to use a Nat allocation_id because we need to extract its bytes
-        #ok(Util.derive_backend_subaccount(principal, allocation_id))
+        #ok(Allocation.derive_backend_subaccount(principal, allocation_id))
     };
 
 
@@ -3495,13 +3499,13 @@ actor class SwapRunner() = this {
             return #err("Anonymous principal not allowed");
         };
 
-        switch(Allocation.activate_allocation(
+        switch(await Allocation.activate_allocation(
             caller,
             allocation_id,
             allocations,
             allocation_statuses,
             allocation_fee_config,
-            Principal.fromActor(this)
+            this_canister_id()
         )) {
             case (#ok(_)) {
                 //allocation_statuses.put(Nat.toText(allocation_id), #Active);
