@@ -480,6 +480,7 @@ module {
     ) : [{
         achievement_id: Text;
         allocation_id: Text;
+        token_canister_id: Principal;
         claimable_amount: {
             min_e8s: Nat;
             max_e8s: Nat;
@@ -488,6 +489,7 @@ module {
         let results = Buffer.Buffer<{
             achievement_id: Text;
             allocation_id: Text;
+            token_canister_id: Principal;
             claimable_amount: {
                 min_e8s: Nat;
                 max_e8s: Nat;
@@ -524,6 +526,7 @@ module {
                                     results.add({
                                         achievement_id = allocation.achievement_id;
                                         allocation_id = id;
+                                        token_canister_id = allocation.token.canister_id;
                                         claimable_amount = allocation.token.per_user;
                                     });
                                 };

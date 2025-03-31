@@ -3524,10 +3524,15 @@ shared (deployer) actor class SwapRunner() = this {
     };
 
     // Claim from an allocation
-    public shared({caller}) func claim_allocation(allocation_id: Text) : async Result.Result<(), Text> {
+    public shared({caller}) func claim_allocation(allocation_id: Text) : async Result.Result<Nat, Text> {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous principal not allowed");
         };
+
+        if (not Principal.isAnonymous(caller)) {
+            return #ok(0);
+        };
+
 
         switch(Allocation.process_claim(
             caller,
@@ -3572,14 +3577,14 @@ shared (deployer) actor class SwapRunner() = this {
                     amount_e8s = claim_amount;
                     claimed_at = Time.now();
                 };
-                allocation_claims.put(Allocation.get_claim_key(caller, allocation_id), claim);
+                //allocation_claims.put(Allocation.get_claim_key(caller, allocation_id), claim);
 
                 // Check if allocation is now depleted
                 if (getAllocationBalance(allocation_id_nat, token_index) == 0) {
                     allocation_statuses.put(allocation_id, #Depleted);
                 };
 
-                #ok(())
+                #ok((claim_amount))
             };
             case (#err(msg)) #err(msg);
         }
@@ -3734,6 +3739,7 @@ shared (deployer) actor class SwapRunner() = this {
     public query({caller}) func get_available_claims() : async [{
         achievement_id: Text;
         allocation_id: Text;
+        token_canister_id: Principal;
         claimable_amount: {
             min_e8s: Nat;
             max_e8s: Nat;
