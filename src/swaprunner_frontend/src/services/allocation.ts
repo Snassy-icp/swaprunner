@@ -140,13 +140,22 @@ class AllocationService {
         return await actor.get_all_achievements();
     }
 
+    private derivePaymentSubaccount(allocationId: string): Uint8Array {
+        const principal = Principal.fromText('ryjl3-tyaaa-aaaaa-aaaba-cai'); // ICP ledger
+        return this.deriveBackendSubaccount(principal, allocationId);
+    }
+
     /**
      * Derive the subaccount for an allocation's payment
-     * Uses the last 3 bytes to encode the allocation ID
+     * Uses the principal's bytes as the base subaccount, then modifies the last 3 bytes with the allocation ID
      */
-    private derivePaymentSubaccount(allocationId: string): Uint8Array {
-        // Create a 32-byte array filled with zeros
+    private deriveBackendSubaccount(principal: Principal, allocationId: string): Uint8Array {
+        // Convert principal to bytes for the subaccount
+        const principalBytes = principal.toUint8Array();
         const subaccount = new Uint8Array(32);
+        
+        // Copy principal bytes into subaccount
+        subaccount.set(principalBytes.slice(0, 29), 0);
         
         // Convert allocation ID to number
         const idNum = parseInt(allocationId);
