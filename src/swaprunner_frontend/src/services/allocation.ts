@@ -43,6 +43,12 @@ export interface Achievement {
     logo_url?: string;
 }
 
+export interface PaymentStatus {
+    current_balance_e8s: bigint;
+    required_fee_e8s: bigint;
+    is_paid: boolean;
+}
+
 class AllocationService {
     /**
      * Create a new allocation
@@ -132,6 +138,76 @@ class AllocationService {
     async getAllAchievements(): Promise<Achievement[]> {
         const actor = await backendService.getActor();
         return await actor.get_all_achievements();
+    }
+
+    /**
+     * Derive the subaccount for an allocation's payment
+     * Uses the last 3 bytes to encode the allocation ID
+     */
+    private derivePaymentSubaccount(allocationId: string): Uint8Array {
+        // Create a 32-byte array filled with zeros
+        const subaccount = new Uint8Array(32);
+        
+        // Convert allocation ID to number
+        const idNum = parseInt(allocationId);
+        if (isNaN(idNum)) {
+            throw new Error('Invalid allocation ID format');
+        }
+
+        // Write the allocation ID to the last 3 bytes
+        subaccount[29] = (idNum >> 16) & 0xFF;
+        subaccount[30] = (idNum >> 8) & 0xFF;
+        subaccount[31] = idNum & 0xFF;
+
+        return subaccount;
+    }
+
+    /**
+     * Get the payment status for an allocation
+     */
+    async getPaymentStatus(allocationId: string): Promise<PaymentStatus> {
+        const actor = await backendService.getActor();
+        const result = await actor.get_allocation_payment_status(allocationId);
+        
+        if ('ok' in result) {
+            return {
+                current_balance_e8s: result.ok.current_balance_e8s,
+                required_fee_e8s: result.ok.required_fee_e8s,
+                is_paid: result.ok.is_paid
+            };
+        } else {
+            throw new Error(result.err);
+        }
+    }
+
+    /**
+     * Pay for an allocation by transferring ICP to its subaccount
+     */
+    async payForAllocation(allocationId: string): Promise<void> {
+        const actor = await backendService.getActor();
+        const paymentStatus = await this.getPaymentStatus(allocationId);
+        
+        if (paymentStatus.is_paid) {
+            throw new Error('Allocation is already paid for');
+        }
+
+        const remainingAmount = paymentStatus.required_fee_e8s - paymentStatus.current_balance_e8s;
+        if (remainingAmount <= BigInt(0)) {
+            throw new Error('No payment required');
+        }
+
+        // Get the subaccount for this allocation
+        const subaccount = this.derivePaymentSubaccount(allocationId);
+
+        // Execute ICRC1 transfer to the backend's subaccount
+        const result = await actor.pay_for_allocation({
+            allocation_id: allocationId,
+            amount_e8s: remainingAmount
+        });
+
+        if ('err' in result) {
+            throw new Error(result.err);
+        }
     }
 }
 

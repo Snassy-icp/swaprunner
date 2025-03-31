@@ -1519,4 +1519,82 @@
     color: #fff;
     font-size: 14px;
     font-weight: 500;
+}
+
+.payment-section {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.payment-section h4 {
+    margin: 0 0 12px 0;
+    color: #fff;
+    font-size: 1em;
+    font-weight: 500;
+}
+
+.payment-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.payment-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+}
+
+.payment-label {
+    color: #8F96A1;
+    font-size: 0.9em;
+}
+
+.payment-value {
+    color: #fff;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.9em;
+}
+
+.payment-actions {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.pay-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #3b82f6;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.pay-button:hover:not(:disabled) {
+    background: #2563eb;
+}
+
+.pay-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pay-button .spinning {
+    animation: spin 1s linear infinite;
+}
+
+.payment-loading {
+    color: #8F96A1;
+    font-size: 0.9em;
+    text-align: center;
+    padding: 8px 0;
 } 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiPlus, FiX, FiAlertCircle } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import { allocationService, Allocation, AllocationStatus, AllocationWithStatus, AllocationFeeConfig, CreateAllocationArgs } from '../services/allocation';
+import { allocationService, Allocation, AllocationStatus, AllocationWithStatus, AllocationFeeConfig, CreateAllocationArgs, PaymentStatus } from '../services/allocation';
 import { CollapsibleSection } from '../pages/Me';
 import { formatTokenAmount, parseTokenAmount } from '../utils/format';
 import { TokenSelect } from './TokenSelect';
@@ -440,13 +440,15 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     const [isExpanded, setIsExpanded] = useState(false);
     const [tokenLogo, setTokenLogo] = useState<string | null>(null);
     const [achievementDetails, setAchievementDetails] = useState<Achievement | null>(null);
+    const [paymentStatus, setPaymentStatus] = useState<PaymentStatus | null>(null);
+    const [isPaymentLoading, setIsPaymentLoading] = useState(false);
     const { allocation, status } = allocationWithStatus;
     const { tokens } = useTokens();
 
     // Get token metadata
     const tokenMetadata = tokens.find(t => t.canisterId === allocation.token.canister_id.toString())?.metadata;
 
-    // Load achievement details and token logo
+    // Load achievement details, token logo, and payment status
     useEffect(() => {
         // Load achievement details
         const loadAchievementDetails = async () => {
@@ -475,11 +477,41 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
             }
         };
 
+        // Load payment status
+        const loadPaymentStatus = async () => {
+            if (isExpanded && status === 'Draft') {
+                try {
+                    const status = await allocationService.getPaymentStatus(allocation.id);
+                    setPaymentStatus(status);
+                } catch (err) {
+                    console.error('Error loading payment status:', err);
+                }
+            }
+        };
+
         loadAchievementDetails();
         if (isExpanded) {
             loadLogo();
+            loadPaymentStatus();
         }
-    }, [allocation.achievement_id, isExpanded, tokenMetadata, allocation.token.canister_id, tokenLogo]);
+    }, [allocation.achievement_id, isExpanded, tokenMetadata, allocation.token.canister_id, tokenLogo, allocation.id, status]);
+
+    const handlePay = async () => {
+        if (!paymentStatus || paymentStatus.is_paid) return;
+
+        try {
+            setIsPaymentLoading(true);
+            await allocationService.payForAllocation(allocation.id);
+            // Reload payment status after successful payment
+            const newStatus = await allocationService.getPaymentStatus(allocation.id);
+            setPaymentStatus(newStatus);
+        } catch (err) {
+            console.error('Error making payment:', err);
+            // You might want to show an error message to the user here
+        } finally {
+            setIsPaymentLoading(false);
+        }
+    };
 
     const getStatusColor = (status: AllocationStatus): string => {
         switch (status) {
@@ -525,6 +557,61 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
             {isExpanded && (
                 <div className="allocation-details">
                     <div className="allocation-details-content">
+                        {status === 'Draft' && (
+                            <div className="payment-section">
+                                <h4>Payment Status</h4>
+                                {paymentStatus ? (
+                                    <div className="payment-info">
+                                        <div className="payment-row">
+                                            <span className="payment-label">Required Fee:</span>
+                                            <span className="payment-value">
+                                                {formatTokenAmount(paymentStatus.required_fee_e8s, 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP
+                                            </span>
+                                        </div>
+                                        <div className="payment-row">
+                                            <span className="payment-label">Current Balance:</span>
+                                            <span className="payment-value">
+                                                {formatTokenAmount(paymentStatus.current_balance_e8s, 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP
+                                            </span>
+                                        </div>
+                                        {!paymentStatus.is_paid && (
+                                            <div className="payment-row">
+                                                <span className="payment-label">Remaining:</span>
+                                                <span className="payment-value">
+                                                    {formatTokenAmount(
+                                                        paymentStatus.required_fee_e8s - paymentStatus.current_balance_e8s,
+                                                        'ryjl3-tyaaa-aaaaa-aaaba-cai'
+                                                    )} ICP
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div className="payment-actions">
+                                            {!paymentStatus.is_paid && (
+                                                <button 
+                                                    className="pay-button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handlePay();
+                                                    }}
+                                                    disabled={isPaymentLoading}
+                                                >
+                                                    {isPaymentLoading ? (
+                                                        <>
+                                                            <FiLoader className="spinning" />
+                                                            Paying...
+                                                        </>
+                                                    ) : (
+                                                        'Pay Now'
+                                                    )}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="payment-loading">Loading payment status...</div>
+                                )}
+                            </div>
+                        )}
                         <div className="detail-row">
                             <span className="detail-label">Achievement:</span>
                             <span className="detail-value">{achievementDetails?.name || 'Loading...'}</span>
