@@ -201,7 +201,6 @@ class AllocationService {
      * Pay for an allocation by transferring ICP to its subaccount
      */
     async payForAllocation(allocationId: string): Promise<void> {
-        const actor = await backendService.getActor();
         const paymentStatus = await this.getPaymentStatus(allocationId);
         
         if (paymentStatus.is_paid) {
@@ -216,15 +215,13 @@ class AllocationService {
         // Get the subaccount for this allocation
         const subaccount = this.derivePaymentSubaccount(allocationId);
 
-        // Execute ICRC1 transfer to the backend's subaccount
-        const result = await actor.pay_for_allocation({
-            allocation_id: allocationId,
-            amount_e8s: remainingAmount
+        // Transfer ICP to the backend's subaccount using ICRC1 transfer
+        await this.icrc1Service.transfer({
+            tokenId: 'ryjl3-tyaaa-aaaaa-aaaba-cai', // ICP ledger
+            to: process.env.CANISTER_ID_SWAPRUNNER_BACKEND!,
+            amount_e8s: remainingAmount.toString(),
+            subaccount: subaccount
         });
-
-        if ('err' in result) {
-            throw new Error(result.err);
-        }
     }
 }
 
