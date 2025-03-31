@@ -23,10 +23,13 @@ import Stats "./Stats";
 import Condition "./Condition";
 import Achievement "./Achievement";
 import Allocation "./Allocation";
+import Util "./Util";
 
-actor {
+actor class SwapRunner() = this {
+    type This = SwapRunner;
+
     // Constants
-    private let ICPSWAP_TOKEN_CANISTER_ID = "k37c6-riaaa-aaaag-qcyza-cai"; // ICPSwap trusted token list canister ID (contains getList() for trusted token list and getLogo() for token logos)
+    private let ICPSWAP_TOKEN_CANISTER_ID = "k37c6-riaaa-aaaag-qcyza-cai"; // ICPSwap trusted token list canister ID
     let ICP_PRINCIPAL = Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai");
 
     // Add new constant at the top of the file, near other constants
@@ -3497,9 +3500,8 @@ actor {
             allocation_id,
             allocations,
             allocation_statuses,
-            fee_config,
-            icrc1_actor,
-            backend_id,
+            allocation_fee_config,
+            Principal.fromActor(this)
         )) {
             case (#ok(_)) {
                 //allocation_statuses.put(Nat.toText(allocation_id), #Active);

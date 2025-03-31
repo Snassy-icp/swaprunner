@@ -90,7 +90,7 @@ module {
         allocations: HashMap.HashMap<Text, T.Allocation>,
         allocation_statuses: HashMap.HashMap<Text, T.AllocationStatus>,
         fee_config: T.AllocationFeeConfig,
-        backend_id: Principal,
+        this_canister_id: Principal,
     ) : async Result.Result<(), Text> {
         // Get allocation
         let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
@@ -122,16 +122,17 @@ module {
             allocation_id
         );
 
-        let icrc1_actor = switch (T.ICRC1Interface.get(backend_id)) {
-            case null return #err("ICRC1 actor not found");
-            case (?a) a;
-        };
+        // Create ICRC1 actor for ICP ledger
+        let icrc1_payment_actor = actor(Principal.toText(Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai"))) : T.ICRC1Interface;
+
+        // Create ICRC1 actor for token
+        let icrc1_funding_actor = actor(Principal.toText(allocation.token.canister_id)) : T.ICRC1Interface;
 
         // Check payment balance
-        let payment_balance = await icrc1_actor.icrc1_balance_of(backend_id, ?payment_subaccount);
+        let payment_balance = await icrc1_payment_actor.icrc1_balance_of(this_canister_id, ?payment_subaccount);
 
         // Check funding balance
-        let funding_balance = await icrc1_actor.icrc1_balance_of(backend_id, ?funding_subaccount);
+        let funding_balance = await icrc1_funding_actor.icrc1_balance_of(this_canister_id, ?funding_subaccount);
 
         // Verify payment is complete
         if (payment_balance < fee_config.icp_fee_e8s) {
