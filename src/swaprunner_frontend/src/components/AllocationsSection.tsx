@@ -474,15 +474,12 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                                         When checked, the cut will be added to your specified amount instead of being taken from it
                                     </div>
                                 </span>
-                                <span className="fee-value">
-                                    {addCutOnTop && totalAmount ? formatTokenAmount(calculateCutOnTop(), selectedToken || '') : '-'}
-                                </span>
                             </div>
                             <div className="fee-row">
                                 <span className="fee-label">Platform Cut ({Number(feeConfig.cut_basis_points) / 100}%)</span>
                                 <div className="fee-value">
                                     <span>
-                                        {calculateCutAmount()} {selectedTokenMetadata?.symbol || 'tokens'}
+                                        {addCutOnTop ? formatTokenAmount(calculateCutOnTop(), selectedToken || '') : calculateCutAmount()} {selectedTokenMetadata?.symbol || 'tokens'}
                                         {selectedToken && !hasEnoughTokens && selectedToken !== 'ryjl3-tyaaa-aaaaa-aaaba-cai' && (
                                             <span className="balance-warning">
                                                 <FiAlertCircle /> Insufficient balance
