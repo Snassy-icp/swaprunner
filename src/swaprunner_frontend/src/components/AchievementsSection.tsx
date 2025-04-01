@@ -699,7 +699,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
     const handleClaim = async (allocationId: string, tokenId: string) => {
         try {
             setLoading(true);
-            const claimedAmount = await allocationService.claimAllocation(achievement.achievement_id, allocationId);
+            const claimedAmount = await allocationService.claimAndWithdrawAllocation(allocationId);
             
             // Show success modal
             setClaimSuccess({

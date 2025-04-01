@@ -121,6 +121,17 @@ class AllocationService {
         }
     }
 
+    async claimAndWithdrawAllocation(allocationId: string): Promise<bigint> {
+        const actor = await backendService.getActor();
+        const result = await actor.claim_and_withdraw_allocation(allocationId);
+        
+        if ('ok' in result) {
+            return result.ok;
+        } else {
+            throw new Error(result.err);
+        }
+    }
+
     /**
      * Get all available claims for the current user
      */
