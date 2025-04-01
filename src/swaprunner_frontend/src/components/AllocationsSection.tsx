@@ -504,8 +504,12 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                                             try {
                                                 const totalE8s = parseTokenAmount(totalAmount, selectedToken);
                                                 const icpTxFee = BigInt(10000);
-                                                // For ICP allocations, we need fee + total amount + one tx fee
-                                                const totalRequired = (feeConfig.icp_fee_e8s || BigInt(0)) + totalE8s + icpTxFee;
+                                                let requiredAmount = totalE8s;
+                                                if (addCutOnTop) {
+                                                    requiredAmount += calculateCutOnTop();
+                                                }
+                                                // For ICP allocations, we need fee + total amount + two tx fees
+                                                const totalRequired = (feeConfig.icp_fee_e8s || BigInt(0)) + requiredAmount + icpTxFee + icpTxFee;
                                                 return formatTokenAmount(totalRequired, 'ryjl3-tyaaa-aaaaa-aaaba-cai');
                                             } catch {
                                                 return '0';
