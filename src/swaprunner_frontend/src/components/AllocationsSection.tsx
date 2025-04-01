@@ -209,7 +209,9 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
 
             // Calculate platform cut
             const cutBasisPoints = feeConfig ? BigInt(feeConfig.cut_basis_points) : BigInt(0);
-            const totalAfterCut = total - ((total * cutBasisPoints) / BigInt(10000));
+
+            // Withdraw the cut from the total amount, unless the cut is put on top
+            const totalAfterCut = addCutOnTop ? total : total - ((total * cutBasisPoints) / BigInt(10000));
 
             const maxUsers = Number(totalAfterCut / min);
             const minUsers = Number(totalAfterCut / max);
