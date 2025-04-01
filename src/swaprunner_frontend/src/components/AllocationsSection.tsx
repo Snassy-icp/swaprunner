@@ -231,7 +231,14 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
         if (!totalAmount || !selectedToken || !feeConfig) return BigInt(0);
         try {
             const totalE8s = parseTokenAmount(totalAmount, selectedToken);
-            return BigInt(totalE8s) / BigInt(BigInt(10000) - BigInt(feeConfig.cut_basis_points));
+            // Calculate total amount needed such that after taking the cut, the user gets their desired amount
+            // Formula: desired_amount = total_amount * (1 - cut_percentage)
+            // Therefore: total_amount = desired_amount / (1 - cut_percentage)
+            // Since cut_basis_points is in basis points (1/100th of a percent), we divide by 10000
+            const cutPercentage = BigInt(feeConfig.cut_basis_points);
+            const denominator = BigInt(10000) - cutPercentage;
+            const totalNeeded = (totalE8s * BigInt(10000)) / denominator;
+            return totalNeeded - totalE8s; // Return just the extra amount needed
         } catch (err: any) {
             console.error('Error calculating cut on top', err);
             return BigInt(0);
