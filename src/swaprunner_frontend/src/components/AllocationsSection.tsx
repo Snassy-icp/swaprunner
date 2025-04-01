@@ -216,9 +216,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
             if (!hasEnoughICP) {
                 if (isICP) {
                     const totalE8s = parseTokenAmount(totalAmount, selectedToken);
-                    const cutBasisPoints = feeConfig ? BigInt(feeConfig.cut_basis_points) : BigInt(0);
-                    const totalWithCut = totalE8s + ((totalE8s * cutBasisPoints) / BigInt(10000));
-                    const totalRequired = (feeConfig?.icp_fee_e8s || BigInt(0)) + totalWithCut;
+                    const totalRequired = (feeConfig?.icp_fee_e8s || BigInt(0)) + totalE8s;
                     setError(`Insufficient ICP balance. Required: ${formatTokenAmount(totalRequired, 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP (includes creation fee and allocation amount)`);
                 } else {
                     setError(`Insufficient ICP balance for creation fee. Required: ${formatTokenAmount(feeConfig?.icp_fee_e8s || BigInt(0), 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP`);
@@ -228,9 +226,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
 
             if (!hasEnoughTokens && !isICP) {
                 const totalE8s = parseTokenAmount(totalAmount, selectedToken);
-                const cutBasisPoints = feeConfig ? BigInt(feeConfig.cut_basis_points) : BigInt(0);
-                const totalWithCut = totalE8s + ((totalE8s * cutBasisPoints) / BigInt(10000));
-                setError(`Insufficient token balance. Required: ${formatTokenAmount(totalWithCut, selectedToken)} ${selectedTokenMetadata?.symbol || 'tokens'}`);
+                setError(`Insufficient token balance. Required: ${formatTokenAmount(totalE8s, selectedToken)} ${selectedTokenMetadata?.symbol || 'tokens'}`);
                 return;
             }
 
