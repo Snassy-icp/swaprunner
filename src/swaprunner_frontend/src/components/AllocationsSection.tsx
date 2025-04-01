@@ -658,6 +658,23 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
         }
     };
 
+    const handlePayAndFund = async () => {
+        try {
+            setLoading(true);
+            await allocationService.payAndFundAllocation(allocationWithStatus.allocation.id);
+            // Reload both payment and funding status
+            const newPaymentStatus = await allocationService.getPaymentStatus(allocationWithStatus.allocation.id);
+            const newFundingBalance = await allocationService.getFundingBalance(allocationWithStatus.allocation.id);
+            setPaymentStatus(newPaymentStatus);
+            setFundingBalance(newFundingBalance);
+        } catch (err: any) {
+            console.error('Error paying and funding allocation:', err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const getStatusColor = (status: AllocationStatus): string => {
         switch (status) {
             case 'Draft': return '#6c757d';     // Gray
@@ -778,7 +795,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                                 </span>
                                             </div>
                                         )}
-                                        {!paymentStatus.is_paid && (
+                                        {!paymentStatus.is_paid && allocationWithStatus.allocation.token.canister_id.toString() !== 'ryjl3-tyaaa-aaaaa-aaaba-cai' && (
                                             <div className="detail-actions">
                                                 <button 
                                                     className="action-button primary"
@@ -840,16 +857,25 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                             <div className="detail-actions">
                                                 <button
                                                     className="action-button primary"
-                                                    onClick={handleFund}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        allocationWithStatus.allocation.token.canister_id.toString() === 'ryjl3-tyaaa-aaaaa-aaaba-cai' 
+                                                            ? handlePayAndFund() 
+                                                            : handleFund();
+                                                    }}
                                                     disabled={loading}
                                                 >
                                                     {loading ? (
                                                         <>
                                                             <FiLoader className="spinning" />
-                                                            Funding...
+                                                            {allocationWithStatus.allocation.token.canister_id.toString() === 'ryjl3-tyaaa-aaaaa-aaaba-cai' 
+                                                                ? 'Processing...' 
+                                                                : 'Funding...'}
                                                         </>
                                                     ) : (
-                                                        'Fund Now'
+                                                        allocationWithStatus.allocation.token.canister_id.toString() === 'ryjl3-tyaaa-aaaaa-aaaba-cai' 
+                                                            ? 'Pay & Fund Now' 
+                                                            : 'Fund Now'
                                                     )}
                                                 </button>
                                             </div>

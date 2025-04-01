@@ -388,6 +388,48 @@ class AllocationService {
         const actor = await backendService.getActor();
         return actor.get_user_claims();
     }
+
+    /**
+     * Pay and fund an ICP allocation in one transaction
+     */
+    async payAndFundAllocation(allocationId: string): Promise<void> {
+        const allocation = await this.getAllocation(allocationId);
+        if (!allocation) {
+            throw new Error('Allocation not found');
+        }
+
+        if (allocation.token.canister_id.toString() !== 'ryjl3-tyaaa-aaaaa-aaaba-cai') {
+            throw new Error('This method is only for ICP allocations');
+        }
+
+        const paymentStatus = await this.getPaymentStatus(allocationId);
+        const fundingBalance = await this.getFundingBalance(allocationId);
+        const feeConfig = await this.getFeeConfig();
+        
+        const remainingPayment = paymentStatus.required_fee_e8s - paymentStatus.current_balance_e8s;
+        const remainingFunding = allocation.token.total_amount_e8s - fundingBalance;
+        
+        if (remainingPayment <= BigInt(0) && remainingFunding <= BigInt(0)) {
+            throw new Error('Allocation is already fully paid and funded');
+        }
+
+        // Get the funding subaccount
+        const subaccount = this.deriveBackendSubaccount(
+            Principal.fromText(allocation.token.canister_id.toString()),
+            allocationId
+        );
+
+        // Transfer total required amount (remaining payment + remaining funding)
+        const totalRequired = remainingPayment + remainingFunding;
+        if (totalRequired > BigInt(0)) {
+            await this.icrc1Service.transfer({
+                tokenId: allocation.token.canister_id.toString(),
+                to: process.env.CANISTER_ID_SWAPRUNNER_BACKEND!,
+                amount_e8s: totalRequired.toString(),
+                subaccount: subaccount
+            });
+        }
+    }
 }
 
 export const allocationService = new AllocationService(); 
