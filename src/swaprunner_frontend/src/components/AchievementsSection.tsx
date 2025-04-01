@@ -5,6 +5,7 @@ import { CollapsibleSection } from '../pages/Me';
 import '../styles/AchievementsSection.css';
 import '../styles/ClaimSuccessModal.css';
 import { allocationService } from '../services/allocation';
+import { Allocation } from '../services/allocation';
 import { formatTokenAmount } from '../utils/format';
 import { useTokens } from '../contexts/TokenContext';
 import { tokenService } from '../services/token';
@@ -667,6 +668,15 @@ interface ClaimSuccess {
 const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details, formatDate, onClaimSuccess }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [availableClaims, setAvailableClaims] = useState<ClaimableReward[]>([]);
+    const [claimedRewards, setClaimedRewards] = useState<{
+        allocation: Allocation;
+        claim: {
+            allocation_id: string;
+            user: string;
+            amount_e8s: bigint;
+            claimed_at: bigint;
+        };
+    }[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [claimSuccess, setClaimSuccess] = useState<ClaimSuccess | null>(null);
@@ -674,23 +684,34 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
 
     useEffect(() => {
         if (isExpanded) {
-            loadAvailableClaims();
+            loadRewards();
         }
     }, [isExpanded]);
 
-    const loadAvailableClaims = async () => {
+    const loadRewards = async () => {
         try {
             setLoading(true);
-            console.log('Loading available claims for achievement:', achievement.achievement_id);
-            const claims = await allocationService.getAvailableClaims();
-            console.log('All available claims:', claims);
-            // Filter claims for this achievement
+            console.log('Loading rewards for achievement:', achievement.achievement_id);
+            
+            // Load both available and claimed rewards in parallel
+            const [claims, userClaims] = await Promise.all([
+                allocationService.getAvailableClaims(),
+                allocationService.getUserClaims()
+            ]);
+            
+            // Filter available claims for this achievement
             const filteredClaims = claims.filter(claim => claim.achievement_id === achievement.achievement_id);
-            console.log('Filtered claims for achievement:', filteredClaims);
             setAvailableClaims(filteredClaims);
+            
+            // Filter claimed rewards for this achievement
+            const filteredClaimedRewards = userClaims.filter(claim => claim.allocation.achievement_id === achievement.achievement_id);
+            setClaimedRewards(filteredClaimedRewards);
+            
+            console.log('Filtered available claims:', filteredClaims);
+            console.log('Filtered claimed rewards:', filteredClaimedRewards);
         } catch (err: any) {
-            console.error('Error in loadAvailableClaims:', err);
-            setError('Failed to load available claims: ' + (err.message || String(err)));
+            console.error('Error in loadRewards:', err);
+            setError('Failed to load rewards: ' + (err.message || String(err)));
         } finally {
             setLoading(false);
         }
@@ -718,43 +739,64 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
     };
 
     return (
-        <>
-            <div className="achievement-card">
-                <div 
-                    className="achievement-header"
-                    onClick={() => setIsExpanded(!isExpanded)}
-                >
-                    <div className="achievement-icon-wrapper">
-                        {details.logo_url ? (
-                            <img 
-                                src={details.logo_url} 
-                                alt={details.name} 
-                                className="achievement-logo"
-                            />
-                        ) : (
-                            <FiAward size={32} className="achievement-icon" />
-                        )}
-                    </div>
-                    <div className="achievement-info">
-                        <h3>{details.name}</h3>
-                        <div className="achievement-date">
-                            {formatDate(achievement.discovered_at)}
-                        </div>
-                    </div>
-                    <div className="achievement-expand">
-                        {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+        <div className="achievement-card">
+            <div 
+                className="achievement-header"
+                onClick={() => setIsExpanded(!isExpanded)}
+            >
+                <div className="achievement-icon-wrapper">
+                    {details.logo_url ? (
+                        <img 
+                            src={details.logo_url} 
+                            alt={details.name} 
+                            className="achievement-logo"
+                        />
+                    ) : (
+                        <FiAward size={32} className="achievement-icon" />
+                    )}
+                </div>
+                <div className="achievement-info">
+                    <h3>{details.name}</h3>
+                    <div className="achievement-date">
+                        {formatDate(achievement.discovered_at)}
                     </div>
                 </div>
-                {isExpanded && (
-                    <div className="achievement-details">
-                        <div className="achievement-details-content">
-                            <h4>{details.name}</h4>
-                            <p>{details.description}</p>
-                            <div className="achievement-details-date">
-                                Earned on {formatDate(achievement.discovered_at)}
-                            </div>
+                <div className="achievement-expand">
+                    {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+                </div>
+            </div>
+            {isExpanded && (
+                <div className="achievement-details">
+                    <div className="achievement-details-content">
+                        <h4>{details.name}</h4>
+                        <p>{details.description}</p>
+                        <div className="achievement-details-date">
+                            Earned on {formatDate(achievement.discovered_at)}
+                        </div>
 
-                            <div className="achievement-rewards">
+                        {/* Claimed Rewards Section */}
+                        {claimedRewards.length > 0 && (
+                            <div className="achievement-rewards claimed">
+                                <h4>Claimed Rewards</h4>
+                                {claimedRewards.map((reward, index) => {
+                                    const token = tokens.find(t => t.canisterId === reward.allocation.token.canister_id.toString());
+                                    return (
+                                        <div key={`claimed-${index}`} className="reward-item claimed">
+                                            <div className="reward-amount">
+                                                {formatTokenAmount(reward.claim.amount_e8s, token?.canisterId || '')} {token?.metadata?.symbol || 'tokens'}
+                                            </div>
+                                            <div className="reward-date">
+                                                Claimed on {formatDate(Number(reward.claim.claimed_at / BigInt(1000000)))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                        
+                        {/* Available Rewards Section */}
+                        {availableClaims.length > 0 && (
+                            <div className="achievement-rewards available">
                                 <h4>Available Rewards</h4>
                                 {loading ? (
                                     <div className="rewards-loading">
@@ -762,7 +804,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                                     </div>
                                 ) : error ? (
                                     <div className="error-message">{error}</div>
-                                ) : availableClaims.length > 0 ? (
+                                ) : (
                                     <div className="rewards-list">
                                         {availableClaims.map((claim) => {
                                             const allocation = tokens.find(t => t.canisterId === claim.token_canister_id.toString());
@@ -802,23 +844,19 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                                             );
                                         })}
                                     </div>
-                                ) : (
-                                    <div className="no-rewards">
-                                        No rewards available to claim
-                                    </div>
                                 )}
                             </div>
-                        </div>
+                        )}
                     </div>
-                )}
-            </div>
+                </div>
+            )}
             {claimSuccess && (
                 <ClaimSuccessModal
                     show={true}
                     onClose={() => {
                         setClaimSuccess(null);
-                        // Reload claims after modal is closed
-                        loadAvailableClaims();
+                        // Reload rewards after modal is closed
+                        loadRewards();
                         if (onClaimSuccess) {
                             onClaimSuccess();
                         }
@@ -828,7 +866,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                     achievementName={claimSuccess.achievementName}
                 />
             )}
-        </>
+        </div>
     );
 };
 

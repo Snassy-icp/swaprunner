@@ -3800,4 +3800,35 @@ shared (deployer) actor class SwapRunner() = this {
             userAchievements,
         )
     };
+
+    // Get all claims for a user
+    public query({caller}) func get_user_claims() : async [{
+        allocation: T.Allocation;
+        claim: T.AllocationClaim;
+    }] {
+        if (Principal.isAnonymous(caller)) {
+            return [];
+        };
+
+        let results = Buffer.Buffer<{
+            allocation: T.Allocation;
+            claim: T.AllocationClaim;
+        }>(0);
+
+        for ((claim_key, claim) in allocation_claims.entries()) {
+            if (claim.user == caller) {
+                switch (allocations.get(claim.allocation_id)) {
+                    case (?allocation) {
+                        results.add({
+                            allocation = allocation;
+                            claim = claim;
+                        });
+                    };
+                    case null {}; // Skip if allocation not found
+                };
+            };
+        };
+
+        Buffer.toArray(results)
+    };
 }

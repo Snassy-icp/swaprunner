@@ -357,6 +357,22 @@ class AllocationService {
             throw new Error(result.err);
         }
     }
+
+    /**
+     * Get all claims for the current user
+     */
+    async getUserClaims(): Promise<{
+        allocation: Allocation;
+        claim: {
+            allocation_id: string;
+            user: string;
+            amount_e8s: bigint;
+            claimed_at: bigint;
+        };
+    }[]> {
+        const actor = await backendService.getActor();
+        return actor.get_user_claims();
+    }
 }
 
 export const allocationService = new AllocationService(); 
