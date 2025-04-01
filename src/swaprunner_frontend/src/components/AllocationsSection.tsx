@@ -60,6 +60,9 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
     const [tokenBalance, setTokenBalance] = useState<bigint>(BigInt(0));
     const [isLoadingBalances, setIsLoadingBalances] = useState(false);
     const [balanceError, setBalanceError] = useState<string | null>(null);
+    const [addCutOnTop, setAddCutOnTop] = useState(false);
+    const [hasEnoughICP, setHasEnoughICP] = useState(false);
+    const [hasEnoughTokens, setHasEnoughTokens] = useState(false);
 
     useEffect(() => {
         loadAchievements();
@@ -104,38 +107,42 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
         }
     };
 
-    // Add function to check if user has sufficient balances
-    const checkBalances = (): { hasEnoughICP: boolean; hasEnoughTokens: boolean } => {
-        // For ICP allocations, we need to check if they have enough for both fee and allocation
-        const isICP = selectedToken === 'ryjl3-tyaaa-aaaaa-aaaba-cai';
-        
-        let hasEnoughICP = false;
-        let hasEnoughTokens = false;
-
-        if (selectedToken && totalAmount) {
-            try {
-                const totalE8s = parseTokenAmount(totalAmount, selectedToken);
-                const icpTxFee = BigInt(10000); // Standard ICP tx fee is 10000 e8s
-                const tokenTxFee = selectedTokenMetadata?.fee || BigInt(0);
-                
-                if (isICP) {
-                    // For ICP allocations, check if they have enough for fee + allocation + two tx fees
-                    hasEnoughICP = icpBalance >= (feeConfig?.icp_fee_e8s || BigInt(0)) + totalE8s + icpTxFee + icpTxFee;
-                    hasEnoughTokens = hasEnoughICP; // We use hasEnoughICP for the total check
-                } else {
-                    // For other tokens:
-                    // - Check if they have enough ICP for fee + tx fee
-                    hasEnoughICP = icpBalance >= (feeConfig?.icp_fee_e8s || BigInt(0)) + icpTxFee;
-                    // - Check if they have enough tokens for allocation + two tx fees
-                    hasEnoughTokens = tokenBalance >= totalE8s + tokenTxFee + tokenTxFee;
-                }
-            } catch {
-                hasEnoughTokens = false;
-                if (isICP) hasEnoughICP = false;
-            }
+    const checkBalances = async (): Promise<{ hasEnoughICP: boolean; hasEnoughTokens: boolean }> => {
+        if (!selectedToken || !totalAmount || !feeConfig) {
+            return { hasEnoughICP: false, hasEnoughTokens: false };
         }
-        
-        return { hasEnoughICP, hasEnoughTokens };
+        setIsLoadingBalances(true);
+        setBalanceError(null);
+
+        try {
+            const [currentIcpBalance, currentTokenBalance] = await Promise.all([
+                icpBalance,
+                selectedToken === 'ryjl3-tyaaa-aaaaa-aaaba-cai' ? icpBalance : tokenBalance
+            ]);
+
+            const requiredICP = feeConfig.icp_fee_e8s;
+            let requiredTokens = parseTokenAmount(totalAmount, selectedToken);
+            
+            if (addCutOnTop) {
+                requiredTokens += calculateCutOnTop();
+            }
+
+            const hasEnoughICP = currentIcpBalance >= requiredICP;
+            const hasEnoughTokens = currentTokenBalance >= requiredTokens;
+
+            if (!hasEnoughICP) {
+                setBalanceError(`Insufficient ICP balance. Required: ${formatTokenAmount(requiredICP, 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP`);
+            } else if (!hasEnoughTokens) {
+                setBalanceError(`Insufficient ${selectedToken === 'ryjl3-tyaaa-aaaaa-aaaba-cai' ? 'ICP' : 'token'} balance. Required: ${formatTokenAmount(requiredTokens, selectedToken)}`);
+            }
+
+            return { hasEnoughICP, hasEnoughTokens };
+        } catch (err: any) {
+            setBalanceError(err.message || 'Failed to check balances');
+            return { hasEnoughICP: false, hasEnoughTokens: false };
+        } finally {
+            setIsLoadingBalances(false);
+        }
     };
 
     const loadAchievements = async () => {
@@ -202,6 +209,16 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
         }
     };
 
+    const calculateCutOnTop = (): bigint => {
+        if (!totalAmount || !selectedToken || !feeConfig) return BigInt(0);
+        try {
+            const totalE8s = parseTokenAmount(totalAmount, selectedToken);
+            return totalE8s / BigInt(10000 - feeConfig.cut_basis_points);
+        } catch {
+            return BigInt(0);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedAchievement || !selectedToken || !totalAmount || !perUserMin || !perUserMax) {
@@ -214,12 +231,12 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
             setError(null);
 
             // Check balances first
-            const { hasEnoughICP, hasEnoughTokens } = checkBalances();
+            const balances = await checkBalances();
             const isICP = selectedToken === 'ryjl3-tyaaa-aaaaa-aaaba-cai';
             const icpTxFee = BigInt(10000);
             const tokenTxFee = selectedTokenMetadata?.fee || BigInt(0);
 
-            if (!hasEnoughICP) {
+            if (!balances.hasEnoughICP) {
                 if (isICP) {
                     const totalE8s = parseTokenAmount(totalAmount, selectedToken);
                     const totalRequired = (feeConfig?.icp_fee_e8s || BigInt(0)) + totalE8s + icpTxFee;
@@ -231,7 +248,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                 return;
             }
 
-            if (!hasEnoughTokens && !isICP) {
+            if (!balances.hasEnoughTokens && !isICP) {
                 const totalE8s = parseTokenAmount(totalAmount, selectedToken);
                 const totalRequired = totalE8s + tokenTxFee;
                 setError(`Insufficient token balance. Required: ${formatTokenAmount(totalRequired, selectedToken)} ${selectedTokenMetadata?.symbol || 'tokens'} (includes allocation amount and transaction fee)`);
@@ -272,8 +289,14 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
         }
     };
 
-    // Calculate if we have sufficient balances
-    const { hasEnoughICP, hasEnoughTokens } = checkBalances();
+    useEffect(() => {
+        const checkUserBalances = async () => {
+            const balances = await checkBalances();
+            setHasEnoughICP(balances.hasEnoughICP);
+            setHasEnoughTokens(balances.hasEnoughTokens);
+        };
+        void checkUserBalances();
+    }, [totalAmount, selectedToken, feeConfig]);
 
     return (
         <form onSubmit={handleSubmit} className="allocation-form">
@@ -405,17 +428,35 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
             {feeConfig && (
                 <div className="fee-info">
                     <div className="fee-section">
-                        <div className="fee-header">Platform Fee</div>
+                        <div className="fee-header">Fee Information</div>
                         <div className="fee-content">
                             <div className="fee-row">
-                                <span className="fee-label">Creation Fee</span>
+                                <span className="fee-label">Platform Fee</span>
                                 <span className="fee-value">
-                                    {formatTokenAmount(feeConfig.icp_fee_e8s, 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP
-                                    {!hasEnoughICP && (
-                                        <span className="balance-warning">
-                                            <FiAlertCircle /> Insufficient balance
-                                        </span>
-                                    )}
+                                    {feeConfig ? formatTokenAmount(feeConfig.icp_fee_e8s, 'ryjl3-tyaaa-aaaaa-aaaba-cai') : '0'} ICP
+                                </span>
+                            </div>
+                            <div className="fee-row">
+                                <span className="fee-label">Platform Cut</span>
+                                <span className="fee-value">{feeConfig ? (Number(feeConfig.cut_basis_points) / 100).toFixed(2) : '0'}%</span>
+                            </div>
+                            <div className="fee-row">
+                                <span className="fee-label">
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={addCutOnTop}
+                                            onChange={(e) => setAddCutOnTop(e.target.checked)}
+                                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                        />
+                                        Add cut on top
+                                    </label>
+                                    <div style={{ color: '#666', fontSize: '12px', fontStyle: 'italic', marginTop: '4px' }}>
+                                        When checked, the cut will be added to your specified amount instead of being taken from it
+                                    </div>
+                                </span>
+                                <span className="fee-value">
+                                    {addCutOnTop && totalAmount ? formatTokenAmount(calculateCutOnTop(), selectedToken || '') : '-'}
                                 </span>
                             </div>
                             <div className="fee-row">
