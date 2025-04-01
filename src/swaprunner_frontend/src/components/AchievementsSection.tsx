@@ -7,6 +7,7 @@ import '../styles/ClaimSuccessModal.css';
 import { allocationService } from '../services/allocation';
 import { formatTokenAmount } from '../utils/format';
 import { useTokens } from '../contexts/TokenContext';
+import { tokenService } from '../services/token';
 
 interface Achievement {
     id: string;
@@ -426,6 +427,17 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
     const [showBalloons] = useState(() => Math.random() < BALLOON_PROBABILITY);
     const [showFireworks] = useState(() => Math.random() < FIREWORK_PROBABILITY);
     const [balloons, setBalloons] = useState<BalloonState[]>([]);
+    const [tokenLogo, setTokenLogo] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (tokenId && tokenMetadata?.hasLogo) {
+            tokenService.getTokenLogo(tokenId).then(logo => {
+                if (logo) {
+                    setTokenLogo(logo);
+                }
+            }).catch(console.error);
+        }
+    }, [tokenId, tokenMetadata]);
 
     const handlePop = (index: number) => {
         console.log('Modal handlePop called with index:', index);
@@ -577,7 +589,17 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
                             <FiGift style={{ opacity: isOpen ? 0 : 1 }} />
                         </div>
                         <div className={`claim-success-icon ${isOpen ? 'closed' : 'open'}`}>
-                            <FiPackage style={{ opacity: isOpen ? 1 : 0 }} />
+                            {tokenLogo ? (
+                                <img 
+                                    src={tokenLogo} 
+                                    alt={tokenMetadata?.symbol || 'Token'} 
+                                    className="token-logo"
+                                />
+                            ) : (
+                                <div className="token-symbol">
+                                    {tokenMetadata?.symbol || '?'}
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div className="claim-success-text">

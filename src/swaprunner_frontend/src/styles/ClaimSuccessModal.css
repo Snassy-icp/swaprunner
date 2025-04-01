@@ -49,6 +49,30 @@
     color: #ffd700;
     animation: giftReveal 1s forwards;
     transform-origin: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.claim-success-icon .token-logo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 12px;
+}
+
+.claim-success-icon .token-symbol {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #ffd700, #ffa500);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .claim-success-icon.closed {
