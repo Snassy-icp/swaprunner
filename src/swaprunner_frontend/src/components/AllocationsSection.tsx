@@ -119,15 +119,15 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                 const tokenTxFee = selectedTokenMetadata?.fee || BigInt(0);
                 
                 if (isICP) {
-                    // For ICP allocations, check if they have enough for fee + allocation + one tx fee
-                    hasEnoughICP = icpBalance >= (feeConfig?.icp_fee_e8s || BigInt(0)) + totalE8s + icpTxFee;
-                    hasEnoughTokens = true; // We use hasEnoughICP for the total check
+                    // For ICP allocations, check if they have enough for fee + allocation + two tx fees
+                    hasEnoughICP = icpBalance >= (feeConfig?.icp_fee_e8s || BigInt(0)) + totalE8s + icpTxFee + icpTxFee;
+                    hasEnoughTokens = hasEnoughICP; // We use hasEnoughICP for the total check
                 } else {
                     // For other tokens:
                     // - Check if they have enough ICP for fee + tx fee
                     hasEnoughICP = icpBalance >= (feeConfig?.icp_fee_e8s || BigInt(0)) + icpTxFee;
-                    // - Check if they have enough tokens for allocation + tx fee
-                    hasEnoughTokens = tokenBalance >= totalE8s + tokenTxFee;
+                    // - Check if they have enough tokens for allocation + two tx fees
+                    hasEnoughTokens = tokenBalance >= totalE8s + tokenTxFee + tokenTxFee;
                 }
             } catch {
                 hasEnoughTokens = false;
