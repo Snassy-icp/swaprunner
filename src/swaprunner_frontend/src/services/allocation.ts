@@ -174,16 +174,12 @@ class AllocationService {
 
         let principalBytes = principalToSubAccount(principal);
 
-        console.log('deriveBackendSubaccount principalBytes', principalBytes);
         const subaccount = new Uint8Array(32);
         
         // Copy principal bytes into subaccount
         subaccount.set(principalBytes.slice(0, 29), 0);
         // call service method to turn subaccount into hex
         let hex =  formatHex(Array.from(subaccount));
-        console.log('deriveBackendSubaccount hex', hex);
-
-        console.log('deriveBackendSubaccount subaccount', subaccount);
         // Convert allocation ID to number
         const idNum = parseInt(allocationId);
         if (isNaN(idNum)) {
@@ -194,8 +190,6 @@ class AllocationService {
         subaccount[29] = (idNum >> 16) & 0xFF;
         subaccount[30] = (idNum >> 8) & 0xFF;
         subaccount[31] = idNum & 0xFF;
-
-        console.log('deriveBackendSubaccount2 subaccount', subaccount);
 
         return subaccount;
     }
@@ -212,15 +206,14 @@ class AllocationService {
         
         // Get the subaccount for this allocation
         const subaccount = this.derivePaymentSubaccount(allocationId);
-        console.log('getPaymentStatus subaccount', subaccount);
+
         // Get balance using ICRC1 service
         const { balance_e8s } = await this.icrc1Service.getOwnerBalanceWithSubaccount(
             'ryjl3-tyaaa-aaaaa-aaaba-cai', // ICP ledger
             Principal.fromText(process.env.CANISTER_ID_SWAPRUNNER_BACKEND!),
             Array.from(subaccount)
         );
-        console.log('getPaymentStatus balance_e8s', balance_e8s);
-
+        
         // For ICP allocations, cap the current balance at the platform fee
         const current_balance = allocation.token.canister_id.toString() === 'ryjl3-tyaaa-aaaaa-aaaba-cai'
             ? balance_e8s > feeConfig.icp_fee_e8s ? feeConfig.icp_fee_e8s : balance_e8s
@@ -426,6 +419,7 @@ class AllocationService {
 
         // Transfer total required amount (remaining payment + remaining funding)
         const totalRequired = remainingPayment + remainingFunding;
+        console.log('payAndFundAllocation totalRequired', totalRequired);
         if (totalRequired > BigInt(0)) {
             await this.icrc1Service.transfer({
                 tokenId: allocation.token.canister_id.toString(),
