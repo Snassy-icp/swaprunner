@@ -3410,6 +3410,10 @@ shared (deployer) actor class SwapRunner() = this {
     };
 
     public shared({caller}) func withdraw_from_balance(token_id: Principal, amount_e8s: Nat) : async Result.Result<Nat, Text> {
+        await withdraw_from_balance_impl(caller, token_id, amount_e8s)
+    };
+
+    private func withdraw_from_balance_impl(caller: Principal, token_id: Principal, amount_e8s: Nat) : async Result.Result<Nat, Text> {
         // Check if token exists and get metadata
         switch (getTokenMetadata(token_id)) {
             case null #err("Token not found");
@@ -3435,9 +3439,11 @@ shared (deployer) actor class SwapRunner() = this {
                                 // Create actor to interact with token ledger
                                 let token_actor : T.ICRC1Interface = actor(Principal.toText(token_id));
                                 
+                                let from_subaccount = Util.PrincipalToSubaccount(token_id);
+
                                 // Prepare transfer arguments
                                 let transfer_args : T.TransferArgs = {
-                                    from_subaccount = null;
+                                    from_subaccount = ?from_subaccount;
                                     to = {
                                         owner = caller;
                                         subaccount = null;
@@ -3538,16 +3544,24 @@ shared (deployer) actor class SwapRunner() = this {
         };
 
         // Try to claim the allocation, and if successfull withdraw everything in the user's balance
-        switch(await claim_allocation(allocation_id)) {
+        switch(await claim_allocation_impl(caller, allocation_id)) {
             case (#ok(claim_amount)) {
-                await withdraw_from_balance(caller, claim_amount)
+                let allocation = switch (allocations.get(allocation_id)) {
+                    case null return #err("Allocation not found");
+                    case (?a) a;
+                };
+                await withdraw_from_balance_impl(caller, allocation.token.canister_id, claim_amount)
             };
             case (#err(msg)) #err(msg);
         }
     };
 
-    // Claim from an allocation
     public shared({caller}) func claim_allocation(allocation_id: Text) : async Result.Result<Nat, Text> {
+        await claim_allocation_impl(caller, allocation_id)
+    };
+
+    // Claim from an allocation
+    private func claim_allocation_impl(caller: Principal, allocation_id: Text) : async Result.Result<Nat, Text> {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous principal not allowed");
         };
