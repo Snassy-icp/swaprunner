@@ -16,6 +16,8 @@ import Blob "mo:base/Blob";
 import Iter "mo:base/Iter";
 import T "./Types";
 import Util "./Util";
+import IC "mo:base/ExperimentalInternetComputer";
+import Hash "mo:base/Hash";
 
 module {
     // Helper function to derive subaccount for allocation
@@ -329,9 +331,16 @@ module {
         )) {
             case (#err(msg)) return #err(msg);
             case (#ok(allocation)) {
-                // For now, just return the minimum amount
-                // In future versions we could implement more sophisticated distribution logic
-                #ok(allocation.token.per_user.min_e8s)
+                if (allocation.token.per_user.max_e8s > allocation.token.per_user.min_e8s) {
+                    // Generate pseudo-random number using Time.now()
+                    let now = Int.abs(Time.now());
+                    let hash = Hash.hash(now);
+                    let range = allocation.token.per_user.max_e8s - allocation.token.per_user.min_e8s + 1;
+                    let random_amount = allocation.token.per_user.min_e8s + (Nat32.toNat(hash) % range);
+                    #ok(random_amount)
+                } else {
+                    #ok(allocation.token.per_user.min_e8s)
+                };
             };
         }
     };
