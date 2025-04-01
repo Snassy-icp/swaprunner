@@ -437,9 +437,9 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                                         {(() => {
                                             try {
                                                 const totalE8s = parseTokenAmount(totalAmount, selectedToken);
-                                                const cutBasisPoints = feeConfig ? BigInt(feeConfig.cut_basis_points) : BigInt(0);
-                                                const totalWithCut = totalE8s + ((totalE8s * cutBasisPoints) / BigInt(10000));
-                                                const totalRequired = (feeConfig.icp_fee_e8s || BigInt(0)) + totalWithCut;
+                                                // For ICP allocations, we just need the total amount plus the fee
+                                                // The cut will be taken from the total amount after transfer
+                                                const totalRequired = (feeConfig.icp_fee_e8s || BigInt(0)) + totalE8s;
                                                 return formatTokenAmount(totalRequired, 'ryjl3-tyaaa-aaaaa-aaaba-cai');
                                             } catch {
                                                 return '0';
