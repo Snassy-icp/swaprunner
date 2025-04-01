@@ -3546,6 +3546,7 @@ shared (deployer) actor class SwapRunner() = this {
         // Try to claim the allocation, and if successfull withdraw everything in the user's balance
         switch(await claim_allocation_impl(caller, allocation_id)) {
             case (#ok(claim_amount)) {
+
                 let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
                     case null return #err("Allocation not found");
                     case (?a) a;
@@ -3589,6 +3590,7 @@ shared (deployer) actor class SwapRunner() = this {
             getUserIndex
         )) {
             case (#ok(claim_amount)) {
+
                 // Get allocation and token index
                 let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
                     case null return #err("Allocation not found");
@@ -3618,7 +3620,7 @@ shared (deployer) actor class SwapRunner() = this {
                     amount_e8s = claim_amount;
                     claimed_at = Time.now();
                 };
-                //allocation_claims.put(Allocation.get_claim_key(caller, allocation_id), claim);
+                allocation_claims.put(Allocation.get_claim_key(caller, Nat.toText(allocation_id)), claim);
 
                 // Check if allocation is now depleted
                 if (getAllocationBalance(allocation_id, token_index) == 0) {
