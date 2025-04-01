@@ -3546,6 +3546,17 @@ shared (deployer) actor class SwapRunner() = this {
         // Try to claim the allocation, and if successfull withdraw everything in the user's balance
         switch(await claim_allocation_impl(caller, allocation_id)) {
             case (#ok(claim_amount)) {
+                let fee = switch (getTokenMetadata(allocation.token.canister_id)) {
+                    case null 0;
+                    case (?token_metadata) switch (token_metadata.fee) {
+                        case null 0;
+                        case (?fee) fee;
+                    };
+                };
+                if (claim_amount <= fee) {
+                    return #ok(claim_amount);
+                };
+
                 let allocation = switch (allocations.get(allocation_id)) {
                     case null return #err("Allocation not found");
                     case (?a) a;

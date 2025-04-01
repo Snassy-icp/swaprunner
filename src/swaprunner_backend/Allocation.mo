@@ -319,6 +319,7 @@ module {
         allocation_statuses: HashMap.HashMap<Text, T.AllocationStatus>,
         allocation_claims: HashMap.HashMap<Text, T.AllocationClaim>,
         user_achievements: HashMap.HashMap<Text, [T.UserAchievement]>,
+        get_allocation_balance: (Text) -> Nat,
     ) : Result.Result<Nat, Text> {
         // Check eligibility
         switch(check_claim_eligibility(
@@ -331,16 +332,38 @@ module {
         )) {
             case (#err(msg)) return #err(msg);
             case (#ok(allocation)) {
-                if (allocation.token.per_user.max_e8s > allocation.token.per_user.min_e8s) {
+                // Get available balance
+                let available_balance = get_allocation_balance(allocation_id);
+                if (available_balance == 0) {
+                    return #err("Allocation has no remaining balance");
+                };
+
+                // Constrain max by available balance
+                let max_e8s = Nat.min(allocation.token.per_user.max_e8s, available_balance);
+                if (max_e8s < allocation.token.per_user.min_e8s) {
+                    return #ok(max_e8s);
+                };
+
+                var result_e8s = 0;
+                if (max_e8s > allocation.token.per_user.min_e8s) {
                     // Generate pseudo-random number using Time.now()
                     let now = Int.abs(Time.now());
                     let hash = Hash.hash(now);
-                    let range = allocation.token.per_user.max_e8s - allocation.token.per_user.min_e8s + 1;
+                    let range = max_e8s - allocation.token.per_user.min_e8s + 1;
                     let random_amount = allocation.token.per_user.min_e8s + (Nat32.toNat(hash) % range);
-                    #ok(random_amount)
+                    result_e8s := random_amount;
                 } else {
-                    #ok(allocation.token.per_user.min_e8s)
+                    result_e8s := max_e8s;
                 };
+
+                // If the remainder of the balance is less than the minimum claim amount, add the remainder
+                let remainder = if (available_balance > result_e8s) { available_balance - result_e8s; } else { 0 };
+                if (remainder < allocation.token.per_user.min_e8s) {
+                    result_e8s += remainder;
+                };
+
+                #ok(result_e8s)
+
             };
         }
     };
