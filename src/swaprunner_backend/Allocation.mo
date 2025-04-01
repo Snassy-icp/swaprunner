@@ -477,6 +477,11 @@ module {
             };
         };
 
+        // If this was an ICP allocation we have already returned the funds with the payment
+        if (allocation.token.canister_id == Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai")) {    
+            return #ok(());
+        };
+
         // Return funding balance if bigger than tx fee
         if (funding_balance > token_tx_fee) {
             let funding_result = await icrc1_funding_actor.icrc1_transfer({

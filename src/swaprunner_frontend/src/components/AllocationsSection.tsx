@@ -282,9 +282,15 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
             }
 
             // Parse amounts using token metadata for proper decimal handling
-            const total = parseTokenAmount(totalAmount, selectedToken);
+            let total = parseTokenAmount(totalAmount, selectedToken);
             const min = parseTokenAmount(perUserMin, selectedToken);
             const max = parseTokenAmount(perUserMax, selectedToken);
+
+            // If addCutOnTop is true, increase the total amount to include the cut
+            if (addCutOnTop) {
+                const cutAmount = calculateCutOnTop();
+                total += cutAmount;
+            }
 
             if (total === BigInt(0) || min === BigInt(0) || max === BigInt(0)) {
                 setError('All amounts must be greater than 0');
