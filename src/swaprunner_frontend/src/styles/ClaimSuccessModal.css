@@ -279,20 +279,43 @@
 
 .balloon {
     position: absolute;
-    border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
-    transform-origin: center bottom;
-    will-change: transform;
+    border-radius: 50% 50% 45% 45%;
+    cursor: pointer;
     pointer-events: all;
-    backface-visibility: hidden;
-    transition: transform 0.3s ease-out;
+    will-change: transform;
+    transform-style: preserve-3d;
 }
 
-.balloon:hover {
+.balloon:not(.popped) {
+    animation: float var(--duration) var(--delay) linear forwards;
+}
+
+.balloon:hover:not(.popped) {
     transform: scale(1.1) translateZ(30px);
 }
 
 .balloon.popped {
-    animation: pop 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+    animation: pop 0.5s ease-out forwards !important;
+    pointer-events: none;
+}
+
+@keyframes pop {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    20% {
+        transform: scale(1.2);
+        opacity: 0.9;
+    }
+    50% {
+        transform: scale(0.8);
+        opacity: 0.6;
+    }
+    100% {
+        transform: scale(0);
+        opacity: 0;
+    }
 }
 
 .balloon-string {
@@ -321,34 +344,6 @@
     }
     100% {
         transform: translate3d(0, -120vh, var(--depth-offset, 0)) rotate(15deg);
-    }
-}
-
-@keyframes sway {
-    0% {
-        transform: translateX(0) translateZ(var(--depth-offset, 0));
-    }
-    50% {
-        transform: translateX(var(--sway-amount, 30px)) translateZ(var(--depth-offset, 0));
-    }
-    100% {
-        transform: translateX(0) translateZ(var(--depth-offset, 0));
-    }
-}
-
-@keyframes pop {
-    0% {
-        transform: scale(1) translateZ(var(--depth-offset, 0));
-    }
-    25% {
-        transform: scale(1.2) translateZ(var(--depth-offset, 0));
-    }
-    50% {
-        transform: scale(0.8) translateZ(var(--depth-offset, 0));
-    }
-    100% {
-        transform: scale(0) translateZ(var(--depth-offset, 0));
-        visibility: hidden;
     }
 }
 

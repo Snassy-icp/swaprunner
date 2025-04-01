@@ -549,8 +549,8 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
                                         width: `${balloon.size}px`,
                                         height: `${balloon.size * 1.2}px`,
                                         backgroundColor: balloon.color,
-                                        animation: `float ${balloon.duration}s ${balloon.delay}s ease-out forwards`,
-                                        '--sway-amount': `${balloon.swayAmount}px`,
+                                        '--delay': `${balloon.delay}s`,
+                                        '--duration': `${balloon.duration}s`,
                                         '--depth-offset': `${balloon.depthOffset}px`,
                                         zIndex,
                                         boxShadow: `inset -${2 + balloon.size/20}px -${2 + balloon.size/20}px ${5 + balloon.size/8}px rgba(0,0,0,${shadowIntensity})`
@@ -611,8 +611,8 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
                                         width: `${balloon.size}px`,
                                         height: `${balloon.size * 1.2}px`,
                                         backgroundColor: balloon.color,
-                                        animation: `float ${balloon.duration}s ${balloon.delay}s ease-out forwards`,
-                                        '--sway-amount': `${balloon.swayAmount}px`,
+                                        '--delay': `${balloon.delay}s`,
+                                        '--duration': `${balloon.duration}s`,
                                         '--depth-offset': `${balloon.depthOffset}px`,
                                         zIndex,
                                         boxShadow: `inset -${2 + balloon.size/20}px -${2 + balloon.size/20}px ${5 + balloon.size/8}px rgba(0,0,0,${shadowIntensity})`
