@@ -120,20 +120,36 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                 selectedToken === 'ryjl3-tyaaa-aaaaa-aaaba-cai' ? icpBalance : tokenBalance
             ]);
 
-            const requiredICP = feeConfig.icp_fee_e8s;
-            let requiredTokens = parseTokenAmount(totalAmount, selectedToken);
+            const isICP = selectedToken === 'ryjl3-tyaaa-aaaaa-aaaba-cai';
+            const totalE8s = parseTokenAmount(totalAmount, selectedToken);
+            const icpTxFee = BigInt(10000); // Standard ICP tx fee is 10000 e8s
+            const tokenTxFee = selectedTokenMetadata?.fee || BigInt(0);
             
+            let hasEnoughICP, hasEnoughTokens;
+            let requiredTokens = totalE8s;
             if (addCutOnTop) {
                 requiredTokens += calculateCutOnTop();
             }
 
-            const hasEnoughICP = currentIcpBalance >= requiredICP;
-            const hasEnoughTokens = currentTokenBalance >= requiredTokens;
+            if (isICP) {
+                // For ICP allocations, check if they have enough for fee + allocation + two tx fees
+                hasEnoughICP = currentIcpBalance >= (feeConfig.icp_fee_e8s || BigInt(0)) + requiredTokens + icpTxFee + icpTxFee;
+                hasEnoughTokens = hasEnoughICP; // We use hasEnoughICP for the total check
+            } else {
+                // For other tokens:
+                // - Check if they have enough ICP for fee + tx fee
+                hasEnoughICP = currentIcpBalance >= (feeConfig.icp_fee_e8s || BigInt(0)) + icpTxFee;
+                // - Check if they have enough tokens for allocation + two tx fees
+                hasEnoughTokens = currentTokenBalance >= requiredTokens + tokenTxFee + tokenTxFee;
+            }
 
             if (!hasEnoughICP) {
-                setBalanceError(`Insufficient ICP balance. Required: ${formatTokenAmount(requiredICP, 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP`);
+                setBalanceError(`Insufficient ICP balance. Required: ${formatTokenAmount(feeConfig.icp_fee_e8s + icpTxFee, 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP`);
             } else if (!hasEnoughTokens) {
-                setBalanceError(`Insufficient ${selectedToken === 'ryjl3-tyaaa-aaaaa-aaaba-cai' ? 'ICP' : 'token'} balance. Required: ${formatTokenAmount(requiredTokens, selectedToken)}`);
+                const requiredTotal = isICP ? 
+                    requiredTokens + icpTxFee + icpTxFee :
+                    requiredTokens + tokenTxFee + tokenTxFee;
+                setBalanceError(`Insufficient ${isICP ? 'ICP' : 'token'} balance. Required: ${formatTokenAmount(requiredTotal, selectedToken)}`);
             }
 
             return { hasEnoughICP, hasEnoughTokens };
@@ -213,8 +229,9 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
         if (!totalAmount || !selectedToken || !feeConfig) return BigInt(0);
         try {
             const totalE8s = parseTokenAmount(totalAmount, selectedToken);
-            return totalE8s / BigInt(10000 - feeConfig.cut_basis_points);
-        } catch {
+            return BigInt(totalE8s) / BigInt(BigInt(10000) - BigInt(feeConfig.cut_basis_points));
+        } catch (err: any) {
+            console.error('Error calculating cut on top', err);
             return BigInt(0);
         }
     };
