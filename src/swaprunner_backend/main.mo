@@ -3409,15 +3409,24 @@ shared (deployer) actor class SwapRunner() = this {
         Buffer.toArray(conditions)
     };
 
-    public shared({caller}) func withdraw_from_balance(token_id: Principal, amount_e8s: Nat) : async Result.Result<Text, Text> {
+    public shared({caller}) func withdraw_from_balance(token_id: Principal, amount_e8s: Nat) : async Result.Result<Nat, Text> {
         // Check if token exists and get metadata
         switch (getTokenMetadata(token_id)) {
             case null #err("Token not found");
             case (?token_metadata) {
+                let fee = switch (token_metadata.fee) {
+                    case null 0;
+                    case (?fee) fee;
+                };
+                if (fee >= amount_e8s) {
+                    return #err("Insufficient withdrawal amount");
+                };
+                let amount = amount_e8s - fee;
+
                 // Get user's balance key
                 switch (getUserIndex(token_id)) {
                     case null #err("Token not found");
-                    case (?token_index) {
+                    case (?token_index) {                        
                         // Check if user has sufficient balance
                         switch (subtractFromUserBalance(caller, token_index, amount_e8s)) {
                             case false #err("Insufficient balance");
@@ -3433,8 +3442,8 @@ shared (deployer) actor class SwapRunner() = this {
                                         owner = caller;
                                         subaccount = null;
                                     };
-                                    amount = amount_e8s;
-                                    fee = token_metadata.fee;
+                                    amount = amount;
+                                    fee = ?fee;
                                     memo = null;
                                     created_at_time = null;
                                 };
@@ -3445,7 +3454,7 @@ shared (deployer) actor class SwapRunner() = this {
                                         case (#Ok(block_index)) {
                                             // Update user balance
                                             
-                                            #ok("Transfer successful")
+                                            #ok(amount)
                                         };
                                         case (#Err(transfer_error)) {
                                             #err("Transfer failed: " # debug_show(transfer_error))
@@ -3523,16 +3532,25 @@ shared (deployer) actor class SwapRunner() = this {
         }
     };
 
+    public shared({caller}) func claim_and_withdraw_allocation(allocation_id: Text) : async Result.Result<Nat, Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        // Try to claim the allocation, and if successfull withdraw everything in the user's balance
+        switch(await claim_allocation(allocation_id)) {
+            case (#ok(claim_amount)) {
+                await withdraw_from_balance(caller, claim_amount)
+            };
+            case (#err(msg)) #err(msg);
+        }
+    };
+
     // Claim from an allocation
     public shared({caller}) func claim_allocation(allocation_id: Text) : async Result.Result<Nat, Text> {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous principal not allowed");
         };
-
-        if (not Principal.isAnonymous(caller)) {
-            return #ok(1234567890);
-        };
-
 
         switch(Allocation.process_claim(
             caller,
