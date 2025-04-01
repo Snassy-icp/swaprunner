@@ -165,9 +165,9 @@ module {
         // Verify funding is complete
         let required_funding = if (allocation.token.canister_id == Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai")) {
             // For ICP allocations, we need to have enough for both the platform fee and the allocation amount
-            allocation.token.total_amount_e8s + fee_config.icp_fee_e8s
+            allocation.token.total_amount_e8s + fee_config.icp_fee_e8s + icp_tx_fee
         } else {
-            allocation.token.total_amount_e8s
+            allocation.token.total_amount_e8s + token_tx_fee
         };
 
         if (funding_balance < required_funding) {
@@ -229,7 +229,7 @@ module {
             let server_result = await icrc1_funding_actor.icrc1_transfer({
                 from_subaccount = ?funding_subaccount;
                 to = { owner = this_canister_id; subaccount = ?server_subaccount };
-                amount = remaining_amount - token_tx_fee;
+                amount = remaining_amount;  // we don't subtract tx fee because we have made room for one extra fee so the allocation.token.total_amount_e8s is what ends up in the allocation balance
                 fee = null;
                 memo = null;
                 created_at_time = null;
@@ -242,9 +242,9 @@ module {
                         case null return #err("Token index not found");
                         case (?token_index) {
                             // Increase allocation balance
-                            addToAllocationBalance(allocation_id, token_index, remaining_amount - token_tx_fee);
+                            addToAllocationBalance(allocation_id, token_index, remaining_amount);
                             // Increase server balance
-                            addToServerBalance(token_index, remaining_amount - token_tx_fee);
+                            addToServerBalance(token_index, remaining_amount);
                         };
                     };
                 };
