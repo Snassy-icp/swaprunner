@@ -914,19 +914,6 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                             <span className="detail-value">{achievement?.name || 'Loading...'}</span>
                         </div>
                         <div className="detail-row">
-                            <span className="detail-label">Token:</span>
-                            <span className="detail-value token-info">
-                                {(tokenMetadata?.symbol === 'ICP' || tokenLogo) && (
-                                    <img 
-                                        src={tokenMetadata?.symbol === 'ICP' ? '/icp_symbol.svg' : tokenLogo || '/generic_token.svg'}
-                                        alt={tokenMetadata?.symbol || 'token'} 
-                                        className="token-logo"
-                                    />
-                                )}
-                                <span className="token-symbol">{tokenMetadata?.symbol || 'Unknown Token'}</span>
-                            </span>
-                        </div>
-                        <div className="detail-row">
                             <span className="detail-label">Total Amount:</span>
                             <span className="detail-value">
                                 {formatTokenAmount(allocationWithStatus.allocation.token.total_amount_e8s, allocationWithStatus.allocation.token.canister_id.toString())} {tokenMetadata?.symbol}

@@ -204,6 +204,10 @@ class AllocationService {
      */
     async getPaymentStatus(allocationId: string): Promise<PaymentStatus> {
         const feeConfig = await this.getFeeConfig();
+        const allocation = await this.getAllocation(allocationId);
+        if (!allocation) {
+            throw new Error('Allocation not found');
+        }
         
         // Get the subaccount for this allocation
         const subaccount = this.derivePaymentSubaccount(allocationId);
@@ -216,10 +220,15 @@ class AllocationService {
         );
         console.log('getPaymentStatus balance_e8s', balance_e8s);
 
+        // For ICP allocations, cap the current balance at the platform fee
+        const current_balance = allocation.token.canister_id.toString() === 'ryjl3-tyaaa-aaaaa-aaaba-cai'
+            ? balance_e8s > feeConfig.icp_fee_e8s ? feeConfig.icp_fee_e8s : balance_e8s
+            : balance_e8s;
+
         return {
-            current_balance_e8s: balance_e8s,
+            current_balance_e8s: current_balance,
             required_fee_e8s: feeConfig.icp_fee_e8s,
-            is_paid: balance_e8s >= feeConfig.icp_fee_e8s
+            is_paid: current_balance >= feeConfig.icp_fee_e8s
         };
     }
 
