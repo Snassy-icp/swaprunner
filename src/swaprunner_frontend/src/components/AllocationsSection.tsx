@@ -106,17 +106,28 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
 
     // Add function to check if user has sufficient balances
     const checkBalances = (): { hasEnoughICP: boolean; hasEnoughTokens: boolean } => {
-        const hasEnoughICP = feeConfig ? icpBalance >= feeConfig.icp_fee_e8s : false;
+        // For ICP allocations, we need to check if they have enough for both fee and allocation
+        const isICP = selectedToken === 'ryjl3-tyaaa-aaaaa-aaaba-cai';
+        
+        let hasEnoughICP = feeConfig ? icpBalance >= feeConfig.icp_fee_e8s : false;
         
         let hasEnoughTokens = false;
         if (selectedToken && totalAmount) {
             try {
                 const totalE8s = parseTokenAmount(totalAmount, selectedToken);
-                const cutBasisPoints = feeConfig ? BigInt(feeConfig.cut_basis_points) : BigInt(0);
-                const totalWithCut = totalE8s + ((totalE8s * cutBasisPoints) / BigInt(10000));
-                hasEnoughTokens = tokenBalance >= totalWithCut;
+                
+                if (isICP) {
+                    // For ICP allocations, check if they have enough for both fee and allocation
+                    hasEnoughICP = icpBalance >= (feeConfig?.icp_fee_e8s || BigInt(0)) + totalE8s;
+                    hasEnoughTokens = true; // We use hasEnoughICP for the total check
+                } else {
+                    // For other tokens, just check if they have the total amount
+                    // (cut will be taken from this amount)
+                    hasEnoughTokens = tokenBalance >= totalE8s;
+                }
             } catch {
                 hasEnoughTokens = false;
+                if (isICP) hasEnoughICP = false;
             }
         }
         
@@ -200,11 +211,22 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
 
             // Check balances first
             const { hasEnoughICP, hasEnoughTokens } = checkBalances();
+            const isICP = selectedToken === 'ryjl3-tyaaa-aaaaa-aaaba-cai';
+
             if (!hasEnoughICP) {
-                setError(`Insufficient ICP balance for creation fee. Required: ${formatTokenAmount(feeConfig?.icp_fee_e8s || BigInt(0), 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP`);
+                if (isICP) {
+                    const totalE8s = parseTokenAmount(totalAmount, selectedToken);
+                    const cutBasisPoints = feeConfig ? BigInt(feeConfig.cut_basis_points) : BigInt(0);
+                    const totalWithCut = totalE8s + ((totalE8s * cutBasisPoints) / BigInt(10000));
+                    const totalRequired = (feeConfig?.icp_fee_e8s || BigInt(0)) + totalWithCut;
+                    setError(`Insufficient ICP balance. Required: ${formatTokenAmount(totalRequired, 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP (includes creation fee and allocation amount)`);
+                } else {
+                    setError(`Insufficient ICP balance for creation fee. Required: ${formatTokenAmount(feeConfig?.icp_fee_e8s || BigInt(0), 'ryjl3-tyaaa-aaaaa-aaaba-cai')} ICP`);
+                }
                 return;
             }
-            if (!hasEnoughTokens) {
+
+            if (!hasEnoughTokens && !isICP) {
                 const totalE8s = parseTokenAmount(totalAmount, selectedToken);
                 const cutBasisPoints = feeConfig ? BigInt(feeConfig.cut_basis_points) : BigInt(0);
                 const totalWithCut = totalE8s + ((totalE8s * cutBasisPoints) / BigInt(10000));
@@ -397,7 +419,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                                 <div className="fee-value">
                                     <span>
                                         {calculateCutAmount()} {selectedTokenMetadata?.symbol || 'tokens'}
-                                        {selectedToken && !hasEnoughTokens && (
+                                        {selectedToken && !hasEnoughTokens && selectedToken !== 'ryjl3-tyaaa-aaaaa-aaaba-cai' && (
                                             <span className="balance-warning">
                                                 <FiAlertCircle /> Insufficient balance
                                             </span>
@@ -412,8 +434,29 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                                     )}
                                 </div>
                             </div>
+                            {selectedToken === 'ryjl3-tyaaa-aaaaa-aaaba-cai' && totalAmount && (
+                                <div className="fee-row total-required">
+                                    <span className="fee-label">Total ICP Required</span>
+                                    <span className="fee-value">
+                                        {(() => {
+                                            try {
+                                                const totalE8s = parseTokenAmount(totalAmount, selectedToken);
+                                                const cutBasisPoints = feeConfig ? BigInt(feeConfig.cut_basis_points) : BigInt(0);
+                                                const totalWithCut = totalE8s + ((totalE8s * cutBasisPoints) / BigInt(10000));
+                                                const totalRequired = (feeConfig.icp_fee_e8s || BigInt(0)) + totalWithCut;
+                                                return formatTokenAmount(totalRequired, 'ryjl3-tyaaa-aaaaa-aaaba-cai');
+                                            } catch {
+                                                return '0';
+                                            }
+                                        })()} ICP
+                                    </span>
+                                </div>
+                            )}
                             <div className="fee-info-note">
-                                Note: The creation fee is paid in ICP, and the platform cut is taken from the allocation amount.
+                                {selectedToken === 'ryjl3-tyaaa-aaaaa-aaaba-cai' 
+                                    ? "Note: When creating an ICP allocation, you need sufficient ICP to cover both the creation fee and the allocation amount."
+                                    : "Note: The creation fee is paid in ICP, and the platform cut is taken from the allocation amount."
+                                }
                             </div>
                         </div>
                     </div>
