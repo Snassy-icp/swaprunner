@@ -518,6 +518,45 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                                     </span>
                                 </div>
                             )}
+                            {selectedToken !== 'ryjl3-tyaaa-aaaaa-aaaba-cai' && totalAmount && (
+                                <>
+                                    <div className="fee-row total-required">
+                                        <span className="fee-label">Total ICP Required</span>
+                                        <span className="fee-value">
+                                            {(() => {
+                                                try {
+                                                    const icpTxFee = BigInt(10000);
+                                                    // For non-ICP allocations, we need fee + one tx fee
+                                                    const totalRequired = (feeConfig.icp_fee_e8s || BigInt(0)) + icpTxFee;
+                                                    return formatTokenAmount(totalRequired, 'ryjl3-tyaaa-aaaaa-aaaba-cai');
+                                                } catch {
+                                                    return '0';
+                                                }
+                                            })()} ICP
+                                        </span>
+                                    </div>
+                                    <div className="fee-row total-required">
+                                        <span className="fee-label">Total {selectedTokenMetadata?.symbol || 'Token'} Required</span>
+                                        <span className="fee-value">
+                                            {(() => {
+                                                try {
+                                                    const totalE8s = parseTokenAmount(totalAmount, selectedToken);
+                                                    const tokenTxFee = selectedTokenMetadata?.fee || BigInt(0);
+                                                    let requiredAmount = totalE8s;
+                                                    if (addCutOnTop) {
+                                                        requiredAmount += calculateCutOnTop();
+                                                    }
+                                                    // For token allocations, we need allocation amount + two tx fees
+                                                    const totalRequired = requiredAmount + tokenTxFee + tokenTxFee;
+                                                    return formatTokenAmount(totalRequired, selectedToken);
+                                                } catch {
+                                                    return '0';
+                                                }
+                                            })()} {selectedTokenMetadata?.symbol || 'tokens'}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
                             <div className="fee-info-note">
                                 {selectedToken === 'ryjl3-tyaaa-aaaaa-aaaba-cai' 
                                     ? "Note: When creating an ICP allocation, you need sufficient ICP to cover both the creation fee and the allocation amount."
