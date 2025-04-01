@@ -4,6 +4,7 @@ import { ICRC1Service } from './icrc1_service';
 import { encodeIcrcAccount } from "@dfinity/ledger-icrc";
 import { formatHex } from '../utils/subaccounts';
 import { principalToSubAccount } from '@dfinity/utils';
+import { getCachedTokenMetadata } from '../utils/format';
 export interface Allocation {
     id: string;
     creator: string;
@@ -275,14 +276,16 @@ class AllocationService {
             Principal.fromText(process.env.CANISTER_ID_SWAPRUNNER_BACKEND!),
             Array.from(subaccount)
         );
-
+        const token_metadata = getCachedTokenMetadata(allocation.token.canister_id.toString());
+        const token_tx_fee = token_metadata?.fee || BigInt(0); // Default to 10000 e8s if fee not found
+        
         // If this is an ICP allocation, subtract the platform fee from the available balance
         if (allocation.token.canister_id.toString() === 'ryjl3-tyaaa-aaaaa-aaaba-cai') {
             const feeConfig = await this.getFeeConfig();
-            return balance_e8s > feeConfig.icp_fee_e8s ? balance_e8s - feeConfig.icp_fee_e8s : BigInt(0);
+            return balance_e8s > feeConfig.icp_fee_e8s ? (balance_e8s > feeConfig.icp_fee_e8s + token_tx_fee ? balance_e8s - feeConfig.icp_fee_e8s - token_tx_fee : balance_e8s - feeConfig.icp_fee_e8s) : BigInt(0);
         }
 
-        return balance_e8s;
+        return balance_e8s > token_tx_fee ? balance_e8s - token_tx_fee : balance_e8s;
     }
 
     /**
@@ -294,8 +297,10 @@ class AllocationService {
             throw new Error('Allocation not found');
         }
 
+        const token_metadata = getCachedTokenMetadata(allocation.token.canister_id.toString());
+        const token_tx_fee = token_metadata?.fee || BigInt(0); // Default to 10000 e8s if fee not found
         const currentBalance = await this.getFundingBalance(allocationId);
-        const remainingAmount = allocation.token.total_amount_e8s - currentBalance;
+        const remainingAmount = allocation.token.total_amount_e8s + token_tx_fee - currentBalance;
         
         if (remainingAmount <= BigInt(0)) {
             throw new Error('Allocation is already fully funded');
@@ -405,9 +410,9 @@ class AllocationService {
         const paymentStatus = await this.getPaymentStatus(allocationId);
         const fundingBalance = await this.getFundingBalance(allocationId);
         const feeConfig = await this.getFeeConfig();
-        
+        const icp_tx_fee = BigInt(10000);
         const remainingPayment = paymentStatus.required_fee_e8s - paymentStatus.current_balance_e8s;
-        const remainingFunding = allocation.token.total_amount_e8s - fundingBalance;
+        const remainingFunding = allocation.token.total_amount_e8s + icp_tx_fee - fundingBalance;
         
         if (remainingPayment <= BigInt(0) && remainingFunding <= BigInt(0)) {
             throw new Error('Allocation is already fully paid and funded');
