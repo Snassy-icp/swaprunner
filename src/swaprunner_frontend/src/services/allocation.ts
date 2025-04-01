@@ -267,6 +267,12 @@ class AllocationService {
             Array.from(subaccount)
         );
 
+        // If this is an ICP allocation, subtract the platform fee from the available balance
+        if (allocation.token.canister_id.toString() === 'ryjl3-tyaaa-aaaaa-aaaba-cai') {
+            const feeConfig = await this.getFeeConfig();
+            return balance_e8s > feeConfig.icp_fee_e8s ? balance_e8s - feeConfig.icp_fee_e8s : BigInt(0);
+        }
+
         return balance_e8s;
     }
 
