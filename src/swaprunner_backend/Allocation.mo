@@ -163,7 +163,14 @@ module {
         };
 
         // Verify funding is complete
-        if (funding_balance < allocation.token.total_amount_e8s) {
+        let required_funding = if (allocation.token.canister_id == Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai")) {
+            // For ICP allocations, we need to have enough for both the platform fee and the allocation amount
+            allocation.token.total_amount_e8s + fee_config.icp_fee_e8s
+        } else {
+            allocation.token.total_amount_e8s
+        };
+
+        if (funding_balance < required_funding) {
             return #err("Allocation must be fully funded before activation");
         };
 
