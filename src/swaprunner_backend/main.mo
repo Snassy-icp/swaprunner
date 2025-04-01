@@ -3538,7 +3538,7 @@ shared (deployer) actor class SwapRunner() = this {
         }
     };
 
-    public shared({caller}) func claim_and_withdraw_allocation(allocation_id: Text) : async Result.Result<Nat, Text> {
+    public shared({caller}) func claim_and_withdraw_allocation(allocation_id: Nat) : async Result.Result<Nat, Text> {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous principal not allowed");
         };
@@ -3546,6 +3546,11 @@ shared (deployer) actor class SwapRunner() = this {
         // Try to claim the allocation, and if successfull withdraw everything in the user's balance
         switch(await claim_allocation_impl(caller, allocation_id)) {
             case (#ok(claim_amount)) {
+                let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
+                    case null return #err("Allocation not found");
+                    case (?a) a;
+                };
+                
                 let fee = switch (getTokenMetadata(allocation.token.canister_id)) {
                     case null 0;
                     case (?token_metadata) switch (token_metadata.fee) {
@@ -3557,22 +3562,18 @@ shared (deployer) actor class SwapRunner() = this {
                     return #ok(claim_amount);
                 };
 
-                let allocation = switch (allocations.get(allocation_id)) {
-                    case null return #err("Allocation not found");
-                    case (?a) a;
-                };
                 await withdraw_from_balance_impl(caller, allocation.token.canister_id, claim_amount)
             };
             case (#err(msg)) #err(msg);
         }
     };
 
-    public shared({caller}) func claim_allocation(allocation_id: Text) : async Result.Result<Nat, Text> {
+    public shared({caller}) func claim_allocation(allocation_id: Nat) : async Result.Result<Nat, Text> {
         await claim_allocation_impl(caller, allocation_id)
     };
 
     // Claim from an allocation
-    private func claim_allocation_impl(caller: Principal, allocation_id: Text) : async Result.Result<Nat, Text> {
+    private func claim_allocation_impl(caller: Principal, allocation_id: Nat) : async Result.Result<Nat, Text> {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous principal not allowed");
         };
@@ -3584,10 +3585,12 @@ shared (deployer) actor class SwapRunner() = this {
             allocation_statuses,
             allocation_claims,
             userAchievements,
+            getAllocationBalance,
+            getUserIndex
         )) {
             case (#ok(claim_amount)) {
                 // Get allocation and token index
-                let allocation = switch (allocations.get(allocation_id)) {
+                let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
                     case null return #err("Allocation not found");
                     case (?a) a;
                 };
@@ -3597,25 +3600,20 @@ shared (deployer) actor class SwapRunner() = this {
                     case (?idx) idx;
                 };
 
-                let allocation_id_nat = switch (Nat.fromText(allocation_id)) {
-                    case null return #err("Invalid allocation ID");
-                    case (?n) n;
-                };
-
                 // Verify allocation has enough balance
-                if (getAllocationBalance(allocation_id_nat, token_index) < claim_amount) {
+                if (getAllocationBalance(allocation_id, token_index) < claim_amount) {
                     return #err("Insufficient allocation balance");
                 };
 
                 // Move tokens from allocation balance to user balance
-                if (not subtractFromAllocationBalance(allocation_id_nat, token_index, claim_amount)) {
+                if (not subtractFromAllocationBalance(allocation_id, token_index, claim_amount)) {
                     return #err("Failed to subtract from allocation balance");
                 };
                 addToUserBalance(caller, token_index, claim_amount);
 
                 // Record the claim
                 let claim : T.AllocationClaim = {
-                    allocation_id = allocation_id;
+                    allocation_id = Nat.toText(allocation_id);
                     user = caller;
                     amount_e8s = claim_amount;
                     claimed_at = Time.now();
@@ -3623,8 +3621,8 @@ shared (deployer) actor class SwapRunner() = this {
                 //allocation_claims.put(Allocation.get_claim_key(caller, allocation_id), claim);
 
                 // Check if allocation is now depleted
-                if (getAllocationBalance(allocation_id_nat, token_index) == 0) {
-                    allocation_statuses.put(allocation_id, #Depleted);
+                if (getAllocationBalance(allocation_id, token_index) == 0) {
+                    allocation_statuses.put(Nat.toText(allocation_id), #Depleted);
                 };
 
                 #ok((claim_amount))

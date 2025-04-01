@@ -112,7 +112,7 @@ class AllocationService {
      */
     async claimAllocation(achievementId: string, allocationId: string): Promise<bigint> {
         const actor = await backendService.getActor();
-        const result = await actor.claim_allocation(allocationId);
+        const result = await actor.claim_allocation(BigInt(allocationId));
         
         if ('ok' in result) {
             return result.ok;
@@ -123,7 +123,7 @@ class AllocationService {
 
     async claimAndWithdrawAllocation(allocationId: string): Promise<bigint> {
         const actor = await backendService.getActor();
-        const result = await actor.claim_and_withdraw_allocation(allocationId);
+        const result = await actor.claim_and_withdraw_allocation(BigInt(allocationId));
         
         if ('ok' in result) {
             return result.ok;

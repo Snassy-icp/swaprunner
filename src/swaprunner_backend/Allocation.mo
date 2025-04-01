@@ -251,7 +251,7 @@ module {
     // Check if a user is eligible to claim from an allocation
     public func check_claim_eligibility(
         caller: Principal,
-        allocation_id: Text,
+        allocation_id: Nat,
         allocations: HashMap.HashMap<Text, T.Allocation>,
         allocation_statuses: HashMap.HashMap<Text, T.AllocationStatus>,
         allocation_claims: HashMap.HashMap<Text, T.AllocationClaim>,
@@ -260,13 +260,13 @@ module {
         Debug.print("Checking claim eligibility for user: " # Principal.toText(caller));
         
         // Get allocation
-        let allocation = switch (allocations.get(allocation_id)) {
+        let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
             case null return #err("Allocation not found");
             case (?a) a;
         };
 
         // Verify allocation is active
-        switch (allocation_statuses.get(allocation_id)) {
+        switch (allocation_statuses.get(Nat.toText(allocation_id))) {
             case (?#Active) {};
             case (?status) return #err("Allocation is not active");
             case null return #err("Allocation status not found");
@@ -302,7 +302,7 @@ module {
         };
 
         // Verify user hasn't already claimed
-        let claim_key = get_claim_key(caller, allocation_id);
+        let claim_key = get_claim_key(caller, Nat.toText(allocation_id));
         switch (allocation_claims.get(claim_key)) {
             case (?_) return #err("User has already claimed from this allocation");
             case null {};
@@ -314,12 +314,13 @@ module {
     // Process a claim request
     public func process_claim(
         caller: Principal,
-        allocation_id: Text,
+        allocation_id: Nat,
         allocations: HashMap.HashMap<Text, T.Allocation>,
         allocation_statuses: HashMap.HashMap<Text, T.AllocationStatus>,
         allocation_claims: HashMap.HashMap<Text, T.AllocationClaim>,
         user_achievements: HashMap.HashMap<Text, [T.UserAchievement]>,
-        get_allocation_balance: (Text) -> Nat,
+        get_allocation_balance: (Nat, Nat16) -> Nat,
+        getUserIndex: (Principal) -> ?Nat16,
     ) : Result.Result<Nat, Text> {
         // Check eligibility
         switch(check_claim_eligibility(
@@ -333,7 +334,11 @@ module {
             case (#err(msg)) return #err(msg);
             case (#ok(allocation)) {
                 // Get available balance
-                let available_balance = get_allocation_balance(allocation_id);
+                let token_index = switch (getUserIndex(allocation.token.canister_id)) {
+                    case null return #err("Token not found");
+                    case (?idx) idx;
+                };
+                let available_balance = get_allocation_balance(allocation_id, token_index);
                 if (available_balance == 0) {
                     return #err("Allocation has no remaining balance");
                 };
