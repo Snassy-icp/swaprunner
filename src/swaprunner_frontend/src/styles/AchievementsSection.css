@@ -244,8 +244,46 @@
 }
 
 .reward-icon {
-    color: #ffd700;
-    font-size: 1.2em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: rgba(255, 215, 0, 0.15);
+    color: #FFD700;
+    margin-right: 12px;
+    transition: all 0.3s ease;
+}
+
+.reward-icon.has-reward {
+    animation: dance 1.5s ease-in-out infinite;
+    background-color: rgba(255, 215, 0, 0.2);
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+}
+
+@keyframes dance {
+    0%, 100% {
+        transform: translateY(0) rotate(0deg);
+    }
+    25% {
+        transform: translateY(-4px) rotate(-5deg);
+    }
+    50% {
+        transform: translateY(-6px) rotate(0deg);
+    }
+    75% {
+        transform: translateY(-4px) rotate(5deg);
+    }
+}
+
+.reward-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.reward-icon.has-reward svg {
+    filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.5));
 }
 
 .reward-details {

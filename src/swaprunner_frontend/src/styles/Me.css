@@ -220,3 +220,31 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+@keyframes dance {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-4px) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-4px) rotate(5deg);
+  }
+}
+
+.reward-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: rgba(255, 215, 0, 0.2);
+  padding: 8px;
+}
+
+.reward-icon.has-reward {
+  animation: dance 1.5s ease-in-out infinite;
+}

@@ -824,7 +824,9 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                                             return (
                                                 <div key={claim.allocation_id} className="reward-item">
                                                     <div className="reward-info">
-                                                        <FiGift className="reward-icon" />
+                                                        <div className="reward-icon has-reward">
+                                                            <FiGift />
+                                                        </div>
                                                         <div className="reward-details">
                                                             <span className="reward-amount">
                                                                 {claim.claimable_amount.min_e8s === claim.claimable_amount.max_e8s ? (
