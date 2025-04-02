@@ -254,36 +254,59 @@
     color: #FFD700;
     margin-right: 12px;
     transition: all 0.3s ease;
+    transform-origin: center bottom;
 }
 
 .reward-icon.has-reward {
-    animation: dance 1.5s ease-in-out infinite;
+    animation: dance 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
     background-color: rgba(255, 215, 0, 0.2);
     box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
 }
 
 @keyframes dance {
-    0%, 100% {
-        transform: translateY(0) rotate(0deg);
+    0% {
+        transform: translateY(0) rotate(0deg) scale(1);
     }
-    25% {
-        transform: translateY(-4px) rotate(-5deg);
+    10% {
+        transform: translateY(-3px) rotate(-3deg) scale(1.05);
+    }
+    20% {
+        transform: translateY(-6px) rotate(3deg) scale(1.1);
+    }
+    30% {
+        transform: translateY(-8px) rotate(-2deg) scale(1.05);
+    }
+    40% {
+        transform: translateY(-6px) rotate(2deg) scale(1.05);
     }
     50% {
-        transform: translateY(-6px) rotate(0deg);
+        transform: translateY(-8px) rotate(0deg) scale(1.1);
     }
-    75% {
-        transform: translateY(-4px) rotate(5deg);
+    60% {
+        transform: translateY(-6px) rotate(-2deg) scale(1.05);
+    }
+    70% {
+        transform: translateY(-4px) rotate(2deg) scale(1.05);
+    }
+    80% {
+        transform: translateY(-2px) rotate(-1deg) scale(1.02);
+    }
+    90% {
+        transform: translateY(-1px) rotate(1deg) scale(1.01);
+    }
+    100% {
+        transform: translateY(0) rotate(0deg) scale(1);
     }
 }
 
 .reward-icon svg {
     width: 20px;
     height: 20px;
+    transition: transform 0.2s ease;
 }
 
 .reward-icon.has-reward svg {
-    filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.5));
+    filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.7));
 }
 
 .reward-details {
