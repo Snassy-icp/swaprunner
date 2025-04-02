@@ -398,4 +398,14 @@
     transform-origin: center;
     position: relative;
     animation: shake 3s ease-in-out infinite;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.achievement-header .small-gift:hover {
+    transform: scale(1.2);
+}
+
+.achievement-header .small-gift:active {
+    transform: scale(0.9);
 } 

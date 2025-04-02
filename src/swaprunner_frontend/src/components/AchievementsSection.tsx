@@ -774,7 +774,16 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                     <h3>
                         {details.name}
                         {availableClaims.length > 0 && (
-                            <FiGift className="small-gift" />
+                            <FiGift 
+                                className="small-gift" 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const firstClaim = availableClaims[0];
+                                    handleClaim(firstClaim.allocation_id, firstClaim.token_canister_id.toString());
+                                }}
+                                role="button"
+                                title="Click to claim first available reward"
+                            />
                         )}
                     </h3>
                     <div className="achievement-date">
