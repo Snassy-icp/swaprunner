@@ -3520,30 +3520,51 @@ shared (deployer) actor class SwapRunner() = this {
     };
 
 
-    // Activate an allocation
+    // Activate an allocation to allow claims
     public shared({caller}) func activate_allocation(allocation_id: Nat) : async Result.Result<(), Text> {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous principal not allowed");
         };
 
-        switch(await Allocation.activate_allocation(
+        // Get allocation for stats recording
+        let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
+            case null return #err("Allocation not found");
+            case (?a) a;
+        };
+
+        // Call allocation module to handle activation
+        let activate_result = await Allocation.activate_allocation(
             caller,
             allocation_id,
             allocations,
             allocation_statuses,
             allocation_fee_config,
-            this_canister_id(),
+            Principal.fromActor(this),
             payment_account,
             cut_account,
             getOrCreateUserIndex,
             addToAllocationBalance,
-            addToServerBalance
-        )) {
+            addToServerBalance,
+        );
+
+        // If activation was successful, update the status and record stats
+        switch (activate_result) {
+            case (#err(e)) { return #err(e) };
             case (#ok(_)) {
                 allocation_statuses.put(Nat.toText(allocation_id), #Active);
+
+                // Record allocation stats
+                await Stats.record_allocation_creation(
+                    caller,
+                    Principal.toText(allocation.token.canister_id),
+                    allocation.token.total_amount_e8s,
+                    allocation_fee_config.icp_fee_e8s,
+                    allocation.token.total_amount_e8s * allocation_fee_config.cut_basis_points / 10000,
+                    getStatsContext()
+                );
+
                 #ok(())
             };
-            case (#err(msg)) #err(msg);
         }
     };
 
@@ -3599,7 +3620,6 @@ shared (deployer) actor class SwapRunner() = this {
             getOrCreateUserIndex
         )) {
             case (#ok(claim_amount)) {
-
                 // Get allocation and token index
                 let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
                     case null return #err("Allocation not found");
@@ -3628,12 +3648,20 @@ shared (deployer) actor class SwapRunner() = this {
                 };
                 allocation_claims.put(Allocation.get_claim_key(caller, Nat.toText(allocation_id)), claim);
 
+                // Record claim stats
+                await Stats.record_allocation_claim(
+                    caller,
+                    Principal.toText(allocation.token.canister_id),
+                    claim_amount,
+                    getStatsContext()
+                );
+
                 // Check if allocation is now depleted
                 if (getAllocationBalance(allocation_id, token_index) == 0) {
                     allocation_statuses.put(Nat.toText(allocation_id), #Depleted);
                 };
 
-                #ok((claim_amount))
+                #ok(claim_amount)
             };
             case (#err(msg)) #err(msg);
         }
