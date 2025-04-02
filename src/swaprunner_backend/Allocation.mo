@@ -95,7 +95,7 @@ module {
         this_canister_id: Principal,
         payment_account: ?T.Account,
         cut_account: ?T.Account,
-        getUserIndex: (Principal) -> ?Nat16,
+        getOrCreateUserIndex: (Principal) -> Nat16,
         addToAllocationBalance: (Nat, Nat16, Nat) -> (),
         addToServerBalance: (Nat16, Nat) -> (),
     ) : async Result.Result<(), Text> {
@@ -162,8 +162,10 @@ module {
             return #err("Allocation must be fully paid before activation");
         };
 
+        let isIcpAlloc = allocation.token.canister_id == Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai");
+
         // Verify funding is complete
-        let required_funding = if (allocation.token.canister_id == Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai")) {
+        let required_funding = if (isIcpAlloc) {
             // For ICP allocations, we need to have enough for both the platform fee and the allocation amount
             allocation.token.total_amount_e8s + fee_config.icp_fee_e8s + icp_tx_fee
         } else {
@@ -183,7 +185,7 @@ module {
                     let payment_result = await icrc1_payment_actor.icrc1_transfer({
                         from_subaccount = ?payment_subaccount;
                         to = pa;
-                        amount = payment_balance - icp_tx_fee;
+                        amount = fee_config.icp_fee_e8s - icp_tx_fee;
                         fee = null;
                         memo = null;
                         created_at_time = null;
@@ -197,11 +199,15 @@ module {
         };
 
         // Calculate cut amount (cut_basis_points is in basis points, i.e. 1/100th of a percent)
-        let cut_amount = (allocation.token.total_amount_e8s * fee_config.cut_basis_points) / 10000;
+        var cut_amount = 0;
 
         // Send cut amount if configured and amount > tx fee
         switch (cut_account) {
             case (?ca) {
+                cut_amount := (allocation.token.total_amount_e8s * fee_config.cut_basis_points) / 10000;
+                if (cut_amount <= token_tx_fee) {
+                    cut_amount := 0;
+                };
                 if (cut_amount > token_tx_fee) {
                     let cut_result = await icrc1_funding_actor.icrc1_transfer({
                         from_subaccount = ?funding_subaccount;
@@ -229,7 +235,7 @@ module {
             let server_result = await icrc1_funding_actor.icrc1_transfer({
                 from_subaccount = ?funding_subaccount;
                 to = { owner = this_canister_id; subaccount = ?server_subaccount };
-                amount = remaining_amount;  // we don't subtract tx fee because we have made room for one extra fee so the allocation.token.total_amount_e8s is what ends up in the allocation balance
+                amount = remaining_amount;  // we don't subtract tx fee because we have made room for one extra fee so the allocation.token.total_amount_e8s is what ends up in the allocation balance (minus cut)
                 fee = null;
                 memo = null;
                 created_at_time = null;
@@ -237,16 +243,11 @@ module {
             switch (server_result) {
                 case (#Err(e)) return #err("Failed to transfer to server: " # debug_show(e));
                 case (#Ok(_)) {
-                    // Get token index for balance tracking
-                    switch (getUserIndex(allocation.token.canister_id)) {
-                        case null return #err("Token index not found");
-                        case (?token_index) {
-                            // Increase allocation balance
-                            addToAllocationBalance(allocation_id, token_index, remaining_amount);
-                            // Increase server balance
-                            addToServerBalance(token_index, remaining_amount);
-                        };
-                    };
+                    let token_index = getOrCreateUserIndex(allocation.token.canister_id);
+                    // Increase allocation balance
+                    addToAllocationBalance(allocation_id, token_index, remaining_amount);
+                    // Increase server balance
+                    addToServerBalance(token_index, remaining_amount);
                 };
             };
         };
@@ -327,7 +328,7 @@ module {
         allocation_claims: HashMap.HashMap<Text, T.AllocationClaim>,
         user_achievements: HashMap.HashMap<Text, [T.UserAchievement]>,
         get_allocation_balance: (Nat, Nat16) -> Nat,
-        getUserIndex: (Principal) -> ?Nat16,
+        getOrCreateUserIndex: (Principal) -> Nat16,
     ) : Result.Result<Nat, Text> {
         // Check eligibility
         switch(check_claim_eligibility(
@@ -341,10 +342,8 @@ module {
             case (#err(msg)) return #err(msg);
             case (#ok(allocation)) {
                 // Get available balance
-                let token_index = switch (getUserIndex(allocation.token.canister_id)) {
-                    case null return #err("Token not found");
-                    case (?idx) idx;
-                };
+                let token_index = getOrCreateUserIndex(allocation.token.canister_id);
+
                 let available_balance = get_allocation_balance(allocation_id, token_index);
                 if (available_balance == 0) {
                     return #err("Allocation has no remaining balance");

@@ -3427,49 +3427,43 @@ shared (deployer) actor class SwapRunner() = this {
                 };
                 let amount = amount_e8s - fee;
 
-                // Get user's balance key
-                switch (getUserIndex(token_id)) {
-                    case null #err("Token not found");
-                    case (?token_index) {                        
-                        // Check if user has sufficient balance
-                        switch (subtractFromUserBalance(caller, token_index, amount_e8s)) {
-                            case false #err("Insufficient balance");
-                            case true {
+                let token_index = getOrCreateUserIndex(token_id);
+                switch (subtractFromUserBalance(caller, token_index, amount_e8s)) {
+                    case false #err("Insufficient balance");
+                    case true {
 
-                                // Create actor to interact with token ledger
-                                let token_actor : T.ICRC1Interface = actor(Principal.toText(token_id));
-                                
-                                let from_subaccount = Util.PrincipalToSubaccount(token_id);
+                        // Create actor to interact with token ledger
+                        let token_actor : T.ICRC1Interface = actor(Principal.toText(token_id));
+                        
+                        let from_subaccount = Util.PrincipalToSubaccount(token_id);
 
-                                // Prepare transfer arguments
-                                let transfer_args : T.TransferArgs = {
-                                    from_subaccount = ?from_subaccount;
-                                    to = {
-                                        owner = caller;
-                                        subaccount = null;
-                                    };
-                                    amount = amount;
-                                    fee = ?fee;
-                                    memo = null;
-                                    created_at_time = null;
+                        // Prepare transfer arguments
+                        let transfer_args : T.TransferArgs = {
+                            from_subaccount = ?from_subaccount;
+                            to = {
+                                owner = caller;
+                                subaccount = null;
+                            };
+                            amount = amount;
+                            fee = ?fee;
+                            memo = null;
+                            created_at_time = null;
+                        };
+
+                        try {
+                            let transfer_result = await token_actor.icrc1_transfer(transfer_args);
+                            switch (transfer_result) {
+                                case (#Ok(block_index)) {
+                                    // Update user balance
+                                    
+                                    #ok(amount)
                                 };
-
-                                try {
-                                    let transfer_result = await token_actor.icrc1_transfer(transfer_args);
-                                    switch (transfer_result) {
-                                        case (#Ok(block_index)) {
-                                            // Update user balance
-                                            
-                                            #ok(amount)
-                                        };
-                                        case (#Err(transfer_error)) {
-                                            #err("Transfer failed: " # debug_show(transfer_error))
-                                        };
-                                    };
-                                } catch (error) {
-                                    #err("Transfer failed: " # Error.message(error))
+                                case (#Err(transfer_error)) {
+                                    #err("Transfer failed: " # debug_show(transfer_error))
                                 };
                             };
+                        } catch (error) {
+                            #err("Transfer failed: " # Error.message(error))
                         };
                     };
                 };
@@ -3526,7 +3520,7 @@ shared (deployer) actor class SwapRunner() = this {
             this_canister_id(),
             payment_account,
             cut_account,
-            getUserIndex,
+            getOrCreateUserIndex,
             addToAllocationBalance,
             addToServerBalance
         )) {
@@ -3587,7 +3581,7 @@ shared (deployer) actor class SwapRunner() = this {
             allocation_claims,
             userAchievements,
             getAllocationBalance,
-            getUserIndex
+            getOrCreateUserIndex
         )) {
             case (#ok(claim_amount)) {
 
@@ -3597,11 +3591,8 @@ shared (deployer) actor class SwapRunner() = this {
                     case (?a) a;
                 };
 
-                let token_index = switch (getUserIndex(allocation.token.canister_id)) {
-                    case null return #err("Token not found");
-                    case (?idx) idx;
-                };
-
+                let token_index = getOrCreateUserIndex(allocation.token.canister_id);
+                
                 // Verify allocation has enough balance
                 if (getAllocationBalance(allocation_id, token_index) < claim_amount) {
                     return #err("Insufficient allocation balance");
