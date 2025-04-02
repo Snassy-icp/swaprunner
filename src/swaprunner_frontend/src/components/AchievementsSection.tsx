@@ -431,12 +431,16 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
     const [tokenLogo, setTokenLogo] = useState<string | null>(null);
 
     useEffect(() => {
-        if (tokenId && tokenMetadata?.hasLogo) {
-            tokenService.getTokenLogo(tokenId).then(logo => {
-                if (logo) {
-                    setTokenLogo(logo);
-                }
-            }).catch(console.error);
+        if (tokenId) {
+            if (tokenId === 'ryjl3-tyaaa-aaaaa-aaaba-cai' || tokenMetadata?.symbol === 'ICP') {
+                setTokenLogo('/icp_symbol.svg');
+            } else if (tokenMetadata?.hasLogo) {
+                tokenService.getTokenLogo(tokenId).then(logo => {
+                    if (logo) {
+                        setTokenLogo(logo);
+                    }
+                }).catch(console.error);
+            }
         }
     }, [tokenId, tokenMetadata]);
 
@@ -595,6 +599,10 @@ const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, am
                                     src={tokenLogo} 
                                     alt={tokenMetadata?.symbol || 'Token'} 
                                     className="token-logo"
+                                    onError={(e) => {
+                                        const img = e.target as HTMLImageElement;
+                                        img.src = tokenMetadata?.symbol === 'ICP' ? '/icp_symbol.svg' : '/generic_token.svg';
+                                    }}
                                 />
                             ) : (
                                 <div className="token-symbol">
