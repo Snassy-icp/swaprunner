@@ -36,6 +36,7 @@ interface Achievement {
     id: string;
     name: string;
     description: string;
+    criteria: string;
     logo_url?: string;
     condition_usages: ConditionUsage[];
     predicate?: {
@@ -451,6 +452,7 @@ export default function AdminAchievementsPage() {
         id: '',
         name: '',
         description: '',
+        criteria: '',
         condition_usages: [],
     });
 
@@ -571,6 +573,7 @@ export default function AdminAchievementsPage() {
                     id: '',
                     name: '',
                     description: '',
+                    criteria: '',
                     condition_usages: [],
                 });
                 setError(null);
@@ -658,6 +661,7 @@ export default function AdminAchievementsPage() {
                     id: '',
                     name: '',
                     description: '',
+                    criteria: '',
                     condition_usages: [],
                 });
                 setError(null);
@@ -753,6 +757,17 @@ export default function AdminAchievementsPage() {
                     </div>
 
                     <div className="form-group">
+                        <label htmlFor="criteria">How to Earn:</label>
+                        <textarea
+                            id="criteria"
+                            value={formData.criteria}
+                            onChange={(e) => setFormData({...formData, criteria: e.target.value})}
+                            required
+                            placeholder="Describe what users need to do to earn this achievement..."
+                        />
+                    </div>
+
+                    <div className="form-group">
                         <label htmlFor="logo_url">Logo URL (optional):</label>
                         <input
                             type="text"
@@ -815,6 +830,7 @@ export default function AdminAchievementsPage() {
                                         id: '',
                                         name: '',
                                         description: '',
+                                        criteria: '',
                                         condition_usages: [],
                                     });
                                 }}
@@ -837,6 +853,7 @@ export default function AdminAchievementsPage() {
                                 <th>ID</th>
                                 <th>Name</th>
                                 <th>Description</th>
+                                <th>How to Earn</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -846,6 +863,7 @@ export default function AdminAchievementsPage() {
                                     <td>{achievement.id}</td>
                                     <td>{achievement.name}</td>
                                     <td>{achievement.description}</td>
+                                    <td>{achievement.criteria}</td>
                                     <td>
                                         <button onClick={() => handleEdit(achievement)}>Edit</button>
                                         <button onClick={() => handleDelete(achievement.id)}>Delete</button>

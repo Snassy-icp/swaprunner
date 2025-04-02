@@ -351,6 +351,7 @@ module {
         id: Text;
         name: Text;
         description: Text;
+        criteria: Text;  // Description of how to earn the achievement
         logo_url: ?Text;
         condition_usages: [ConditionUsage];
         predicate: ?PredicateExpression;

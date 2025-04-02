@@ -44,6 +44,7 @@ export interface Achievement {
     id: string;
     name: string;
     description: string;
+    criteria: string;
     logo_url?: string;
 }
 

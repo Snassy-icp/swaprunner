@@ -14,6 +14,7 @@ interface Achievement {
     id: string;
     name: string;
     description: string;
+    criteria: string;
     logo_url?: string;
 }
 
@@ -778,6 +779,10 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                     <div className="achievement-details-content">
                         <h4>{details.name}</h4>
                         <p>{details.description}</p>
+                        <div className="achievement-criteria">
+                            <h5>How to Earn</h5>
+                            <p>{details.criteria}</p>
+                        </div>
                         <div className="achievement-details-date">
                             Earned on {formatDate(achievement.discovered_at)}
                         </div>
