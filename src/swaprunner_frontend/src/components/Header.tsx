@@ -55,7 +55,12 @@ export const Header: React.FC = () => {
           className={`tab ${location.pathname === '/me' ? 'active' : ''} ${availableClaims.length > 0 ? 'has-rewards' : ''}`}
           onClick={() => navigate('/me')}
         >
-          {availableClaims.length > 0 && <div className="rewards-tooltip">You have unclaimed rewards!</div>}
+          {availableClaims.length > 0 && (
+            <div className="rewards-tooltip">
+              Congratulations!<br />
+              You have unclaimed rewards
+            </div>
+          )}
           {availableClaims.length > 0 ? (
             <>
               <FiGift className="FiGift" />
