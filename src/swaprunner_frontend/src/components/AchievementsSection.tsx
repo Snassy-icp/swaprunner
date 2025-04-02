@@ -921,6 +921,8 @@ export const AchievementsSection: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
     const [achievementDetails, setAchievementDetails] = useState<Record<string, Achievement>>({});
+    const [availableClaims, setAvailableClaims] = useState<ClaimableReward[]>([]);
+    const [claiming, setClaiming] = useState<string | null>(null);
 
     const loadAchievements = async () => {
         try {
@@ -928,10 +930,15 @@ export const AchievementsSection: React.FC = () => {
             setError(null);
             const actor = await backendService.getActor();
             
-            // Get user's achievements
-            const achievements = await actor.get_user_achievements();
+            // Get user's achievements and available claims in parallel
+            const [achievements, claims] = await Promise.all([
+                actor.get_user_achievements(),
+                allocationService.getAvailableClaims()
+            ]);
+            
             console.log('Loaded achievements:', achievements);
             setUserAchievements(achievements);
+            setAvailableClaims(claims);
 
             // Get details for each achievement
             const details: Record<string, Achievement> = {};
@@ -973,6 +980,24 @@ export const AchievementsSection: React.FC = () => {
             console.error('Scan error:', err);
         } finally {
             setScanning(false);
+        }
+    };
+
+    const handleClaim = async (allocationId: string, tokenId: string) => {
+        if (claiming) return; // Prevent multiple claims at once
+        
+        try {
+            setClaiming(allocationId);
+            const result = await allocationService.claimAndWithdrawAllocation(allocationId);
+            
+            if (result) {
+                // Refresh the achievements and available claims
+                await loadAchievements();
+            }
+        } catch (error) {
+            console.error('Failed to claim reward:', error);
+        } finally {
+            setClaiming(null);
         }
     };
 
@@ -1030,7 +1055,25 @@ export const AchievementsSection: React.FC = () => {
 
     return (
         <CollapsibleSection 
-            title="Achievements" 
+            title={
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    Achievements
+                    {availableClaims.length > 0 && (
+                        <FiGift 
+                            className={`small-gift ${claiming ? 'claiming' : ''}`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (availableClaims.length > 0) {
+                                    const firstClaim = availableClaims[0];
+                                    handleClaim(firstClaim.allocation_id, firstClaim.token_canister_id.toString());
+                                }
+                            }}
+                            role="button"
+                            title="Click to claim first available reward"
+                        />
+                    )}
+                </div>
+            }
             icon={<FiAward size={24} />}
             defaultExpanded={false}
         >

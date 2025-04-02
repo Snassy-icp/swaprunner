@@ -20,7 +20,7 @@ interface SortConfig {
 }
 
 interface CollapsibleSectionProps {
-  title: string;
+  title: React.ReactNode;
   icon: React.ReactNode;
   children: React.ReactNode;
   defaultExpanded?: boolean;
