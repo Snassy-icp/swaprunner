@@ -9,6 +9,7 @@ import { Allocation } from '../services/allocation';
 import { formatTokenAmount } from '../utils/format';
 import { useTokens } from '../contexts/TokenContext';
 import { tokenService } from '../services/token';
+import { useClaims } from '../contexts/ClaimContext';
 
 interface Achievement {
     id: string;
@@ -39,6 +40,7 @@ interface AchievementCardProps {
     details: Achievement;
     formatDate: (timestamp: number) => string;
     onClaimSuccess?: () => void;
+    defaultExpanded: boolean;
 }
 
 interface ClaimSuccessModalProps {
@@ -674,8 +676,8 @@ interface ClaimSuccess {
     achievementName: string;
 }
 
-const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details, formatDate, onClaimSuccess }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details, formatDate, onClaimSuccess, defaultExpanded }) => {
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const [availableClaims, setAvailableClaims] = useState<ClaimableReward[]>([]);
     const [claimedRewards, setClaimedRewards] = useState<{
         allocation: Allocation;
@@ -916,13 +918,13 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
 };
 
 export const AchievementsSection: React.FC = () => {
+    const [achievements, setAchievements] = useState<UserAchievement[]>([]);
+    const [achievementDetails, setAchievementDetails] = useState<Record<string, Achievement>>({});
     const [loading, setLoading] = useState(true);
     const [scanning, setScanning] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
-    const [achievementDetails, setAchievementDetails] = useState<Record<string, Achievement>>({});
-    const [availableClaims, setAvailableClaims] = useState<ClaimableReward[]>([]);
     const [claiming, setClaiming] = useState<string | null>(null);
+    const { availableClaims } = useClaims();
 
     const loadAchievements = async () => {
         try {
@@ -937,8 +939,7 @@ export const AchievementsSection: React.FC = () => {
             ]);
             
             console.log('Loaded achievements:', achievements);
-            setUserAchievements(achievements);
-            setAvailableClaims(claims);
+            setAchievements(achievements);
 
             // Get details for each achievement
             const details: Record<string, Achievement> = {};
@@ -1028,15 +1029,20 @@ export const AchievementsSection: React.FC = () => {
                 <div className="achievements-loading">Loading achievements...</div>
             ) : (
                 <div className="achievements-list">
-                    {userAchievements.length === 0 ? (
+                    {achievements.length === 0 ? (
                         <div className="no-achievements">
                             No achievements yet. Keep trading to earn some!
                         </div>
                     ) : (
-                        userAchievements.map(achievement => {
+                        achievements.map(achievement => {
                             const details = achievementDetails[achievement.achievement_id];
                             if (!details) return null;
-
+                            
+                            // Check if this achievement has any available claims
+                            const hasRewards = availableClaims.some(
+                                claim => claim.achievement_id === achievement.achievement_id
+                            );
+                            
                             return (
                                 <AchievementCard
                                     key={achievement.achievement_id}
@@ -1044,6 +1050,7 @@ export const AchievementsSection: React.FC = () => {
                                     details={details}
                                     formatDate={formatDate}
                                     onClaimSuccess={loadAchievements}
+                                    defaultExpanded={hasRewards} // Auto-expand if has rewards
                                 />
                             );
                         })
@@ -1055,27 +1062,9 @@ export const AchievementsSection: React.FC = () => {
 
     return (
         <CollapsibleSection 
-            title={
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    Achievements
-                    {availableClaims.length > 0 && (
-                        <FiGift 
-                            className={`small-gift ${claiming ? 'claiming' : ''}`}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (availableClaims.length > 0) {
-                                    const firstClaim = availableClaims[0];
-                                    handleClaim(firstClaim.allocation_id, firstClaim.token_canister_id.toString());
-                                }
-                            }}
-                            role="button"
-                            title="Click to claim first available reward"
-                        />
-                    )}
-                </div>
-            }
-            icon={<FiAward size={24} />}
-            defaultExpanded={false}
+            title="Achievements" 
+            icon={<FiAward />} 
+            defaultExpanded={availableClaims.length > 0}
         >
             {achievementsContent}
         </CollapsibleSection>

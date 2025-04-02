@@ -587,7 +587,7 @@ export const Me: React.FC = () => {
         <AchievementsSection />
         <AllocationsSection />
 
-        <CollapsibleSection title="Statistics" icon={<FiBarChart2 />} defaultExpanded={true}>
+        <CollapsibleSection title="Statistics" icon={<FiBarChart2 />} defaultExpanded={false}>
           <div className="section-header">
             <FiTrendingUp />
             <span>Trades</span>
