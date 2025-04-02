@@ -5,6 +5,7 @@ import { isFeatureEnabled } from '../config/featureFlags';
 import { SlippageSettings } from './SlippageSettings';
 import { useSlippage } from '../contexts/SlippageContext';
 import { useClaims } from '../contexts/ClaimContext';
+import '../styles/Header.css';
 
 export const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -51,16 +52,21 @@ export const Header: React.FC = () => {
           {location.pathname === '/transactions' && <span>Transactions</span>}
         </button>
         <button 
-          className={`tab ${location.pathname === '/me' ? 'active' : ''}`}
+          className={`tab ${location.pathname === '/me' ? 'active' : ''} ${availableClaims.length > 0 ? 'has-rewards' : ''}`}
           onClick={() => navigate('/me')}
-          title={availableClaims.length > 0 ? "View your profile - You have rewards to claim!" : "View your profile"}
         >
+          {availableClaims.length > 0 && <div className="rewards-tooltip">You have unclaimed rewards!</div>}
           {availableClaims.length > 0 ? (
-            <FiGift className="FiGift" />
+            <>
+              <FiGift className="FiGift" />
+              {location.pathname === '/me' && <span>Me</span>}
+            </>
           ) : (
-            <FiUser />
+            <>
+              <FiUser />
+              {location.pathname === '/me' && <span>Me</span>}
+            </>
           )}
-          {location.pathname === '/me' && <span>Me</span>}
         </button>
         <button 
           className={`tab ${location.pathname === '/statistics' ? 'active' : ''}`}

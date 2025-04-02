@@ -49,6 +49,15 @@
   color: var(--text-secondary);
 }
 
+.section-header .FiGift {
+    color: #FFD700;
+    filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.7));
+}
+
+.section-header .FiGift.claiming {
+    animation: spin-claim 2s linear infinite;
+}
+
 .me-page .section-content {
   padding: 0 0 20px;
 }
@@ -275,4 +284,13 @@
     width: 18px;
     height: 18px;
     color: var(--text-secondary);
+}
+
+.me-page .statistics-display .section-header svg.FiGift {
+    color: #FFD700;
+    filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.7));
+}
+
+.me-page .statistics-display .section-header svg.FiGift.claiming {
+    animation: spin-claim 2s linear infinite;
 }
