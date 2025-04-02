@@ -15,6 +15,9 @@ import './App.css';
 import { tokenService } from './services/token';
 import { priceService } from './services/price';
 import { clearTokenMetadataCache } from './utils/format';
+import { AchievementProvider } from './contexts/AchievementContext';
+import { AchievementNotification } from './components/AchievementNotification';
+import { useAchievements } from './contexts/AchievementContext';
 
 // Initialize analytics with your measurement ID
 const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
@@ -260,28 +263,46 @@ const FixedHeader: React.FC = () => {
   );
 };
 
+// Add AuthStateListener component
+const AuthStateListener: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  const { setNeedsScan } = useAchievements();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      setNeedsScan(true);
+    }
+  }, [isAuthenticated, setNeedsScan]);
+
+  return null;
+};
+
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <TokenProvider>
-        <LogoLoadingProvider>
-          <SlippageProvider>
-            <PoolProvider>
-              <Router>
-                <RouteTracker />
-                <FixedHeader />
-                <div className="app">
-                  <Header />
-                  <main>
-                    <AppRoutes />
-                  </main>
-                </div>
-              </Router>
-            </PoolProvider>
-          </SlippageProvider>
-        </LogoLoadingProvider>
-      </TokenProvider>
-    </AuthProvider>
+    <Router>
+      <AchievementProvider>
+        <AuthProvider>
+          <TokenProvider>
+            <LogoLoadingProvider>
+              <SlippageProvider>
+                <PoolProvider>
+                  <RouteTracker />
+                  <AuthStateListener />
+                  <FixedHeader />
+                  <div className="app">
+                    <Header />
+                    <main>
+                      <AppRoutes />
+                    </main>
+                  </div>
+                  <AchievementNotification />
+                </PoolProvider>
+              </SlippageProvider>
+            </LogoLoadingProvider>
+          </TokenProvider>
+        </AuthProvider>
+      </AchievementProvider>
+    </Router>
   );
 };
 
