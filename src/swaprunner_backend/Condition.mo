@@ -27,12 +27,19 @@ module {
     private let TOTAL_TRADES_COUNT : T.Condition = {
         key = "total_trades_count";
         name = "Trade Count Achievement";
-        description = "Execute a certain number of trades";
-        parameter_specs = [{
-            name = "min_trades";
-            param_type = #Nat;
-            default_value = null;
-        }];
+        description = "Execute a certain number of trades, optionally of a specific type (icpswap/kong/split)";
+        parameter_specs = [
+            {
+                name = "min_trades";
+                param_type = #Nat;
+                default_value = null;
+            },
+            {
+                name = "swap_type";
+                param_type = #Text;
+                default_value = null;  // null means any type
+            }
+        ];
     };
 
     private let TOKEN_TRADE_VOLUME : T.Condition = {
@@ -126,6 +133,8 @@ module {
         parameters: [{#Principal: Principal; #Nat: Nat; #Text: Text}]
     ) : async Bool {
         Debug.print("Evaluating total_trades_count condition");
+        
+        // Get min_trades parameter
         let min_trades = switch (parameters[0]) {
             case (#Nat(trades)) {
                 Debug.print("Min trades parameter: " # Nat.toText(trades));
@@ -135,6 +144,23 @@ module {
                 Debug.print("Invalid min_trades parameter type");
                 null;
             };
+        };
+
+        // Get optional swap_type parameter
+        let swap_type = if (parameters.size() > 1) {
+            switch (parameters[1]) {
+                case (#Text(type_)) {
+                    Debug.print("Swap type parameter: " # type_);
+                    ?type_;
+                };
+                case _ {
+                    Debug.print("Invalid swap_type parameter type");
+                    null;
+                };
+            };
+        } else {
+            Debug.print("No swap_type specified, using any");
+            null;
         };
         
         switch (min_trades) {
@@ -149,14 +175,48 @@ module {
                         return false;
                     };
                     case (?s) {
-                        Debug.print("Found user stats with total_swaps: " # Nat.toText(s.total_swaps));
+                        Debug.print("Found user stats");
                         s;
                     };
                 };
-                let result = stats.total_swaps >= min;
-                Debug.print("Total trades condition result: " # Bool.toText(result) # 
+
+                // Get the appropriate trade count based on swap type
+                let trade_count = switch (swap_type) {
+                    case (?type_) {
+                        switch (type_) {
+                            case "icpswap" {
+                                Debug.print("Checking ICPSwap trades: " # Nat.toText(stats.icpswap_swaps));
+                                stats.icpswap_swaps;
+                            };
+                            case "kong" {
+                                Debug.print("Checking Kong trades: " # Nat.toText(stats.kong_swaps));
+                                stats.kong_swaps;
+                            };
+                            case "split" {
+                                Debug.print("Checking split trades: " # Nat.toText(stats.split_swaps));
+                                stats.split_swaps;
+                            };
+                            case _ {
+                                Debug.print("Invalid swap type: " # type_ # ", using total trades");
+                                stats.total_swaps;
+                            };
+                        };
+                    };
+                    case null {
+                        Debug.print("No swap type specified, using total trades: " # Nat.toText(stats.total_swaps));
+                        stats.total_swaps;
+                    };
+                };
+
+                let result = trade_count >= min;
+                let type_str = switch (swap_type) {
+                    case (?type_) ", type: " # type_;
+                    case null ", type: any";
+                };
+                Debug.print("Trade count condition result: " # Bool.toText(result) # 
                           " (required: " # Nat.toText(min) # 
-                          ", actual: " # Nat.toText(stats.total_swaps) # ")");
+                          ", actual: " # Nat.toText(trade_count) # 
+                          type_str);
                 return result;
             };
         };
