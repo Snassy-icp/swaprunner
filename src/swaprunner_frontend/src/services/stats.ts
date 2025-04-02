@@ -66,6 +66,25 @@ export interface TokenSavingsStats {
   split_savings_e8s: bigint;
 }
 
+// Add new types for allocation stats
+export interface TokenAllocationStats {
+  total_allocated_e8s: bigint;
+  total_claimed_e8s: bigint;
+  total_fees_paid_e8s: bigint;
+  total_cuts_paid_e8s: bigint;
+  allocation_count: bigint;
+  claim_count: bigint;
+}
+
+export interface UserTokenAllocationStats {
+  total_allocated_e8s: bigint;
+  total_claimed_e8s: bigint;
+  total_fees_paid_e8s: bigint;
+  total_cuts_paid_e8s: bigint;
+  allocation_count: bigint;
+  claim_count: bigint;
+}
+
 export class StatsService {
   private queryActor: any = null;
 
@@ -426,6 +445,16 @@ export class StatsService {
     const stats = await actor.get_my_token_savings_stats();
     console.log('User token savings stats:', stats);
     return stats;
+  }
+
+  async getAllTokenAllocationStats(): Promise<[string, TokenAllocationStats][]> {
+    const actor = await this.getQueryActor();
+    return actor.get_all_token_allocation_stats();
+  }
+
+  async getUserTokenAllocationStats(principal: string): Promise<[string, UserTokenAllocationStats][]> {
+    const actor = await this.getQueryActor();
+    return actor.get_user_token_allocation_stats(principal);
   }
 }
 

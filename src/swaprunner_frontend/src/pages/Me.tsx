@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FiUser, FiLogIn, FiChevronDown, FiChevronUp, FiSettings, FiBarChart2, FiLoader, FiArrowUp, FiArrowDown, FiRefreshCw } from 'react-icons/fi';
+import { FiUser, FiLogIn, FiChevronDown, FiChevronUp, FiSettings, FiBarChart2, FiLoader, FiArrowUp, FiArrowDown, FiRefreshCw, FiGift } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { usePool } from '../contexts/PoolContext';
-import { statsService, UserTokenStats, TokenSavingsStats } from '../services/stats';
+import { statsService, UserTokenStats, TokenSavingsStats, UserTokenAllocationStats } from '../services/stats';
 import { tokenService } from '../services/token';
 import { TokenMetadata } from '../types/token';
 import { formatTokenAmount } from '../utils/format';
@@ -65,18 +65,23 @@ export const Me: React.FC = () => {
   const [loadingUSDPrices, setLoadingUSDPrices] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'volume', direction: 'desc' });
+  const [userTokenAllocationStats, setUserTokenAllocationStats] = useState<[string, UserTokenAllocationStats][]>([]);
+  const [loadingAllocationStats, setLoadingAllocationStats] = useState(true);
 
   const fetchStats = async () => {
     if (!isAuthenticated || !principal) return;
     
     try {
       setLoading(true);
-      const [stats, savingsStats] = await Promise.all([
+      setLoadingAllocationStats(true);
+      const [stats, savingsStats, allocationStats] = await Promise.all([
         statsService.getMyTokenStats(),
-        statsService.getMyTokenSavingsStats()
+        statsService.getMyTokenSavingsStats(),
+        statsService.getUserTokenAllocationStats(principal)
       ]);
       
       setUserTokenStats(stats);
+      setUserTokenAllocationStats(allocationStats);
       
       // Convert savings stats array to record for easier lookup
       const savingsRecord: Record<string, TokenSavingsStats> = {};
@@ -129,6 +134,7 @@ export const Me: React.FC = () => {
       console.error('Failed to fetch user-token stats:', error);
     } finally {
       setLoading(false);
+      setLoadingAllocationStats(false);
     }
   };
 
@@ -602,6 +608,106 @@ export const Me: React.FC = () => {
 
         <CollapsibleSection title="Statistics" icon={<FiBarChart2 />} defaultExpanded={true}>
           {statisticsContent}
+        </CollapsibleSection>
+
+        <CollapsibleSection 
+          title="My Allocations" 
+          icon={<FiGift />}
+          defaultExpanded={false}
+        >
+          <div className="token-statistics-table">
+            {loadingAllocationStats ? (
+              <LoadingSpinner />
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Token</th>
+                    <th>Total Allocated</th>
+                    <th>Total Claimed</th>
+                    <th>Total Fees</th>
+                    <th>Total Cuts</th>
+                    <th>Allocations</th>
+                    <th>Claims</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {userTokenAllocationStats.map(([tokenId, stats]) => {
+                    const metadata = tokenMetadata[tokenId];
+                    const formattedAllocated = metadata ? formatTokenAmount(stats.total_allocated_e8s, tokenId) : formatAmount(stats.total_allocated_e8s);
+                    const formattedClaimed = metadata ? formatTokenAmount(stats.total_claimed_e8s, tokenId) : formatAmount(stats.total_claimed_e8s);
+                    const formattedFees = formatTokenAmount(stats.total_fees_paid_e8s, "ryjl3-tyaaa-aaaaa-aaaba-cai"); // ICP
+                    const formattedCuts = metadata ? formatTokenAmount(stats.total_cuts_paid_e8s, tokenId) : formatAmount(stats.total_cuts_paid_e8s);
+                    const isLoadingUSD = loadingUSDPrices[tokenId];
+
+                    const usdAllocated = tokenUSDPrices[tokenId] !== undefined 
+                      ? calculateUSDValue(stats.total_allocated_e8s, tokenId)
+                      : undefined;
+                    const usdClaimed = tokenUSDPrices[tokenId] !== undefined 
+                      ? calculateUSDValue(stats.total_claimed_e8s, tokenId)
+                      : undefined;
+                    const usdCuts = tokenUSDPrices[tokenId] !== undefined 
+                      ? calculateUSDValue(stats.total_cuts_paid_e8s, tokenId)
+                      : undefined;
+
+                    return (
+                      <tr key={tokenId}>
+                        <td className="token-cell">
+                          {metadata && (
+                            <img 
+                              src={metadata.logo || '/generic_token.svg'}
+                              alt={metadata.symbol}
+                              className="token-logo"
+                              onError={(e) => {
+                                const img = e.target as HTMLImageElement;
+                                img.src = metadata.symbol === 'ICP' ? '/icp_symbol.svg' : '/generic_token.svg';
+                              }}
+                            />
+                          )}
+                          <div className="token-info">
+                            <span className="token-symbol">{metadata?.symbol || 'Unknown'}</span>
+                          </div>
+                        </td>
+                        <td>
+                          {formattedAllocated}
+                          {isLoadingUSD ? (
+                            <span className="usd-value">
+                              <FiLoader className="spinner" />
+                            </span>
+                          ) : usdAllocated !== '-' && (
+                            <span className="usd-value"> • {usdAllocated}</span>
+                          )}
+                        </td>
+                        <td>
+                          {formattedClaimed}
+                          {isLoadingUSD ? (
+                            <span className="usd-value">
+                              <FiLoader className="spinner" />
+                            </span>
+                          ) : usdClaimed !== '-' && (
+                            <span className="usd-value"> • {usdClaimed}</span>
+                          )}
+                        </td>
+                        <td>{formattedFees}</td>
+                        <td>
+                          {formattedCuts}
+                          {isLoadingUSD ? (
+                            <span className="usd-value">
+                              <FiLoader className="spinner" />
+                            </span>
+                          ) : usdCuts !== '-' && (
+                            <span className="usd-value"> • {usdCuts}</span>
+                          )}
+                        </td>
+                        <td>{formatAmount(stats.allocation_count)}</td>
+                        <td>{formatAmount(stats.claim_count)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
         </CollapsibleSection>
 
         <AchievementsSection />
