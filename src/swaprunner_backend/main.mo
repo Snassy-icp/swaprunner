@@ -188,6 +188,15 @@ shared (deployer) actor class SwapRunner() = this {
     private var allocation_statuses = HashMap.fromIter<Text, T.AllocationStatus>(allocationStatusEntries.vals(), 0, Text.equal, Text.hash);
     private var allocation_claims = HashMap.fromIter<Text, T.AllocationClaim>(allocationClaimEntries.vals(), 0, Text.equal, Text.hash);
 
+
+    // Stable storage for allocation statistics
+    private stable var tokenAllocationStatsEntries : [(Text, T.TokenAllocationStats)] = [];
+    private stable var userTokenAllocationStatsEntries : [(Text, T.UserTokenAllocationStats)] = [];
+
+    // Runtime maps
+    private var tokenAllocationStats = HashMap.fromIter<Text, T.TokenAllocationStats>(tokenAllocationStatsEntries.vals(), 0, Text.equal, Text.hash);
+    private var userTokenAllocationStats = HashMap.fromIter<Text, T.UserTokenAllocationStats>(userTokenAllocationStatsEntries.vals(), 0, Text.equal, Text.hash);
+
     // Allocation fee configuration
     private stable var allocation_fee_config : T.AllocationFeeConfig = {
         icp_fee_e8s = 1000_0000; // Default 0.1 ICP
@@ -327,6 +336,8 @@ shared (deployer) actor class SwapRunner() = this {
         allocationEntries := Iter.toArray(allocations.entries());
         allocationStatusEntries := Iter.toArray(allocation_statuses.entries());
         allocationClaimEntries := Iter.toArray(allocation_claims.entries());
+        tokenAllocationStatsEntries := Iter.toArray(tokenAllocationStats.entries());
+        userTokenAllocationStatsEntries := Iter.toArray(userTokenAllocationStats.entries());
     };
 
     system func postupgrade() {
@@ -360,6 +371,8 @@ shared (deployer) actor class SwapRunner() = this {
         allocationEntries := [];
         allocationStatusEntries := [];
         allocationClaimEntries := [];
+        tokenAllocationStatsEntries := [];
+        userTokenAllocationStatsEntries := [];     
     };
 
     public query func get_cycle_balance() : async Nat {
@@ -3871,4 +3884,5 @@ shared (deployer) actor class SwapRunner() = this {
             };
         };
     };
+
 }

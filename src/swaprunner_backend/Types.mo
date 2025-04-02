@@ -449,4 +449,22 @@ module {
         }];
     };
 
+    //--------------------------------  
+    // Types for Allocation Statistics
+    //--------------------------------
+
+    public type TokenAllocationStats = {
+        total_allocated_e8s: Nat;  // Total amount allocated all-time
+        total_claimed_e8s: Nat;    // Total amount claimed all-time
+        allocation_count: Nat;     // Number of allocations created
+        claim_count: Nat;          // Number of claims made
+    };
+
+    public type UserTokenAllocationStats = {
+        total_allocated_e8s: Nat;  // Total amount user has allocated
+        total_claimed_e8s: Nat;    // Total amount user has claimed
+        allocation_count: Nat;     // Number of allocations user has created
+        claim_count: Nat;          // Number of claims user has made
+    };
+
 }
