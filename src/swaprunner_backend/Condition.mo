@@ -74,6 +74,193 @@ module {
         ]
     };
 
+    // Helper functions
+    private func getUserTokenStatsKey(user: Principal, token_id: Text) : Text {
+        Principal.toText(user) # ":" # token_id;
+    };
+
+    // Condition evaluation helpers
+    private func evaluate_trades_above_amount(
+        context: T.Context,
+        user: Principal,
+        parameters: [{#Principal: Principal; #Nat: Nat; #Text: Text}]
+    ) : async Bool {
+        Debug.print("Evaluating trades_above_amount condition");
+        let min_amount = switch (parameters[0]) {
+            case (#Nat(amount)) {
+                Debug.print("Min amount parameter: " # Nat.toText(amount));
+                ?amount;
+            };
+            case _ {
+                Debug.print("Invalid min_amount parameter type");
+                null;
+            };
+        };
+        
+        switch (min_amount) {
+            case null {
+                Debug.print("No valid min_amount parameter");
+                return false;
+            };
+            case (?min) {
+                let stats = switch (context.user_stats.get(Principal.toText(user))) {
+                    case null {
+                        Debug.print("No user stats found");
+                        return false;
+                    };
+                    case (?s) {
+                        Debug.print("Found user stats");
+                        s;
+                    };
+                };
+                // TODO: Implement largest trade check when we add that stat
+                Debug.print("trades_above_amount not yet implemented");
+                return false;
+            };
+        };
+    };
+
+    private func evaluate_total_trades_count(
+        context: T.Context,
+        user: Principal,
+        parameters: [{#Principal: Principal; #Nat: Nat; #Text: Text}]
+    ) : async Bool {
+        Debug.print("Evaluating total_trades_count condition");
+        let min_trades = switch (parameters[0]) {
+            case (#Nat(trades)) {
+                Debug.print("Min trades parameter: " # Nat.toText(trades));
+                ?trades;
+            };
+            case _ {
+                Debug.print("Invalid min_trades parameter type");
+                null;
+            };
+        };
+        
+        switch (min_trades) {
+            case null {
+                Debug.print("No valid min_trades parameter");
+                return false;
+            };
+            case (?min) {
+                let stats = switch (context.user_stats.get(Principal.toText(user))) {
+                    case null {
+                        Debug.print("No user stats found");
+                        return false;
+                    };
+                    case (?s) {
+                        Debug.print("Found user stats with total_swaps: " # Nat.toText(s.total_swaps));
+                        s;
+                    };
+                };
+                let result = stats.total_swaps >= min;
+                Debug.print("Total trades condition result: " # Bool.toText(result) # 
+                          " (required: " # Nat.toText(min) # 
+                          ", actual: " # Nat.toText(stats.total_swaps) # ")");
+                return result;
+            };
+        };
+    };
+
+    private func evaluate_token_trade_volume(
+        context: T.Context,
+        user: Principal,
+        parameters: [{#Principal: Principal; #Nat: Nat; #Text: Text}]
+    ) : async Bool {
+        Debug.print("Evaluating token_trade_volume condition");
+        let token_id = switch (parameters[0]) {
+            case (#Text(id)) {
+                Debug.print("Token ID parameter: " # id);
+                ?id;
+            };
+            case _ {
+                Debug.print("Invalid token_id parameter type");
+                null;
+            };
+        };
+        
+        let min_volume = switch (parameters[1]) {
+            case (#Nat(volume)) {
+                Debug.print("Min volume parameter: " # Nat.toText(volume));
+                ?volume;
+            };
+            case _ {
+                Debug.print("Invalid min_volume parameter type");
+                null;
+            };
+        };
+        
+        switch (token_id, min_volume) {
+            case (?id, ?min) {
+                let stats = switch (context.user_token_stats.get(getUserTokenStatsKey(user, id))) {
+                    case null {
+                        Debug.print("No token stats found for token: " # id);
+                        return false;
+                    };
+                    case (?stats) {
+                        Debug.print("Found token stats");
+                        stats;
+                    };
+                };
+                let total_volume = stats.input_volume_e8s_icpswap + 
+                                 stats.input_volume_e8s_kong +
+                                 stats.input_volume_e8s_split;
+                let result = total_volume >= min;
+                Debug.print("Token volume condition result: " # Bool.toText(result) # 
+                          " (required: " # Nat.toText(min) # 
+                          ", actual: " # Nat.toText(total_volume) # ")");
+                return result;
+            };
+            case _ {
+                Debug.print("Missing token_id or min_volume parameter");
+                return false;
+            };
+        };
+    };
+
+    private func evaluate_login_count(
+        context: T.Context,
+        user: Principal,
+        parameters: [{#Principal: Principal; #Nat: Nat; #Text: Text}]
+    ) : async Bool {
+        Debug.print("Evaluating login_count condition");
+        let min_logins = switch (parameters[0]) {
+            case (#Nat(logins)) {
+                Debug.print("Min logins parameter: " # Nat.toText(logins));
+                ?logins;
+            };
+            case _ {
+                Debug.print("Invalid min_logins parameter type");
+                null;
+            };
+        };
+        
+        switch (min_logins) {
+            case null {
+                Debug.print("No valid min_logins parameter");
+                return false;
+            };
+            case (?min) {
+                let login_count = switch (context.user_logins.get(Principal.toText(user))) {
+                    case null {
+                        Debug.print("No login count found");
+                        return false;
+                    };
+                    case (?count) {
+                        Debug.print("Found login count: " # Nat.toText(count));
+                        count;
+                    };
+                };
+                let result = login_count >= min;
+                Debug.print("Login count condition result: " # Bool.toText(result) # 
+                          " (required: " # Nat.toText(min) # 
+                          ", actual: " # Nat.toText(login_count) # ")");
+                return result;
+            };
+        };
+    };
+
+    // Main condition evaluation function
     public func evaluate_condition(
         context: T.Context,
         user: Principal,
@@ -95,178 +282,21 @@ module {
 
         switch (usage.condition_key) {
             case "trades_above_amount" {
-                Debug.print("Evaluating trades_above_amount condition");
-                let min_amount = switch (usage.parameters[0]) {
-                    case (#Nat(amount)) {
-                        Debug.print("Min amount parameter: " # Nat.toText(amount));
-                        ?amount;
-                    };
-                    case _ {
-                        Debug.print("Invalid min_amount parameter type");
-                        null;
-                    };
-                };
-                
-                switch (min_amount) {
-                    case null {
-                        Debug.print("No valid min_amount parameter");
-                        return false;
-                    };
-                    case (?min) {
-                        let stats = switch (context.user_stats.get(Principal.toText(user))) {
-                            case null {
-                                Debug.print("No user stats found");
-                                return false;
-                            };
-                            case (?s) {
-                                Debug.print("Found user stats");
-                                s;
-                            };
-                        };
-                        // TODO: Implement largest trade check when we add that stat
-                        Debug.print("trades_above_amount not yet implemented");
-                        return false;
-                    };
-                };
+                await evaluate_trades_above_amount(context, user, usage.parameters);
             };
-
             case "total_trades_count" {
-                Debug.print("Evaluating total_trades_count condition");
-                let min_trades = switch (usage.parameters[0]) {
-                    case (#Nat(trades)) {
-                        Debug.print("Min trades parameter: " # Nat.toText(trades));
-                        ?trades;
-                    };
-                    case _ {
-                        Debug.print("Invalid min_trades parameter type");
-                        null;
-                    };
-                };
-                
-                switch (min_trades) {
-                    case null {
-                        Debug.print("No valid min_trades parameter");
-                        return false;
-                    };
-                    case (?min) {
-                        let stats = switch (context.user_stats.get(Principal.toText(user))) {
-                            case null {
-                                Debug.print("No user stats found");
-                                return false;
-                            };
-                            case (?s) {
-                                Debug.print("Found user stats with total_swaps: " # Nat.toText(s.total_swaps));
-                                s;
-                            };
-                        };
-                        let result = stats.total_swaps >= min;
-                        Debug.print("Total trades condition result: " # Bool.toText(result) # 
-                                  " (required: " # Nat.toText(min) # 
-                                  ", actual: " # Nat.toText(stats.total_swaps) # ")");
-                        return result;
-                    };
-                };
+                await evaluate_total_trades_count(context, user, usage.parameters);
             };
-
             case "token_trade_volume" {
-                Debug.print("Evaluating token_trade_volume condition");
-                let token_id = switch (usage.parameters[0]) {
-                    case (#Text(id)) {
-                        Debug.print("Token ID parameter: " # id);
-                        ?id;
-                    };
-                    case _ {
-                        Debug.print("Invalid token_id parameter type");
-                        null;
-                    };
-                };
-                
-                let min_volume = switch (usage.parameters[1]) {
-                    case (#Nat(volume)) {
-                        Debug.print("Min volume parameter: " # Nat.toText(volume));
-                        ?volume;
-                    };
-                    case _ {
-                        Debug.print("Invalid min_volume parameter type");
-                        null;
-                    };
-                };
-                
-                switch (token_id, min_volume) {
-                    case (?id, ?min) {
-                        let stats = switch (context.user_token_stats.get(getUserTokenStatsKey(user, id))) {
-                            case null {
-                                Debug.print("No token stats found for token: " # id);
-                                return false;
-                            };
-                            case (?stats) {
-                                Debug.print("Found token stats");
-                                stats;
-                            };
-                        };
-                        let total_volume = stats.input_volume_e8s_icpswap + 
-                                         stats.input_volume_e8s_kong +
-                                         stats.input_volume_e8s_split;
-                        let result = total_volume >= min;
-                        Debug.print("Token volume condition result: " # Bool.toText(result) # 
-                                  " (required: " # Nat.toText(min) # 
-                                  ", actual: " # Nat.toText(total_volume) # ")");
-                        return result;
-                    };
-                    case _ {
-                        Debug.print("Missing token_id or min_volume parameter");
-                        return false;
-                    };
-                };
+                await evaluate_token_trade_volume(context, user, usage.parameters);
             };
-
             case "login_count" {
-                Debug.print("Evaluating login_count condition");
-                let min_logins = switch (usage.parameters[0]) {
-                    case (#Nat(logins)) {
-                        Debug.print("Min logins parameter: " # Nat.toText(logins));
-                        ?logins;
-                    };
-                    case _ {
-                        Debug.print("Invalid min_logins parameter type");
-                        null;
-                    };
-                };
-                
-                switch (min_logins) {
-                    case null {
-                        Debug.print("No valid min_logins parameter");
-                        return false;
-                    };
-                    case (?min) {
-                        let login_count = switch (context.user_logins.get(Principal.toText(user))) {
-                            case null {
-                                Debug.print("No login count found");
-                                return false;
-                            };
-                            case (?count) {
-                                Debug.print("Found login count: " # Nat.toText(count));
-                                count;
-                            };
-                        };
-                        let result = login_count >= min;
-                        Debug.print("Login count condition result: " # Bool.toText(result) # 
-                                  " (required: " # Nat.toText(min) # 
-                                  ", actual: " # Nat.toText(login_count) # ")");
-                        return result;
-                    };
-                };
+                await evaluate_login_count(context, user, usage.parameters);
             };
-
             case _ {
                 Debug.print("Unknown condition type: " # usage.condition_key);
                 return false; // Unknown condition
             };
         };
-    };
-
-    // Helper functions
-    private func getUserTokenStatsKey(user: Principal, token_id: Text) : Text {
-        Principal.toText(user) # ":" # token_id;
     };
 };
