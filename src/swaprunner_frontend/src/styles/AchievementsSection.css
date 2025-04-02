@@ -116,14 +116,14 @@
 .achievement-info h3 {
     margin: 0;
     color: #fff;
-    font-size: 1em;
+    font-size: 16px;
     line-height: 1.2;
     font-weight: 500;
 }
 
 .achievement-date {
     color: #888;
-    font-size: 0.85em;
+    font-size: 12px;
     margin-top: 4px;
 }
 
@@ -160,7 +160,7 @@
 .achievement-details-content h4 {
     margin: 0 0 12px 0;
     color: #ffd700;
-    font-size: 1.1em;
+    font-size: 16px;
     font-weight: 600;
 }
 
@@ -168,12 +168,12 @@
     margin: 0 0 16px 0;
     color: #fff;
     line-height: 1.5;
-    font-size: 0.95em;
+    font-size: 16px;
 }
 
 .achievement-details-date {
     color: #888;
-    font-size: 0.85em;
+    font-size: 12px;
     font-style: italic;
     margin-bottom: 20px;
 }
@@ -189,7 +189,7 @@
     align-items: center;
     gap: 8px;
     color: #888;
-    font-size: 0.9em;
+    font-size: 16px;
 }
 
 .rewards-loading .spinning {
@@ -234,7 +234,7 @@
 
 .reward-amount {
     color: #fff;
-    font-size: 0.95em;
+    font-size: 16px;
     font-weight: 500;
 }
 
@@ -248,7 +248,7 @@
     background-color: #007bff;
     color: white;
     cursor: pointer;
-    font-size: 0.9em;
+    font-size: 12px;
     transition: background-color 0.2s;
 }
 
@@ -267,7 +267,7 @@
 
 .no-rewards {
     color: #888;
-    font-size: 0.9em;
+    font-size: 16px;
     text-align: center;
     padding: 20px;
 }
@@ -310,6 +310,6 @@
 
 .reward-date {
     color: #888;
-    font-size: 0.85em;
+    font-size: 12px;
     margin-top: 4px;
 } 
