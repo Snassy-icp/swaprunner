@@ -378,4 +378,13 @@
     color: #888;
     font-size: 12px;
     margin-top: 4px;
+}
+
+.achievement-header .small-gift {
+    font-size: 16px;
+    color: #FFD700;
+    margin-left: 8px;
+    transform-origin: center;
+    position: relative;
+    animation: shake 3s ease-in-out infinite;
 } 

@@ -765,7 +765,12 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                     )}
                 </div>
                 <div className="achievement-info">
-                    <h3>{details.name}</h3>
+                    <h3>
+                        {details.name}
+                        {availableClaims.length > 0 && (
+                            <FiGift className="small-gift" />
+                        )}
+                    </h3>
                     <div className="achievement-date">
                         {formatDate(achievement.discovered_at)}
                     </div>
