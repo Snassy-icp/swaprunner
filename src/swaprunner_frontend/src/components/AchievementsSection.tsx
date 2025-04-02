@@ -691,6 +691,12 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
     const [claimSuccess, setClaimSuccess] = useState<ClaimSuccess | null>(null);
     const { tokens } = useTokens();
 
+    // Load rewards data when component mounts
+    useEffect(() => {
+        loadRewards();
+    }, []);
+
+    // Refresh rewards when expanded
     useEffect(() => {
         if (isExpanded) {
             loadRewards();
@@ -829,7 +835,15 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                                             return (
                                                 <div key={claim.allocation_id} className="reward-item">
                                                     <div className="reward-info">
-                                                        <div className="reward-icon has-reward">
+                                                        <div 
+                                                            className="reward-icon has-reward"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleClaim(claim.allocation_id, claim.token_canister_id.toString());
+                                                            }}
+                                                            role="button"
+                                                            title="Click to claim reward"
+                                                        >
                                                             <FiGift />
                                                         </div>
                                                         <div className="reward-details">

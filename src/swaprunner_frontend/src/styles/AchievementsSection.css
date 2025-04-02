@@ -261,6 +261,17 @@
     animation: shake 3s ease-in-out infinite;
     background-color: rgba(255, 215, 0, 0.2);
     box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.reward-icon.has-reward:hover {
+    background-color: rgba(255, 215, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.reward-icon.has-reward:active {
+    transform: scale(0.95);
 }
 
 @keyframes shake {
