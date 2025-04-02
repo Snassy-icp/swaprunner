@@ -696,8 +696,8 @@ shared (deployer) actor class SwapRunner() = this {
             userStats = userStats;
             userTokenStats = userTokenStats;
             tokenSavingsStats = tokenSavingsStats;
-            tokenAllocationStats = HashMap.HashMap<Text, T.TokenAllocationStats>(0, Text.equal, Text.hash);
-            userTokenAllocationStats = HashMap.HashMap<Text, T.UserTokenAllocationStats>(0, Text.equal, Text.hash);
+            tokenAllocationStats = tokenAllocationStats;
+            userTokenAllocationStats = userTokenAllocationStats;
         }
     };
 
@@ -3547,12 +3547,14 @@ shared (deployer) actor class SwapRunner() = this {
             addToServerBalance,
         );
 
+        Debug.print("activate_allocation: " # Nat.toText(allocation_id) # " " # debug_show(activate_result));
+
         // If activation was successful, update the status and record stats
         switch (activate_result) {
             case (#err(e)) { return #err(e) };
             case (#ok(_)) {
                 allocation_statuses.put(Nat.toText(allocation_id), #Active);
-
+                Debug.print("record_allocation_creation: " # Nat.toText(allocation_id));
                 // Record allocation stats
                 await Stats.record_allocation_creation(
                     caller,
@@ -3562,6 +3564,7 @@ shared (deployer) actor class SwapRunner() = this {
                     allocation.token.total_amount_e8s * allocation_fee_config.cut_basis_points / 10000,
                     getStatsContext()
                 );
+                Debug.print("recorded allocation creation: " # Nat.toText(allocation_id));
 
                 #ok(())
             };

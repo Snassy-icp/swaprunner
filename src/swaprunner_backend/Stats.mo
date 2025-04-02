@@ -4,7 +4,7 @@ import Int "mo:base/Int";
 import Nat "mo:base/Nat";
 import Principal "mo:base/Principal";
 import Text "mo:base/Text";
-
+import Debug "mo:base/Debug";
 module {
 
     // Record completed ICPSwap swap
@@ -787,6 +787,8 @@ module {
         cut_e8s: Nat,
         statsContext: T.StatsContext
     ) : async () {
+        Debug.print("STEP 1:record_allocation_creation: " # token # " " # Nat.toText(amount_e8s) # " " # Nat.toText(fee_e8s) # " " # Nat.toText(cut_e8s));
+
         // Update token allocation stats
         let token_stats = getOrCreateTokenAllocationStats(token, statsContext);
         statsContext.tokenAllocationStats.put(token, {
@@ -798,6 +800,7 @@ module {
             claim_count = token_stats.claim_count;
         });
 
+        Debug.print("STEP 2:record_allocation_creation: " # token # " " # Nat.toText(amount_e8s) # " " # Nat.toText(fee_e8s) # " " # Nat.toText(cut_e8s));
         // Update user-token allocation stats
         let user_token_stats = getOrCreateUserTokenAllocationStats(creator, token, statsContext);
         statsContext.userTokenAllocationStats.put(getUserTokenStatsKey(creator, token), {
@@ -808,6 +811,7 @@ module {
             allocation_count = user_token_stats.allocation_count + 1;
             claim_count = user_token_stats.claim_count;
         });
+        Debug.print("STEP 3:record_allocation_creation: " # token # " " # Nat.toText(amount_e8s) # " " # Nat.toText(fee_e8s) # " " # Nat.toText(cut_e8s));
     };
 
     // Record allocation claim
