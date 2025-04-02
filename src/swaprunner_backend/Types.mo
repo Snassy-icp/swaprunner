@@ -456,6 +456,8 @@ module {
     public type TokenAllocationStats = {
         total_allocated_e8s: Nat;  // Total amount allocated all-time
         total_claimed_e8s: Nat;    // Total amount claimed all-time
+        total_fees_paid_e8s: Nat;  // Total ICP fees paid for allocations
+        total_cuts_paid_e8s: Nat;  // Total cuts taken from allocations
         allocation_count: Nat;     // Number of allocations created
         claim_count: Nat;          // Number of claims made
     };
@@ -463,6 +465,8 @@ module {
     public type UserTokenAllocationStats = {
         total_allocated_e8s: Nat;  // Total amount user has allocated
         total_claimed_e8s: Nat;    // Total amount user has claimed
+        total_fees_paid_e8s: Nat;  // Total ICP fees paid by this user
+        total_cuts_paid_e8s: Nat;  // Total cuts taken from this user's allocations
         allocation_count: Nat;     // Number of allocations user has created
         claim_count: Nat;          // Number of claims user has made
     };
