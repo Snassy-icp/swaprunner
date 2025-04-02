@@ -865,8 +865,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                                                                     formatTokenAmount(claim.claimable_amount.min_e8s, claim.token_canister_id.toString())
                                                                 ) : (
                                                                     `${formatTokenAmount(claim.claimable_amount.min_e8s, claim.token_canister_id.toString())} - ${formatTokenAmount(claim.claimable_amount.max_e8s, claim.token_canister_id.toString())}`
-                                                                )}
-                                                                {allocation?.metadata?.symbol || ' tokens'}
+                                                                )} {allocation?.metadata?.symbol || ' tokens'}
                                                             </span>
                                                         </div>
                                                     </div>
