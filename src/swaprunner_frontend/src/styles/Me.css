@@ -221,18 +221,24 @@
   }
 }
 
-@keyframes dance {
-  0%, 100% {
-    transform: translateY(0) rotate(0deg);
+@keyframes shake {
+  0%, 80%, 100% { 
+    transform: rotate(0deg);
   }
-  25% {
-    transform: translateY(-4px) rotate(-5deg);
+  82% { 
+    transform: rotate(-12deg);
   }
-  50% {
-    transform: translateY(-6px) rotate(0deg);
+  84% { 
+    transform: rotate(12deg);
   }
-  75% {
-    transform: translateY(-4px) rotate(5deg);
+  86% { 
+    transform: rotate(-8deg);
+  }
+  88% { 
+    transform: rotate(4deg);
+  }
+  90% { 
+    transform: rotate(0deg);
   }
 }
 
@@ -243,8 +249,12 @@
   border-radius: 50%;
   background-color: rgba(255, 215, 0, 0.2);
   padding: 8px;
+  transform-origin: center;
+  position: relative;
 }
 
 .reward-icon.has-reward {
-  animation: dance 1.5s ease-in-out infinite;
+  animation: shake 3s ease-in-out infinite;
+  background-color: rgba(255, 215, 0, 0.2);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
 }
