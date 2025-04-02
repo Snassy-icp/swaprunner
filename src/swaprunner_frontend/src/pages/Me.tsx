@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiUser, FiLogIn, FiChevronDown, FiChevronUp, FiSettings, FiBarChart2, FiLoader, FiArrowUp, FiArrowDown, FiRefreshCw, FiGift } from 'react-icons/fi';
+import { FiUser, FiLogIn, FiChevronDown, FiChevronUp, FiSettings, FiBarChart2, FiLoader, FiArrowUp, FiArrowDown, FiRefreshCw, FiGift, FiTrendingUp } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { usePool } from '../contexts/PoolContext';
 import { statsService, UserTokenStats, TokenSavingsStats, UserTokenAllocationStats } from '../services/stats';
@@ -588,9 +588,15 @@ export const Me: React.FC = () => {
         <AllocationsSection />
 
         <CollapsibleSection title="Statistics" icon={<FiBarChart2 />} defaultExpanded={true}>
-          <b>Trades</b>
+          <div className="section-header">
+            <FiTrendingUp />
+            <span>Trades</span>
+          </div>
           {statisticsContent}
-          <b>Allocations</b>
+          <div className="section-header">
+            <FiGift />
+            <span>Rewards</span>
+          </div>
           <div className="token-statistics-table">
             {loadingAllocationStats ? (
               <LoadingSpinner />
