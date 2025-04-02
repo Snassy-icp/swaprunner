@@ -1062,7 +1062,25 @@ export const AchievementsSection: React.FC = () => {
 
     return (
         <CollapsibleSection 
-            title="Achievements" 
+            title={
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    Achievements
+                    {availableClaims.length > 0 && (
+                        <FiGift 
+                            className={`small-gift ${claiming ? 'claiming' : ''}`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (availableClaims.length > 0) {
+                                    const firstClaim = availableClaims[0];
+                                    handleClaim(firstClaim.allocation_id, firstClaim.token_canister_id.toString());
+                                }
+                            }}
+                            role="button"
+                            title="Click to claim first available reward"
+                        />
+                    )}
+                </div>
+            }
             icon={<FiAward />} 
             defaultExpanded={availableClaims.length > 0}
         >
