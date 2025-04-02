@@ -1,0 +1,19 @@
+@keyframes spin-claim {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.tab svg {
+    width: 16px;
+    height: 16px;
+    transition: all 0.2s;
+}
+
+.tab:not(.active) .FiGift {
+    animation: spin-claim 2s linear infinite;
+    color: var(--success-green);
+} 

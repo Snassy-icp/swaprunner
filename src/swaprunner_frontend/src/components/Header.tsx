@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiPercent, FiRepeat, FiCreditCard, FiDroplet, FiList, FiBarChart2, FiUser } from 'react-icons/fi';
+import { FiPercent, FiRepeat, FiCreditCard, FiDroplet, FiList, FiBarChart2, FiUser, FiGift } from 'react-icons/fi';
 import { isFeatureEnabled } from '../config/featureFlags';
 import { SlippageSettings } from './SlippageSettings';
 import { useSlippage } from '../contexts/SlippageContext';
+import { useClaims } from '../contexts/ClaimContext';
 
 export const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showSlippageSettings, setShowSlippageSettings] = useState(false);
   const { slippageTolerance, setSlippageTolerance } = useSlippage();
+  const { availableClaims } = useClaims();
 
   const isSwapTab = location.pathname === '/';
 
@@ -51,9 +53,13 @@ export const Header: React.FC = () => {
         <button 
           className={`tab ${location.pathname === '/me' ? 'active' : ''}`}
           onClick={() => navigate('/me')}
-          title="View your profile"
+          title={availableClaims.length > 0 ? "View your profile - You have rewards to claim!" : "View your profile"}
         >
-          <FiUser />
+          {availableClaims.length > 0 ? (
+            <FiGift className="FiGift" />
+          ) : (
+            <FiUser />
+          )}
           {location.pathname === '/me' && <span>Me</span>}
         </button>
         <button 

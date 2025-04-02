@@ -5,6 +5,7 @@ import { SlippageProvider } from './contexts/SlippageContext';
 import { LogoLoadingProvider } from './contexts/LogoLoadingContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { PoolProvider } from './contexts/PoolContext';
+import { ClaimProvider } from './contexts/ClaimContext';
 import { AppRoutes } from './routes';
 import { Header } from './components/Header';
 import { analyticsService } from './services/analytics';
@@ -280,28 +281,30 @@ const AuthStateListener: React.FC = () => {
 const App: React.FC = () => {
   return (
     <Router>
-      <AchievementProvider>
-        <AuthProvider>
-          <TokenProvider>
+      <AuthProvider>
+        <TokenProvider>
+          <SlippageProvider>
             <LogoLoadingProvider>
-              <SlippageProvider>
-                <PoolProvider>
-                  <RouteTracker />
-                  <AuthStateListener />
-                  <FixedHeader />
-                  <div className="app">
-                    <Header />
-                    <main>
-                      <AppRoutes />
-                    </main>
-                  </div>
-                  <AchievementNotification />
-                </PoolProvider>
-              </SlippageProvider>
+              <PoolProvider>
+                <ClaimProvider>
+                  <AchievementProvider>
+                    <RouteTracker />
+                    <AuthStateListener />
+                    <FixedHeader />
+                    <div className="app">
+                      <Header />
+                      <main>
+                        <AppRoutes />
+                      </main>
+                    </div>
+                    <AchievementNotification />
+                  </AchievementProvider>
+                </ClaimProvider>
+              </PoolProvider>
             </LogoLoadingProvider>
-          </TokenProvider>
-        </AuthProvider>
-      </AchievementProvider>
+          </SlippageProvider>
+        </TokenProvider>
+      </AuthProvider>
     </Router>
   );
 };
