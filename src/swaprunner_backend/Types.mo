@@ -438,6 +438,7 @@ module {
         user_achievements: HashMap.HashMap<Text, [UserAchievement]>;
         user_stats: HashMap.HashMap<Text, UserStats>;
         user_token_stats: HashMap.HashMap<Text, UserTokenStats>;
+        user_logins: HashMap.HashMap<Text, Nat>;  // Added for login count tracking
     };
 
     // Types for conditions

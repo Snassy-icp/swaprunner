@@ -3329,6 +3329,7 @@ shared (deployer) actor class SwapRunner() = this {
             user_achievements = userAchievements;
             user_stats = userStats;
             user_token_stats = userTokenStats;
+            user_logins = userLogins;
         };
         
         let result = await Achievement.scan_for_new_achievements(context, caller);

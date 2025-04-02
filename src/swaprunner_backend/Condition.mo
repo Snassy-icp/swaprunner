@@ -53,12 +53,24 @@ module {
         ];
     };
 
+    private let LOGIN_COUNT : T.Condition = {
+        key = "login_count";
+        name = "Login Count Achievement";
+        description = "Achieve a certain number of logins";
+        parameter_specs = [{
+            name = "min_logins";
+            param_type = #Nat;
+            default_value = null;
+        }];
+    };
+
     // Public setup function to initialize registry in main.mo
     public func setup_registry() : [(Text, T.Condition)] {
         [
             (TRADES_ABOVE_AMOUNT.key, TRADES_ABOVE_AMOUNT),
             (TOTAL_TRADES_COUNT.key, TOTAL_TRADES_COUNT),
-            (TOKEN_TRADE_VOLUME.key, TOKEN_TRADE_VOLUME)
+            (TOKEN_TRADE_VOLUME.key, TOKEN_TRADE_VOLUME),
+            (LOGIN_COUNT.key, LOGIN_COUNT)
         ]
     };
 
@@ -204,6 +216,44 @@ module {
                     case _ {
                         Debug.print("Missing token_id or min_volume parameter");
                         return false;
+                    };
+                };
+            };
+
+            case "login_count" {
+                Debug.print("Evaluating login_count condition");
+                let min_logins = switch (usage.parameters[0]) {
+                    case (#Nat(logins)) {
+                        Debug.print("Min logins parameter: " # Nat.toText(logins));
+                        ?logins;
+                    };
+                    case _ {
+                        Debug.print("Invalid min_logins parameter type");
+                        null;
+                    };
+                };
+                
+                switch (min_logins) {
+                    case null {
+                        Debug.print("No valid min_logins parameter");
+                        return false;
+                    };
+                    case (?min) {
+                        let login_count = switch (context.user_logins.get(Principal.toText(user))) {
+                            case null {
+                                Debug.print("No login count found");
+                                return false;
+                            };
+                            case (?count) {
+                                Debug.print("Found login count: " # Nat.toText(count));
+                                count;
+                            };
+                        };
+                        let result = login_count >= min;
+                        Debug.print("Login count condition result: " # Bool.toText(result) # 
+                                  " (required: " # Nat.toText(min) # 
+                                  ", actual: " # Nat.toText(login_count) # ")");
+                        return result;
                     };
                 };
             };
