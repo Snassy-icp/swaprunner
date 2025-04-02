@@ -3915,4 +3915,25 @@ shared (deployer) actor class SwapRunner() = this {
         };
     };
 
+    // Statistics methods
+
+    // Get all token allocation stats
+    public query func get_all_token_allocation_stats() : async [(Text, T.TokenAllocationStats)] {
+        Iter.toArray(tokenAllocationStats.entries())
+    };
+
+    // Get user token allocation stats
+    public query func get_user_token_allocation_stats(user: Text) : async [(Text, T.UserTokenAllocationStats)] {
+        let userStats = Buffer.Buffer<(Text, T.UserTokenAllocationStats)>(0);
+        for ((key, stats) in tokenAllocationStats.entries()) {
+            switch (userTokenAllocationStats.get(Stats.getUserTokenStatsKey(Principal.fromText(user), key))) {
+                case (?userStats_) {
+                    userStats.add((key, userStats_));
+                };
+                case null {};
+            };
+        };
+        Buffer.toArray(userStats)
+    };
+
 }

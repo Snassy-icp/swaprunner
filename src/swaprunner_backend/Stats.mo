@@ -707,7 +707,7 @@ module {
     };
 
     // Add after other helper functions but before record methods
-    private func getUserTokenStatsKey(user: Principal, token: Text) : Text {
+    public func getUserTokenStatsKey(user: Principal, token: Text) : Text {
         Principal.toText(user) # "_" # token
     };
 
