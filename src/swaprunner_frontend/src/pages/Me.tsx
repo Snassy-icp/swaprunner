@@ -584,37 +584,13 @@ export const Me: React.FC = () => {
           </div>
         </CollapsibleSection>
 
-        <CollapsibleSection title="Settings" icon={<FiSettings />} defaultExpanded={false}>
-          <div className="settings-display">
-            <div className="setting-item">
-              <div className="setting-info">
-                <label htmlFor="keepTokensInPool">Keep tokens in ICPSwap Pool</label>
-                <p className="setting-description">
-                  When enabled, swapped tokens will remain in the ICPSwap pool for faster future swaps.
-                  You can view and withdraw these balances in the Pools tab.
-                </p>
-              </div>
-              <div className="setting-control">
-                <input
-                  type="checkbox"
-                  id="keepTokensInPool"
-                  checked={keepTokensInPool}
-                  onChange={(e) => setKeepTokensInPool(e.target.checked)}
-                />
-              </div>
-            </div>
-          </div>
-        </CollapsibleSection>
+        <AchievementsSection />
+        <AllocationsSection />
 
         <CollapsibleSection title="Statistics" icon={<FiBarChart2 />} defaultExpanded={true}>
+          <b>Trades</b>
           {statisticsContent}
-        </CollapsibleSection>
-
-        <CollapsibleSection 
-          title="My Allocations" 
-          icon={<FiGift />}
-          defaultExpanded={false}
-        >
+          <b>Allocations</b>
           <div className="token-statistics-table">
             {loadingAllocationStats ? (
               <LoadingSpinner />
@@ -708,10 +684,30 @@ export const Me: React.FC = () => {
               </table>
             )}
           </div>
+
         </CollapsibleSection>
 
-        <AchievementsSection />
-        <AllocationsSection />
+        <CollapsibleSection title="Settings" icon={<FiSettings />} defaultExpanded={false}>
+          <div className="settings-display">
+            <div className="setting-item">
+              <div className="setting-info">
+                <label htmlFor="keepTokensInPool">Keep tokens in ICPSwap Pool</label>
+                <p className="setting-description">
+                  When enabled, swapped tokens will remain in the ICPSwap pool for faster future swaps.
+                  You can view and withdraw these balances in the Pools tab.
+                </p>
+              </div>
+              <div className="setting-control">
+                <input
+                  type="checkbox"
+                  id="keepTokensInPool"
+                  checked={keepTokensInPool}
+                  onChange={(e) => setKeepTokensInPool(e.target.checked)}
+                />
+              </div>
+            </div>
+          </div>
+        </CollapsibleSection>        
       </div>
     </div>
   );
