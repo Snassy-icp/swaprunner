@@ -689,6 +689,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [claimSuccess, setClaimSuccess] = useState<ClaimSuccess | null>(null);
+    const [claiming, setClaiming] = useState<string | null>(null);
     const { tokens } = useTokens();
 
     // Load rewards data when component mounts
@@ -734,7 +735,10 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
 
     const handleClaim = async (allocationId: string, tokenId: string) => {
         try {
-            setLoading(true);
+            if (claiming) return; // Prevent multiple claims at once
+            setClaiming(allocationId);
+            setError(null);
+            
             const claimedAmount = await allocationService.claimAndWithdrawAllocation(allocationId);
             
             // Show success modal
@@ -743,13 +747,11 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                 tokenId: tokenId,
                 achievementName: details.name
             });
-
-            // Don't reload immediately - wait for modal to be closed
-            setLoading(false);
         } catch (err: any) {
             setError('Failed to claim reward: ' + (err.message || String(err)));
             console.error('Error claiming reward:', err);
-            setLoading(false);
+        } finally {
+            setClaiming(null);
         }
     };
 
@@ -775,7 +777,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                         {details.name}
                         {availableClaims.length > 0 && (
                             <FiGift 
-                                className="small-gift" 
+                                className={`small-gift ${claiming === availableClaims[0].allocation_id ? 'claiming' : ''}`}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     const firstClaim = availableClaims[0];
@@ -845,7 +847,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                                                 <div key={claim.allocation_id} className="reward-item">
                                                     <div className="reward-info">
                                                         <div 
-                                                            className="reward-icon has-reward"
+                                                            className={`reward-icon has-reward ${claiming === claim.allocation_id ? 'claiming' : ''}`}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleClaim(claim.allocation_id, claim.token_canister_id.toString());
@@ -872,9 +874,9 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                                                             e.stopPropagation();
                                                             handleClaim(claim.allocation_id, claim.token_canister_id.toString());
                                                         }}
-                                                        disabled={loading}
+                                                        disabled={claiming !== null}
                                                     >
-                                                        {loading ? (
+                                                        {claiming === claim.allocation_id ? (
                                                             <>
                                                                 <FiLoader className="spinning" />
                                                                 Claiming...
