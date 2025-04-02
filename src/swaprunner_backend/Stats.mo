@@ -778,5 +778,105 @@ module {
         }
     };
 
+    // Record allocation creation
+    public func record_allocation_creation(
+        creator: Principal,
+        token: Text,  // Canister ID
+        amount_e8s: Nat,
+        fee_e8s: Nat,
+        cut_e8s: Nat,
+        statsContext: T.StatsContext
+    ) : async () {
+        // Update token allocation stats
+        let token_stats = getOrCreateTokenAllocationStats(token, statsContext);
+        statsContext.tokenAllocationStats.put(token, {
+            total_allocated_e8s = token_stats.total_allocated_e8s + amount_e8s;
+            total_claimed_e8s = token_stats.total_claimed_e8s;
+            total_fees_paid_e8s = token_stats.total_fees_paid_e8s + fee_e8s;
+            total_cuts_paid_e8s = token_stats.total_cuts_paid_e8s + cut_e8s;
+            allocation_count = token_stats.allocation_count + 1;
+            claim_count = token_stats.claim_count;
+        });
 
-};
+        // Update user-token allocation stats
+        let user_token_stats = getOrCreateUserTokenAllocationStats(creator, token, statsContext);
+        statsContext.userTokenAllocationStats.put(getUserTokenStatsKey(creator, token), {
+            total_allocated_e8s = user_token_stats.total_allocated_e8s + amount_e8s;
+            total_claimed_e8s = user_token_stats.total_claimed_e8s;
+            total_fees_paid_e8s = user_token_stats.total_fees_paid_e8s + fee_e8s;
+            total_cuts_paid_e8s = user_token_stats.total_cuts_paid_e8s + cut_e8s;
+            allocation_count = user_token_stats.allocation_count + 1;
+            claim_count = user_token_stats.claim_count;
+        });
+    };
+
+    // Record allocation claim
+    public func record_allocation_claim(
+        claimer: Principal,
+        token: Text,  // Canister ID
+        amount_e8s: Nat,
+        statsContext: T.StatsContext
+    ) : async () {
+        // Update token allocation stats
+        let token_stats = getOrCreateTokenAllocationStats(token, statsContext);
+        statsContext.tokenAllocationStats.put(token, {
+            total_allocated_e8s = token_stats.total_allocated_e8s;
+            total_claimed_e8s = token_stats.total_claimed_e8s + amount_e8s;
+            total_fees_paid_e8s = token_stats.total_fees_paid_e8s;
+            total_cuts_paid_e8s = token_stats.total_cuts_paid_e8s;
+            allocation_count = token_stats.allocation_count;
+            claim_count = token_stats.claim_count + 1;
+        });
+
+        // Update user-token allocation stats
+        let user_token_stats = getOrCreateUserTokenAllocationStats(claimer, token, statsContext);
+        statsContext.userTokenAllocationStats.put(getUserTokenStatsKey(claimer, token), {
+            total_allocated_e8s = user_token_stats.total_allocated_e8s;
+            total_claimed_e8s = user_token_stats.total_claimed_e8s + amount_e8s;
+            total_fees_paid_e8s = user_token_stats.total_fees_paid_e8s;
+            total_cuts_paid_e8s = user_token_stats.total_cuts_paid_e8s;
+            allocation_count = user_token_stats.allocation_count;
+            claim_count = user_token_stats.claim_count + 1;
+        });
+    };
+
+    // Helper function to get or create token allocation stats
+    private func getOrCreateTokenAllocationStats(token_id: Text, statsContext: T.StatsContext) : T.TokenAllocationStats {
+        switch (statsContext.tokenAllocationStats.get(token_id)) {
+            case (?stats) { stats };
+            case null {
+                let newStats = {
+                    total_allocated_e8s = 0;
+                    total_claimed_e8s = 0;
+                    total_fees_paid_e8s = 0;
+                    total_cuts_paid_e8s = 0;
+                    allocation_count = 0;
+                    claim_count = 0;
+                };
+                statsContext.tokenAllocationStats.put(token_id, newStats);
+                newStats
+            };
+        }
+    };
+
+    // Helper function to get or create user-token allocation stats
+    private func getOrCreateUserTokenAllocationStats(user: Principal, token: Text, statsContext: T.StatsContext) : T.UserTokenAllocationStats {
+        let key = getUserTokenStatsKey(user, token);
+        switch (statsContext.userTokenAllocationStats.get(key)) {
+            case (?stats) { stats };
+            case null {
+                let newStats = {
+                    total_allocated_e8s = 0;
+                    total_claimed_e8s = 0;
+                    total_fees_paid_e8s = 0;
+                    total_cuts_paid_e8s = 0;
+                    allocation_count = 0;
+                    claim_count = 0;
+                };
+                statsContext.userTokenAllocationStats.put(key, newStats);
+                newStats
+            };
+        }
+    };
+
+}

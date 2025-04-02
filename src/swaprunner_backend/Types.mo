@@ -335,12 +335,15 @@ module {
         amount_e8s: ?Nat;  // If null, withdraw entire balance
     };
 
+    // Context type for statistics tracking
     public type StatsContext = {
         globalStats: GlobalStats;
         tokenStats: HashMap.HashMap<Text, TokenStats>;
-        userStats: HashMap.HashMap<Text, UserStats>;
-        userTokenStats: HashMap.HashMap<Text, UserTokenStats>;  
         tokenSavingsStats: HashMap.HashMap<Text, TokenSavingsStats>;
+        userStats: HashMap.HashMap<Text, UserStats>;
+        userTokenStats: HashMap.HashMap<Text, UserTokenStats>;
+        tokenAllocationStats: HashMap.HashMap<Text, TokenAllocationStats>;
+        userTokenAllocationStats: HashMap.HashMap<Text, UserTokenAllocationStats>;
     };
 
     //--------------------------------  

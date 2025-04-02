@@ -696,6 +696,8 @@ shared (deployer) actor class SwapRunner() = this {
             userStats = userStats;
             userTokenStats = userTokenStats;
             tokenSavingsStats = tokenSavingsStats;
+            tokenAllocationStats = HashMap.HashMap<Text, T.TokenAllocationStats>(0, Text.equal, Text.hash);
+            userTokenAllocationStats = HashMap.HashMap<Text, T.UserTokenAllocationStats>(0, Text.equal, Text.hash);
         }
     };
 
