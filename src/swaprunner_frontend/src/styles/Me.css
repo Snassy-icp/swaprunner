@@ -49,6 +49,15 @@
   color: var(--text-secondary);
 }
 
+.section-header .FiGift {
+    color: #FFD700;
+    filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.7));
+}
+
+.section-header .FiGift.claiming {
+    animation: spin-claim 2s linear infinite;
+}
+
 .me-page .section-content {
   padding: 0 0 20px;
 }
@@ -219,4 +228,69 @@
   .me-page .statistics-display .activity-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+@keyframes shake {
+  0%, 80%, 100% { 
+    transform: rotate(0deg);
+  }
+  82% { 
+    transform: rotate(-12deg);
+  }
+  84% { 
+    transform: rotate(12deg);
+  }
+  86% { 
+    transform: rotate(-8deg);
+  }
+  88% { 
+    transform: rotate(4deg);
+  }
+  90% { 
+    transform: rotate(0deg);
+  }
+}
+
+.reward-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: rgba(255, 215, 0, 0.2);
+  padding: 8px;
+  transform-origin: center;
+  position: relative;
+}
+
+.reward-icon.has-reward {
+  animation: shake 3s ease-in-out infinite;
+  background-color: rgba(255, 215, 0, 0.2);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+}
+
+.me-page .statistics-display .section-header {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 24px 0 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.me-page .statistics-display .section-header svg {
+    width: 18px;
+    height: 18px;
+    color: var(--text-secondary);
+}
+
+.me-page .statistics-display .section-header svg.FiGift {
+    color: #FFD700;
+    filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.7));
+}
+
+.me-page .statistics-display .section-header svg.FiGift.claiming {
+    animation: spin-claim 2s linear infinite;
 }

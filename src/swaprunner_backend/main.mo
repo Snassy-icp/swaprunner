@@ -8,6 +8,7 @@ import Error "mo:base/Error";
 import Nat "mo:base/Nat";
 import Nat8 "mo:base/Nat8";
 import Nat16 "mo:base/Nat16";
+import Nat32 "mo:base/Nat32";
 import Debug "mo:base/Debug";
 import Iter "mo:base/Iter";
 import Timer "mo:base/Timer";
@@ -17,13 +18,37 @@ import Hash "mo:base/Hash";
 import Float "mo:base/Float";
 import Int "mo:base/Int";
 import T "Types";
-actor {
+
+import Stats "./Stats";
+import Condition "./Condition";
+import Achievement "./Achievement";
+import Allocation "./Allocation";
+import Util "./Util";
+
+shared (deployer) actor class SwapRunner() = this {
+    //type This = SwapRunner;
+
+    private func this_canister_id() : Principal {
+        Principal.fromActor(this);
+    };
+    
     // Constants
-    private let ICPSWAP_TOKEN_CANISTER_ID = "k37c6-riaaa-aaaag-qcyza-cai"; // ICPSwap trusted token list canister ID (contains getList() for trusted token list and getLogo() for token logos)
+    private let ICPSWAP_TOKEN_CANISTER_ID = "k37c6-riaaa-aaaag-qcyza-cai"; // ICPSwap trusted token list canister ID
     let ICP_PRINCIPAL = Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai");
 
     // Add new constant at the top of the file, near other constants
     private let MAX_RESPONSE_SIZE_BYTES : Nat = 2_500_000; // Conservative limit below IC's max of ~3.1MB
+
+    // Runtime state
+    private var conditionRegistry = HashMap.fromIter<Text, T.Condition>(Condition.setup_registry().vals(), 10, Text.equal, Text.hash);
+
+    // Stable storage for achievements
+    private stable var achievementEntries : [(Text, T.Achievement)] = [];
+    private stable var userAchievementEntries : [(Text, [T.UserAchievement])] = [];
+
+    // Runtime achievement state
+    private var achievementRegistry = HashMap.fromIter<Text, T.Achievement>(achievementEntries.vals(), 10, Text.equal, Text.hash);
+    private var userAchievements = HashMap.fromIter<Text, [T.UserAchievement]>(userAchievementEntries.vals(), 10, Text.equal, Text.hash);
 
     // Stable storage for admin list
     private stable var admins : [Principal] = [];
@@ -34,7 +59,9 @@ actor {
     private stable var userCustomTokenEntries : [(Principal, [Principal])] = [];  // New: Store user's custom tokens
     private stable var userTokenSubaccountsEntries : [(Principal, [T.UserTokenSubaccounts])] = [];  // Named subaccounts storage
 
-    // User index mapping system
+    // IMPORTANT NOTE: Despite the naming, this is actually a token/pool index system, not a user index system!
+    // It maps token/pool canister IDs to compact Nat16 indices for efficient storage.
+    // The "user" prefix in the variable names is historical and misleading.
     private stable var nextUserIndex : Nat16 = 0;
     private stable var userIndexEntries : [(Principal, Nat16)] = [];
     private var principalToIndex = HashMap.HashMap<Principal, Nat16>(0, Principal.equal, Principal.hash);
@@ -44,6 +71,8 @@ actor {
     private stable var userWalletTokenEntries : [(Principal, [Nat16])] = [];
 
     // Stable storage for statistics
+    // IMPORTANT: DO NOT MODIFY ANY STATS CODE BELOW THIS LINE
+    // The stats implementation is well-tested and any changes must be explicitly requested
     private stable var userTokenStatsEntries : [(Text, T.UserTokenStats)] = [];
     private stable var tokenSavingsStatsEntries : [(Text, T.TokenSavingsStats)] = [];
     private stable var globalStats : T.GlobalStats = {
@@ -120,7 +149,6 @@ actor {
 
     private var nextLogoBatchSize: ?Nat = null;
 
-
     // Add stable storage for discrepancies
     private stable var metadataDiscrepancies : [T.MetadataDiscrepancy] = [];
 
@@ -138,6 +166,66 @@ actor {
 
     // Add variable for next batch size
     private var nextMetadataBatchSize : ?Nat = null;
+
+    // Stable storage for user balances
+    private stable var userBalanceEntries : [(Text, Nat)] = [];  // Format: "{principal}:{token_index}" -> amount
+    private var userBalances = HashMap.fromIter<Text, Nat>(userBalanceEntries.vals(), 0, Text.equal, Text.hash);
+
+    // Stable storage for allocation balances
+    private stable var allocationBalanceEntries : [(Text, Nat)] = [];  // Format: "{alloc_id}:{token_index}" -> amount
+    private var allocationBalances = HashMap.fromIter<Text, Nat>(allocationBalanceEntries.vals(), 0, Text.equal, Text.hash);
+    private stable var nextAllocationId : Nat = 0;
+
+    // Stable storage for server balances
+    private stable var serverBalanceEntries : [(Nat16, Nat)] = [];  // Format: token_index -> amount
+    private var serverBalances = HashMap.fromIter<Nat16, Nat>(serverBalanceEntries.vals(), 0, Nat16.equal, func(n: Nat16) : Hash.Hash { Nat32.fromNat(Nat16.toNat(n)) });
+
+  // Allocation Management
+    private stable var allocationEntries : [(Text, T.Allocation)] = [];
+    private stable var allocationStatusEntries : [(Text, T.AllocationStatus)] = [];
+    private stable var allocationClaimEntries : [(Text, T.AllocationClaim)] = [];
+    private var allocations = HashMap.fromIter<Text, T.Allocation>(allocationEntries.vals(), 0, Text.equal, Text.hash);
+    private var allocation_statuses = HashMap.fromIter<Text, T.AllocationStatus>(allocationStatusEntries.vals(), 0, Text.equal, Text.hash);
+    private var allocation_claims = HashMap.fromIter<Text, T.AllocationClaim>(allocationClaimEntries.vals(), 0, Text.equal, Text.hash);
+
+
+    // Stable storage for allocation statistics
+    private stable var tokenAllocationStatsEntries : [(Text, T.TokenAllocationStats)] = [];
+    private stable var userTokenAllocationStatsEntries : [(Text, T.UserTokenAllocationStats)] = [];
+
+    // Runtime maps
+    private var tokenAllocationStats = HashMap.fromIter<Text, T.TokenAllocationStats>(tokenAllocationStatsEntries.vals(), 0, Text.equal, Text.hash);
+    private var userTokenAllocationStats = HashMap.fromIter<Text, T.UserTokenAllocationStats>(userTokenAllocationStatsEntries.vals(), 0, Text.equal, Text.hash);
+
+    // Allocation fee configuration
+    private stable var allocation_fee_config : T.AllocationFeeConfig = {
+        icp_fee_e8s = 1000_0000; // Default 0.1 ICP
+        cut_basis_points = 100; // Default 1%
+    };
+
+    // Add after other stable variables and before runtime state
+    private stable var payment_account : ?T.Account = null;
+    private stable var cut_account : ?T.Account = null;
+
+    // Public query to get allocation fee config
+    public query func get_allocation_fee_config() : async T.AllocationFeeConfig {
+        allocation_fee_config
+    };
+
+    // Admin method to update allocation fee config
+    public shared({caller}) func update_allocation_fee_config(config: T.AllocationFeeConfig) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        allocation_fee_config := config;
+        #ok(())
+    };
+
+    // Helper function to get next allocation ID
+    private func getNextAllocationId() : Nat {
+        nextAllocationId += 1;
+        nextAllocationId;
+    };
 
     // Helper function to check if a token is whitelisted
     private func isWhitelisted(tokenId: Principal) : Bool {
@@ -224,6 +312,7 @@ actor {
 
     // System upgrade hooks
     system func preupgrade() {
+        // Store runtime maps into stable storage
         tokenMetadataEntries := Iter.toArray(tokenMetadata.entries());
         tokenLogoEntries := Iter.toArray(tokenLogos.entries());
         userCustomTokenEntries := Iter.toArray(userCustomTokens.entries());
@@ -239,6 +328,16 @@ actor {
         userTokenStatsEntries := Iter.toArray(userTokenStats.entries());
         tokenSavingsStatsEntries := Iter.toArray(tokenSavingsStats.entries());
         userTokenSubaccountsEntries := Iter.toArray(userTokenSubaccounts.entries());
+        achievementEntries := Iter.toArray(achievementRegistry.entries());
+        userAchievementEntries := Iter.toArray(userAchievements.entries());
+        userBalanceEntries := Iter.toArray(userBalances.entries());
+        allocationBalanceEntries := Iter.toArray(allocationBalances.entries());
+        serverBalanceEntries := Iter.toArray(serverBalances.entries());
+        allocationEntries := Iter.toArray(allocations.entries());
+        allocationStatusEntries := Iter.toArray(allocation_statuses.entries());
+        allocationClaimEntries := Iter.toArray(allocation_claims.entries());
+        tokenAllocationStatsEntries := Iter.toArray(tokenAllocationStats.entries());
+        userTokenAllocationStatsEntries := Iter.toArray(userTokenAllocationStats.entries());
     };
 
     system func postupgrade() {
@@ -264,6 +363,16 @@ actor {
 
         userIndexEntries := [];
         userTokenSubaccountsEntries := []; 
+        achievementEntries := [];
+        userAchievementEntries := [];
+        userBalanceEntries := [];
+        allocationBalanceEntries := [];
+        serverBalanceEntries := [];
+        allocationEntries := [];
+        allocationStatusEntries := [];
+        allocationClaimEntries := [];
+        tokenAllocationStatsEntries := [];
+        userTokenAllocationStatsEntries := [];     
     };
 
     public query func get_cycle_balance() : async Nat {
@@ -406,6 +515,14 @@ actor {
         };
 
         true
+    };
+
+    // Helper method to get token metadata from both maps
+    private func getTokenMetadata(token_canister_id: Principal) : ?T.TokenMetadata {
+        switch (tokenMetadata.get(token_canister_id)) {
+            case (?metadata) ?metadata;
+            case null tokenMetadataICPSwap.get(token_canister_id);
+        };
     };
 
     // Token Whitelist Methods
@@ -572,119 +689,15 @@ actor {
 
     // Statistics methods
 
-    // Helper function to get or create token stats
-    private func getOrCreateTokenStats(token_id: Text) : T.TokenStats {
-        switch (tokenStats.get(token_id)) {
-            case (?stats) { stats };
-            case null {
-                let newStats = {
-                    total_swaps = 0;
-                    icpswap_swaps = 0;
-                    kong_swaps = 0;
-                    split_swaps = 0;
-                    volume_e8s = 0;
-                    total_sends = 0;
-                    sends_volume_e8s = 0;
-                    total_deposits = 0;
-                    deposits_volume_e8s = 0;
-                    total_withdrawals = 0;
-                    withdrawals_volume_e8s = 0;
-                };
-                tokenStats.put(token_id, newStats);
-                newStats
-            };
-        }
-    };
-
-    // Helper function to get or create user stats
-    private func getOrCreateUserStats(user: Text) : T.UserStats {
-        switch (userStats.get(user)) {
-            case (?stats) { stats };
-            case null {
-                let newStats = {
-                    total_swaps = 0;
-                    icpswap_swaps = 0;
-                    kong_swaps = 0;
-                    split_swaps = 0;
-                    total_sends = 0;
-                    total_deposits = 0;
-                    total_withdrawals = 0;
-                };
-                userStats.put(user, newStats);
-                newStats
-            };
-        }
-    };
-
-    // Add after other helper functions but before record methods
-    private func getUserTokenStatsKey(user: Principal, token: Text) : Text {
-        Principal.toText(user) # "_" # token
-    };
-
-    private func getOrCreateUserTokenStats(user: Principal, token: Text) : T.UserTokenStats {
-        let key = getUserTokenStatsKey(user, token);
-        switch (userTokenStats.get(key)) {
-            case (?stats) stats;
-            case null {
-                let newStats = {
-                    swaps_as_input_icpswap = 0;
-                    swaps_as_input_kong = 0;
-                    swaps_as_input_split = 0;
-                    input_volume_e8s_icpswap = 0;
-                    input_volume_e8s_kong = 0;
-                    input_volume_e8s_split = 0;
-                    swaps_as_output_icpswap = 0;
-                    swaps_as_output_kong = 0;
-                    swaps_as_output_split = 0;
-                    output_volume_e8s_icpswap = 0;
-                    output_volume_e8s_kong = 0;
-                    output_volume_e8s_split = 0;
-                    savings_as_output_icpswap_e8s = 0;
-                    savings_as_output_kong_e8s = 0;
-                    savings_as_output_split_e8s = 0;
-                    total_sends = 0;
-                    total_deposits = 0;
-                    total_withdrawals = 0;
-                };
-                userTokenStats.put(key, newStats);
-                newStats
-            };
-        }
-    };
-
-    // Helper function to get or create token savings stats
-    private func getOrCreateTokenSavingsStats(token_id: Text) : T.TokenSavingsStats {
-        switch (tokenSavingsStats.get(token_id)) {
-            case (?stats) stats;
-            case null {
-                let newStats = {
-                    icpswap_savings_e8s = 0;
-                    kong_savings_e8s = 0;
-                    split_savings_e8s = 0;
-                };
-                tokenSavingsStats.put(token_id, newStats);
-                newStats
-            };
-        }
-    };
-
-    // Helper function to cap savings based on output amount
-    private func capSavings(savings_e8s: Nat, total_output_e8s: Nat) : Nat {
-        let savings_percentage = Float.fromInt(savings_e8s) / Float.fromInt(total_output_e8s) * 100;
-        
-        if (savings_percentage > 5.0) {
-            // Over 5% is considered an outlier - return 0
-            0
-        } else if (savings_percentage > 2.0) {
-            // Cap at 2% of total output
-            let capped_amount = Int.abs(Float.toInt(Float.fromInt(total_output_e8s) * 0.02));
-            switch (Nat.fromText(Int.toText(capped_amount))) {
-                case (?n) n;
-                case null 0;
-            }
-        } else {
-            // Under 2% is fine - keep original savings
-            savings_e8s
+    private func getStatsContext() : T.StatsContext {
+        {
+            globalStats = globalStats;
+            tokenStats = tokenStats;
+            userStats = userStats;
+            userTokenStats = userTokenStats;
+            tokenSavingsStats = tokenSavingsStats;
+            tokenAllocationStats = tokenAllocationStats;
+            userTokenAllocationStats = userTokenAllocationStats;
         }
     };
 
@@ -698,146 +711,14 @@ actor {
         savings_out_e8s: Nat,
         pool_id: Principal,  // Pool ID
     ) : async () {
-        // Cap the savings based on output amount
-        let capped_savings = capSavings(savings_out_e8s, amount_out_e8s);
 
-        // Existing global stats update
-        globalStats := {
-            total_swaps = globalStats.total_swaps + 1;
-            icpswap_swaps = globalStats.icpswap_swaps + 1;
-            kong_swaps = globalStats.kong_swaps;
-            split_swaps = globalStats.split_swaps;
-            total_sends = globalStats.total_sends;
-            total_deposits = globalStats.total_deposits;
-            total_withdrawals = globalStats.total_withdrawals;
-        };
-
-        // Update token stats for input token
-        let token_in_stats = getOrCreateTokenStats(token_in);
-        tokenStats.put(token_in, {
-            total_swaps = token_in_stats.total_swaps + 1;
-            icpswap_swaps = token_in_stats.icpswap_swaps + 1;
-            kong_swaps = token_in_stats.kong_swaps;
-            split_swaps = token_in_stats.split_swaps;
-            volume_e8s = token_in_stats.volume_e8s + amount_in_e8s;
-            total_sends = token_in_stats.total_sends;
-            sends_volume_e8s = token_in_stats.sends_volume_e8s;
-            total_deposits = token_in_stats.total_deposits;
-            deposits_volume_e8s = token_in_stats.deposits_volume_e8s;
-            total_withdrawals = token_in_stats.total_withdrawals;
-            withdrawals_volume_e8s = token_in_stats.withdrawals_volume_e8s;
-        });
-
-        // Update token stats for output token
-        let token_out_stats = getOrCreateTokenStats(token_out);
-        tokenStats.put(token_out, {
-            total_swaps = token_out_stats.total_swaps + 1;
-            icpswap_swaps = token_out_stats.icpswap_swaps + 1;
-            kong_swaps = token_out_stats.kong_swaps;
-            split_swaps = token_out_stats.split_swaps;
-            volume_e8s = token_out_stats.volume_e8s + amount_out_e8s;
-            total_sends = token_out_stats.total_sends;
-            sends_volume_e8s = token_out_stats.sends_volume_e8s;
-            total_deposits = token_out_stats.total_deposits;
-            deposits_volume_e8s = token_out_stats.deposits_volume_e8s;
-            total_withdrawals = token_out_stats.total_withdrawals;
-            withdrawals_volume_e8s = token_out_stats.withdrawals_volume_e8s;
-        });
-
-        // Update token savings stats for output token
-        let token_out_savings_stats = getOrCreateTokenSavingsStats(token_out);
-        tokenSavingsStats.put(token_out, {
-            icpswap_savings_e8s = token_out_savings_stats.icpswap_savings_e8s + capped_savings;
-            kong_savings_e8s = token_out_savings_stats.kong_savings_e8s;
-            split_savings_e8s = token_out_savings_stats.split_savings_e8s;
-        });
-
-        // Update user stats
-        let user_stats = getOrCreateUserStats(Principal.toText(user));
-        userStats.put(Principal.toText(user), {
-            total_swaps = user_stats.total_swaps + 1;
-            icpswap_swaps = user_stats.icpswap_swaps + 1;
-            kong_swaps = user_stats.kong_swaps;
-            split_swaps = user_stats.split_swaps;
-            total_sends = user_stats.total_sends;
-            total_deposits = user_stats.total_deposits;
-            total_withdrawals = user_stats.total_withdrawals;
-        });
-
-        // Update user-token stats for input token
-        let user_token_in_stats = getOrCreateUserTokenStats(user, token_in);
-        userTokenStats.put(getUserTokenStatsKey(user, token_in), {
-            swaps_as_input_icpswap = user_token_in_stats.swaps_as_input_icpswap + 1;
-            swaps_as_input_kong = user_token_in_stats.swaps_as_input_kong;
-            swaps_as_input_split = user_token_in_stats.swaps_as_input_split;
-            input_volume_e8s_icpswap = user_token_in_stats.input_volume_e8s_icpswap + amount_in_e8s;
-            input_volume_e8s_kong = user_token_in_stats.input_volume_e8s_kong;
-            input_volume_e8s_split = user_token_in_stats.input_volume_e8s_split;
-            swaps_as_output_icpswap = user_token_in_stats.swaps_as_output_icpswap;
-            swaps_as_output_kong = user_token_in_stats.swaps_as_output_kong;
-            swaps_as_output_split = user_token_in_stats.swaps_as_output_split;
-            output_volume_e8s_icpswap = user_token_in_stats.output_volume_e8s_icpswap;
-            output_volume_e8s_kong = user_token_in_stats.output_volume_e8s_kong;
-            output_volume_e8s_split = user_token_in_stats.output_volume_e8s_split;
-            savings_as_output_icpswap_e8s = user_token_in_stats.savings_as_output_icpswap_e8s;
-            savings_as_output_kong_e8s = user_token_in_stats.savings_as_output_kong_e8s;
-            savings_as_output_split_e8s = user_token_in_stats.savings_as_output_split_e8s;
-            total_sends = user_token_in_stats.total_sends;
-            total_deposits = user_token_in_stats.total_deposits;
-            total_withdrawals = user_token_in_stats.total_withdrawals;
-        });
-
-        // Update user-token stats for output token
-        let user_token_out_stats = getOrCreateUserTokenStats(user, token_out);
-        userTokenStats.put(getUserTokenStatsKey(user, token_out), {
-            swaps_as_input_icpswap = user_token_out_stats.swaps_as_input_icpswap;
-            swaps_as_input_kong = user_token_out_stats.swaps_as_input_kong;
-            swaps_as_input_split = user_token_out_stats.swaps_as_input_split;
-            input_volume_e8s_icpswap = user_token_out_stats.input_volume_e8s_icpswap;
-            input_volume_e8s_kong = user_token_out_stats.input_volume_e8s_kong;
-            input_volume_e8s_split = user_token_out_stats.input_volume_e8s_split;
-            swaps_as_output_icpswap = user_token_out_stats.swaps_as_output_icpswap + 1;
-            swaps_as_output_kong = user_token_out_stats.swaps_as_output_kong;
-            swaps_as_output_split = user_token_out_stats.swaps_as_output_split;
-            output_volume_e8s_icpswap = user_token_out_stats.output_volume_e8s_icpswap + amount_out_e8s;
-            output_volume_e8s_kong = user_token_out_stats.output_volume_e8s_kong;
-            output_volume_e8s_split = user_token_out_stats.output_volume_e8s_split;
-            savings_as_output_icpswap_e8s = user_token_out_stats.savings_as_output_icpswap_e8s + capped_savings;
-            savings_as_output_kong_e8s = user_token_out_stats.savings_as_output_kong_e8s;
-            savings_as_output_split_e8s = user_token_out_stats.savings_as_output_split_e8s;
-            total_sends = user_token_out_stats.total_sends;
-            total_deposits = user_token_out_stats.total_deposits;
-            total_withdrawals = user_token_out_stats.total_withdrawals;
-        });
+        let statsContext : T.StatsContext = getStatsContext();
+        let new_global_stats = await Stats.record_icpswap_swap(user, token_in, amount_in_e8s, token_out, amount_out_e8s, savings_out_e8s, statsContext);
+        globalStats := new_global_stats;
 
         // Add tokens to user's wallet
-        if (token_in != Principal.toText(ICP_PRINCIPAL)) {
-            var userTokens = switch (userWalletTokens.get(user)) {
-                case (?tokens) tokens;
-                case null [];
-            };
-            let tokenInPrincipal = Principal.fromText(token_in);
-            let tokenInIndex = getOrCreateUserIndex(tokenInPrincipal);
-            let existsIn = Array.find<Nat16>(userTokens, func(idx) = idx == tokenInIndex);
-            if (existsIn == null) {
-                userTokens := Array.append<Nat16>(userTokens, [tokenInIndex]);
-                userWalletTokens.put(user, userTokens);
-            };
-        };
-
-        if (token_out != Principal.toText(ICP_PRINCIPAL)) {
-            var userTokens = switch (userWalletTokens.get(user)) {
-                case (?tokens) tokens;
-                case null [];
-            };
-            let tokenOutPrincipal = Principal.fromText(token_out);
-            let tokenOutIndex = getOrCreateUserIndex(tokenOutPrincipal);
-            let existsOut = Array.find<Nat16>(userTokens, func(idx) = idx == tokenOutIndex);
-            if (existsOut == null) {
-                userTokens := Array.append<Nat16>(userTokens, [tokenOutIndex]);
-                userWalletTokens.put(user, userTokens);
-            };
-        };
+        ignore await add_wallet_token_impl(user, token_in);
+        ignore await add_wallet_token_impl(user, token_out);
 
         // Add pool to user's tracked pools
         ignore await add_pool_impl(user, pool_id);
@@ -852,155 +733,14 @@ actor {
         amount_out_e8s: Nat,
         savings_out_e8s: Nat,
     ) : async () {
-        // Cap the savings based on output amount
-        let capped_savings = capSavings(savings_out_e8s, amount_out_e8s);
 
-        // Update global stats
-        globalStats := {
-            total_swaps = globalStats.total_swaps + 1;
-            icpswap_swaps = globalStats.icpswap_swaps;
-            kong_swaps = globalStats.kong_swaps + 1;
-            split_swaps = globalStats.split_swaps;
-            total_sends = globalStats.total_sends;
-            total_deposits = globalStats.total_deposits;
-            total_withdrawals = globalStats.total_withdrawals;
-        };
-
-        // IMPORTANT: This is a Kong-only swap, not a split swap.
-        // Only increment kong_swaps (not icpswap_swaps) for both input and output tokens,
-        // as Kong is the only DEX involved in this transaction. 
-        // Yes, this comment is directed at you, Mr AI! Stop creating a bug in this code, please!
-        
-        // Update token stats
-        let token_in_stats = getOrCreateTokenStats(token_in);
-        tokenStats.put(token_in, {
-            total_swaps = token_in_stats.total_swaps + 1;
-            icpswap_swaps = token_in_stats.icpswap_swaps;
-            kong_swaps = token_in_stats.kong_swaps + 1;
-            split_swaps = token_in_stats.split_swaps;
-            volume_e8s = token_in_stats.volume_e8s + amount_in_e8s;
-            total_sends = token_in_stats.total_sends;
-            sends_volume_e8s = token_in_stats.sends_volume_e8s;
-            total_deposits = token_in_stats.total_deposits;
-            deposits_volume_e8s = token_in_stats.deposits_volume_e8s;
-            total_withdrawals = token_in_stats.total_withdrawals;
-            withdrawals_volume_e8s = token_in_stats.withdrawals_volume_e8s;
-        });
-
-        // IMPORTANT: This is a Kong-only swap, not a split swap.
-        // Only increment kong_swaps (not icpswap_swaps) for both input and output tokens,
-        // as Kong is the only DEX involved in this transaction. 
-        // Yes, this comment is directed at you, Mr AI! Stop creating a bug in this code, please!
-
-        let token_out_stats = getOrCreateTokenStats(token_out);
-        tokenStats.put(token_out, {
-            total_swaps = token_out_stats.total_swaps + 1;
-            icpswap_swaps = token_out_stats.icpswap_swaps;
-            kong_swaps = token_out_stats.kong_swaps + 1;
-            split_swaps = token_out_stats.split_swaps;
-            volume_e8s = token_out_stats.volume_e8s + amount_out_e8s;
-            total_sends = token_out_stats.total_sends;
-            sends_volume_e8s = token_out_stats.sends_volume_e8s;
-            total_deposits = token_out_stats.total_deposits;
-            deposits_volume_e8s = token_out_stats.deposits_volume_e8s;
-            total_withdrawals = token_out_stats.total_withdrawals;
-            withdrawals_volume_e8s = token_out_stats.withdrawals_volume_e8s;
-        });
-
-        // Update token savings stats for output token
-        let token_out_savings_stats = getOrCreateTokenSavingsStats(token_out);
-        tokenSavingsStats.put(token_out, {
-            icpswap_savings_e8s = token_out_savings_stats.icpswap_savings_e8s;
-            kong_savings_e8s = token_out_savings_stats.kong_savings_e8s + capped_savings;
-            split_savings_e8s = token_out_savings_stats.split_savings_e8s;
-        });
-
-        // Update user stats
-        let user_stats = getOrCreateUserStats(Principal.toText(user));
-        userStats.put(Principal.toText(user), {
-            total_swaps = user_stats.total_swaps + 1;
-            icpswap_swaps = user_stats.icpswap_swaps;
-            kong_swaps = user_stats.kong_swaps + 1;
-            split_swaps = user_stats.split_swaps;
-            total_sends = user_stats.total_sends;
-            total_deposits = user_stats.total_deposits;
-            total_withdrawals = user_stats.total_withdrawals;
-        });
-        
-        // Update user-token stats for input token
-        let user_token_in_stats = getOrCreateUserTokenStats(user, token_in);
-        userTokenStats.put(getUserTokenStatsKey(user, token_in), {
-            swaps_as_input_icpswap = user_token_in_stats.swaps_as_input_icpswap;
-            swaps_as_input_kong = user_token_in_stats.swaps_as_input_kong + 1;
-            swaps_as_input_split = user_token_in_stats.swaps_as_input_split;
-            input_volume_e8s_icpswap = user_token_in_stats.input_volume_e8s_icpswap;
-            input_volume_e8s_kong = user_token_in_stats.input_volume_e8s_kong + amount_in_e8s;
-            input_volume_e8s_split = user_token_in_stats.input_volume_e8s_split;
-            swaps_as_output_icpswap = user_token_in_stats.swaps_as_output_icpswap;
-            swaps_as_output_kong = user_token_in_stats.swaps_as_output_kong;
-            swaps_as_output_split = user_token_in_stats.swaps_as_output_split;
-            output_volume_e8s_icpswap = user_token_in_stats.output_volume_e8s_icpswap;
-            output_volume_e8s_kong = user_token_in_stats.output_volume_e8s_kong;
-            output_volume_e8s_split = user_token_in_stats.output_volume_e8s_split;
-            savings_as_output_icpswap_e8s = user_token_in_stats.savings_as_output_icpswap_e8s;
-            savings_as_output_kong_e8s = user_token_in_stats.savings_as_output_kong_e8s;
-            savings_as_output_split_e8s = user_token_in_stats.savings_as_output_split_e8s;
-            total_sends = user_token_in_stats.total_sends;
-            total_deposits = user_token_in_stats.total_deposits;
-            total_withdrawals = user_token_in_stats.total_withdrawals;
-        });
-
-        // Update user-token stats for output token
-        let user_token_out_stats = getOrCreateUserTokenStats(user, token_out);
-        userTokenStats.put(getUserTokenStatsKey(user, token_out), {
-            swaps_as_input_icpswap = user_token_out_stats.swaps_as_input_icpswap;
-            swaps_as_input_kong = user_token_out_stats.swaps_as_input_kong;
-            swaps_as_input_split = user_token_out_stats.swaps_as_input_split;
-            input_volume_e8s_icpswap = user_token_out_stats.input_volume_e8s_icpswap;
-            input_volume_e8s_kong = user_token_out_stats.input_volume_e8s_kong;
-            input_volume_e8s_split = user_token_out_stats.input_volume_e8s_split;
-            swaps_as_output_icpswap = user_token_out_stats.swaps_as_output_icpswap;
-            swaps_as_output_kong = user_token_out_stats.swaps_as_output_kong + 1;
-            swaps_as_output_split = user_token_out_stats.swaps_as_output_split;
-            output_volume_e8s_icpswap = user_token_out_stats.output_volume_e8s_icpswap;
-            output_volume_e8s_kong = user_token_out_stats.output_volume_e8s_kong + amount_out_e8s;
-            output_volume_e8s_split = user_token_out_stats.output_volume_e8s_split;
-            savings_as_output_icpswap_e8s = user_token_out_stats.savings_as_output_icpswap_e8s;
-            savings_as_output_kong_e8s = user_token_out_stats.savings_as_output_kong_e8s + capped_savings;
-            savings_as_output_split_e8s = user_token_out_stats.savings_as_output_split_e8s;
-            total_sends = user_token_out_stats.total_sends;
-            total_deposits = user_token_out_stats.total_deposits;
-            total_withdrawals = user_token_out_stats.total_withdrawals;
-        });
+        let statsContext : T.StatsContext = getStatsContext();
+        let new_global_stats = await Stats.record_kong_swap(user, token_in, amount_in_e8s, token_out, amount_out_e8s, savings_out_e8s, statsContext);
+        globalStats := new_global_stats;
 
         // Add tokens to user's wallet
-        if (token_in != Principal.toText(ICP_PRINCIPAL)) {
-            var userTokens = switch (userWalletTokens.get(user)) {
-                case (?tokens) tokens;
-                case null [];
-            };
-            let tokenInPrincipal = Principal.fromText(token_in);
-            let tokenInIndex = getOrCreateUserIndex(tokenInPrincipal);
-            let existsIn = Array.find<Nat16>(userTokens, func(idx) = idx == tokenInIndex);
-            if (existsIn == null) {
-                userTokens := Array.append<Nat16>(userTokens, [tokenInIndex]);
-                userWalletTokens.put(user, userTokens);
-            };
-        };
-
-        if (token_out != Principal.toText(ICP_PRINCIPAL)) {
-            var userTokens = switch (userWalletTokens.get(user)) {
-                case (?tokens) tokens;
-                case null [];
-            };
-            let tokenOutPrincipal = Principal.fromText(token_out);
-            let tokenOutIndex = getOrCreateUserIndex(tokenOutPrincipal);
-            let existsOut = Array.find<Nat16>(userTokens, func(idx) = idx == tokenOutIndex);
-            if (existsOut == null) {
-                userTokens := Array.append<Nat16>(userTokens, [tokenOutIndex]);
-                userWalletTokens.put(user, userTokens);
-            };
-        };
+        ignore await add_wallet_token_impl(user, token_in);
+        ignore await add_wallet_token_impl(user, token_out);
     };
 
     // Dear AI: Believe it or not, this is the correct code.
@@ -1016,146 +756,14 @@ actor {
         savings_out_e8s: Nat,
         icpswap_pool_id: Principal,  // Add pool ID
     ) : async () {
-        // Cap the savings based on total output amount
-        let total_output = icpswap_amount_out_e8s + kong_amount_out_e8s;
-        let capped_savings = capSavings(savings_out_e8s, total_output);
 
-        // Update global stats
-        globalStats := {
-            total_swaps = globalStats.total_swaps + 1;
-            icpswap_swaps = globalStats.icpswap_swaps;
-            kong_swaps = globalStats.kong_swaps;
-            split_swaps = globalStats.split_swaps + 1;
-            total_sends = globalStats.total_sends;
-            total_deposits = globalStats.total_deposits;
-            total_withdrawals = globalStats.total_withdrawals;
-        };
-
-        // Update token stats
-        let token_in_stats = getOrCreateTokenStats(token_in);
-        tokenStats.put(token_in, {
-            total_swaps = token_in_stats.total_swaps + 1;
-            icpswap_swaps = token_in_stats.icpswap_swaps;
-            kong_swaps = token_in_stats.kong_swaps;
-            split_swaps = token_in_stats.split_swaps + 1;
-            volume_e8s = token_in_stats.volume_e8s + icpswap_amount_in_e8s + kong_amount_in_e8s;
-            total_sends = token_in_stats.total_sends;
-            sends_volume_e8s = token_in_stats.sends_volume_e8s;
-            total_deposits = token_in_stats.total_deposits;
-            deposits_volume_e8s = token_in_stats.deposits_volume_e8s;
-            total_withdrawals = token_in_stats.total_withdrawals;
-            withdrawals_volume_e8s = token_in_stats.withdrawals_volume_e8s;
-        });
-
-        let token_out_stats = getOrCreateTokenStats(token_out);
-        tokenStats.put(token_out, {
-            total_swaps = token_out_stats.total_swaps + 1;
-            icpswap_swaps = token_out_stats.icpswap_swaps;
-            kong_swaps = token_out_stats.kong_swaps;
-            split_swaps = token_out_stats.split_swaps + 1;
-            volume_e8s = token_out_stats.volume_e8s + icpswap_amount_out_e8s + kong_amount_out_e8s;
-            total_sends = token_out_stats.total_sends;
-            sends_volume_e8s = token_out_stats.sends_volume_e8s;
-            total_deposits = token_out_stats.total_deposits;
-            deposits_volume_e8s = token_out_stats.deposits_volume_e8s;
-            total_withdrawals = token_out_stats.total_withdrawals;
-            withdrawals_volume_e8s = token_out_stats.withdrawals_volume_e8s;
-        });
-
-        // Update token savings stats for output token
-        let token_out_savings_stats = getOrCreateTokenSavingsStats(token_out);
-        tokenSavingsStats.put(token_out, {
-            icpswap_savings_e8s = token_out_savings_stats.icpswap_savings_e8s;
-            kong_savings_e8s = token_out_savings_stats.kong_savings_e8s;
-            split_savings_e8s = token_out_savings_stats.split_savings_e8s + capped_savings;
-        });
-
-        // Update user stats
-        let user_stats = getOrCreateUserStats(Principal.toText(user));
-        userStats.put(Principal.toText(user), {
-            total_swaps = user_stats.total_swaps + 1;
-            icpswap_swaps = user_stats.icpswap_swaps;
-            kong_swaps = user_stats.kong_swaps;
-            split_swaps = user_stats.split_swaps + 1;
-            total_sends = user_stats.total_sends;
-            total_deposits = user_stats.total_deposits;
-            total_withdrawals = user_stats.total_withdrawals;
-        });
-
-        // Update user-token stats for input token
-        let user_token_in_stats = getOrCreateUserTokenStats(user, token_in);
-        userTokenStats.put(getUserTokenStatsKey(user, token_in), {
-            swaps_as_input_icpswap = user_token_in_stats.swaps_as_input_icpswap;
-            swaps_as_input_kong = user_token_in_stats.swaps_as_input_kong;
-            swaps_as_input_split = user_token_in_stats.swaps_as_input_split + 1;
-            input_volume_e8s_icpswap = user_token_in_stats.input_volume_e8s_icpswap + icpswap_amount_in_e8s;
-            input_volume_e8s_kong = user_token_in_stats.input_volume_e8s_kong + kong_amount_in_e8s;
-            input_volume_e8s_split = user_token_in_stats.input_volume_e8s_split + icpswap_amount_in_e8s + kong_amount_in_e8s;
-            swaps_as_output_icpswap = user_token_in_stats.swaps_as_output_icpswap;
-            swaps_as_output_kong = user_token_in_stats.swaps_as_output_kong;
-            swaps_as_output_split = user_token_in_stats.swaps_as_output_split;
-            output_volume_e8s_icpswap = user_token_in_stats.output_volume_e8s_icpswap;
-            output_volume_e8s_kong = user_token_in_stats.output_volume_e8s_kong;
-            output_volume_e8s_split = user_token_in_stats.output_volume_e8s_split;
-            savings_as_output_icpswap_e8s = user_token_in_stats.savings_as_output_icpswap_e8s;
-            savings_as_output_kong_e8s = user_token_in_stats.savings_as_output_kong_e8s;
-            savings_as_output_split_e8s = user_token_in_stats.savings_as_output_split_e8s;
-            total_sends = user_token_in_stats.total_sends;
-            total_deposits = user_token_in_stats.total_deposits;
-            total_withdrawals = user_token_in_stats.total_withdrawals;
-        });
-
-        // Update user-token stats for output token
-        let user_token_out_stats = getOrCreateUserTokenStats(user, token_out);
-        userTokenStats.put(getUserTokenStatsKey(user, token_out), {
-            swaps_as_input_icpswap = user_token_out_stats.swaps_as_input_icpswap;
-            swaps_as_input_kong = user_token_out_stats.swaps_as_input_kong;
-            swaps_as_input_split = user_token_out_stats.swaps_as_input_split;
-            input_volume_e8s_icpswap = user_token_out_stats.input_volume_e8s_icpswap;
-            input_volume_e8s_kong = user_token_out_stats.input_volume_e8s_kong;
-            input_volume_e8s_split = user_token_out_stats.input_volume_e8s_split;
-            swaps_as_output_icpswap = user_token_out_stats.swaps_as_output_icpswap;
-            swaps_as_output_kong = user_token_out_stats.swaps_as_output_kong;
-            swaps_as_output_split = user_token_out_stats.swaps_as_output_split + 1;
-            output_volume_e8s_icpswap = user_token_out_stats.output_volume_e8s_icpswap + icpswap_amount_out_e8s;
-            output_volume_e8s_kong = user_token_out_stats.output_volume_e8s_kong + kong_amount_out_e8s;
-            output_volume_e8s_split = user_token_out_stats.output_volume_e8s_split + icpswap_amount_out_e8s + kong_amount_out_e8s;
-            savings_as_output_icpswap_e8s = user_token_out_stats.savings_as_output_icpswap_e8s;
-            savings_as_output_kong_e8s = user_token_out_stats.savings_as_output_kong_e8s;
-            savings_as_output_split_e8s = user_token_out_stats.savings_as_output_split_e8s + capped_savings;
-            total_sends = user_token_out_stats.total_sends;
-            total_deposits = user_token_out_stats.total_deposits;
-            total_withdrawals = user_token_out_stats.total_withdrawals;
-        });
+        let statsContext : T.StatsContext = getStatsContext();
+        let new_global_stats =  await Stats.record_split_swap(user, token_in, icpswap_amount_in_e8s, kong_amount_in_e8s, token_out, icpswap_amount_out_e8s, kong_amount_out_e8s, savings_out_e8s, statsContext);
+        globalStats := new_global_stats;
 
         // Add tokens to user's wallet
-        if (token_in != Principal.toText(ICP_PRINCIPAL)) {
-            var userTokens = switch (userWalletTokens.get(user)) {
-                case (?tokens) tokens;
-                case null [];
-            };
-            let tokenInPrincipal = Principal.fromText(token_in);
-            let tokenInIndex = getOrCreateUserIndex(tokenInPrincipal);
-            let existsIn = Array.find<Nat16>(userTokens, func(idx) = idx == tokenInIndex);
-            if (existsIn == null) {
-                userTokens := Array.append<Nat16>(userTokens, [tokenInIndex]);
-                userWalletTokens.put(user, userTokens);
-            };
-        };
-
-        if (token_out != Principal.toText(ICP_PRINCIPAL)) {
-            var userTokens = switch (userWalletTokens.get(user)) {
-                case (?tokens) tokens;
-                case null [];
-            };
-            let tokenOutPrincipal = Principal.fromText(token_out);
-            let tokenOutIndex = getOrCreateUserIndex(tokenOutPrincipal);
-            let existsOut = Array.find<Nat16>(userTokens, func(idx) = idx == tokenOutIndex);
-            if (existsOut == null) {
-                userTokens := Array.append<Nat16>(userTokens, [tokenOutIndex]);
-                userWalletTokens.put(user, userTokens);
-            };
-        };
+        ignore await add_wallet_token_impl(user, token_in);
+        ignore await add_wallet_token_impl(user, token_out);
 
         // Add pools to user's tracked pools
         ignore await add_pool_impl(user, icpswap_pool_id);
@@ -1167,67 +775,11 @@ actor {
         token: Text,  // Canister ID
         amount_e8s: Nat,
     ) : async () {
-        // Update global stats
-        globalStats := {
-            total_swaps = globalStats.total_swaps;
-            icpswap_swaps = globalStats.icpswap_swaps;
-            kong_swaps = globalStats.kong_swaps;
-            split_swaps = globalStats.split_swaps;
-            total_sends = globalStats.total_sends + 1;
-            total_deposits = globalStats.total_deposits;
-            total_withdrawals = globalStats.total_withdrawals;
-        };
 
-        // Update token stats
-        let token_stats = getOrCreateTokenStats(token);
-        tokenStats.put(token, {
-            total_swaps = token_stats.total_swaps;
-            icpswap_swaps = token_stats.icpswap_swaps;
-            kong_swaps = token_stats.kong_swaps;
-            split_swaps = token_stats.split_swaps;
-            volume_e8s = token_stats.volume_e8s;
-            total_sends = token_stats.total_sends + 1;
-            sends_volume_e8s = token_stats.sends_volume_e8s + amount_e8s;
-            total_deposits = token_stats.total_deposits;
-            deposits_volume_e8s = token_stats.deposits_volume_e8s;
-            total_withdrawals = token_stats.total_withdrawals;
-            withdrawals_volume_e8s = token_stats.withdrawals_volume_e8s;
-        });
+        let statsContext : T.StatsContext = getStatsContext();
+        let new_global_stats = await Stats.record_send(user, token, amount_e8s, statsContext);
+        globalStats := new_global_stats;
 
-        // Update user stats
-        let user_stats = getOrCreateUserStats(Principal.toText(user));
-        userStats.put(Principal.toText(user), {
-            total_swaps = user_stats.total_swaps;
-            icpswap_swaps = user_stats.icpswap_swaps;
-            kong_swaps = user_stats.kong_swaps;
-            split_swaps = user_stats.split_swaps;
-            total_sends = user_stats.total_sends + 1;
-            total_deposits = user_stats.total_deposits;
-            total_withdrawals = user_stats.total_withdrawals;
-        });
-
-        // Update user-token stats for the sent token
-        let user_token_stats = getOrCreateUserTokenStats(user, token);
-        userTokenStats.put(getUserTokenStatsKey(user, token), {
-            swaps_as_input_icpswap = user_token_stats.swaps_as_input_icpswap;
-            swaps_as_input_kong = user_token_stats.swaps_as_input_kong;
-            swaps_as_input_split = user_token_stats.swaps_as_input_split;
-            input_volume_e8s_icpswap = user_token_stats.input_volume_e8s_icpswap;
-            input_volume_e8s_kong = user_token_stats.input_volume_e8s_kong;
-            input_volume_e8s_split = user_token_stats.input_volume_e8s_split;
-            swaps_as_output_icpswap = user_token_stats.swaps_as_output_icpswap;
-            swaps_as_output_kong = user_token_stats.swaps_as_output_kong;
-            swaps_as_output_split = user_token_stats.swaps_as_output_split;
-            output_volume_e8s_icpswap = user_token_stats.output_volume_e8s_icpswap;
-            output_volume_e8s_kong = user_token_stats.output_volume_e8s_kong;
-            output_volume_e8s_split = user_token_stats.output_volume_e8s_split;
-            savings_as_output_icpswap_e8s = user_token_stats.savings_as_output_icpswap_e8s;
-            savings_as_output_kong_e8s = user_token_stats.savings_as_output_kong_e8s;
-            savings_as_output_split_e8s = user_token_stats.savings_as_output_split_e8s;
-            total_sends = user_token_stats.total_sends + 1;
-            total_deposits = user_token_stats.total_deposits;
-            total_withdrawals = user_token_stats.total_withdrawals;
-        });
     };
 
     // Record completed deposit
@@ -1237,67 +789,10 @@ actor {
         amount_e8s: Nat,
         pool_id: Principal,  // Add pool_id parameter
     ) : async () {
-        // Update global stats
-        globalStats := {
-            total_swaps = globalStats.total_swaps;
-            icpswap_swaps = globalStats.icpswap_swaps;
-            kong_swaps = globalStats.kong_swaps;
-            split_swaps = globalStats.split_swaps;
-            total_sends = globalStats.total_sends;
-            total_deposits = globalStats.total_deposits + 1;
-            total_withdrawals = globalStats.total_withdrawals;
-        };
 
-        // Update token stats
-        let token_stats = getOrCreateTokenStats(token);
-        tokenStats.put(token, {
-            total_swaps = token_stats.total_swaps;
-            icpswap_swaps = token_stats.icpswap_swaps;
-            kong_swaps = token_stats.kong_swaps;
-            split_swaps = token_stats.split_swaps;
-            volume_e8s = token_stats.volume_e8s;
-            total_sends = token_stats.total_sends;
-            sends_volume_e8s = token_stats.sends_volume_e8s;
-            total_deposits = token_stats.total_deposits + 1;
-            deposits_volume_e8s = token_stats.deposits_volume_e8s + amount_e8s;
-            total_withdrawals = token_stats.total_withdrawals;
-            withdrawals_volume_e8s = token_stats.withdrawals_volume_e8s;
-        });
-
-        // Update user stats
-        let user_stats = getOrCreateUserStats(Principal.toText(user));
-        userStats.put(Principal.toText(user), {
-            total_swaps = user_stats.total_swaps;
-            icpswap_swaps = user_stats.icpswap_swaps;
-            kong_swaps = user_stats.kong_swaps;
-            split_swaps = user_stats.split_swaps;
-            total_sends = user_stats.total_sends;
-            total_deposits = user_stats.total_deposits + 1;
-            total_withdrawals = user_stats.total_withdrawals;
-        });
-
-        // Update user-token stats for the sent token
-        let user_token_stats = getOrCreateUserTokenStats(user, token);
-        userTokenStats.put(getUserTokenStatsKey(user, token), {
-            swaps_as_input_icpswap = user_token_stats.swaps_as_input_icpswap;
-            swaps_as_input_kong = user_token_stats.swaps_as_input_kong;
-            swaps_as_input_split = user_token_stats.swaps_as_input_split;
-            input_volume_e8s_icpswap = user_token_stats.input_volume_e8s_icpswap;
-            input_volume_e8s_kong = user_token_stats.input_volume_e8s_kong;
-            input_volume_e8s_split = user_token_stats.input_volume_e8s_split;
-            swaps_as_output_icpswap = user_token_stats.swaps_as_output_icpswap;
-            swaps_as_output_kong = user_token_stats.swaps_as_output_kong;
-            swaps_as_output_split = user_token_stats.swaps_as_output_split;
-            output_volume_e8s_icpswap = user_token_stats.output_volume_e8s_icpswap;
-            output_volume_e8s_kong = user_token_stats.output_volume_e8s_kong;
-            output_volume_e8s_split = user_token_stats.output_volume_e8s_split;
-            savings_as_output_icpswap_e8s = user_token_stats.savings_as_output_icpswap_e8s;
-            savings_as_output_kong_e8s = user_token_stats.savings_as_output_kong_e8s;
-            savings_as_output_split_e8s = user_token_stats.savings_as_output_split_e8s;
-            total_sends = user_token_stats.total_sends;
-            total_deposits = user_token_stats.total_deposits + 1;
-            total_withdrawals = user_token_stats.total_withdrawals;
-        });
+        let statsContext : T.StatsContext = getStatsContext();
+        let new_global_stats = await Stats.record_deposit(user, token, amount_e8s, statsContext);
+        globalStats := new_global_stats;
 
         // Add pools to user's tracked pools
         ignore await add_pool_impl(user, pool_id);
@@ -1310,67 +805,11 @@ actor {
         amount_e8s: Nat,
         pool_id: Principal,  // Add pool_id parameter
     ) : async () {
-        // Update global stats
-        globalStats := {
-            total_swaps = globalStats.total_swaps;
-            icpswap_swaps = globalStats.icpswap_swaps;
-            kong_swaps = globalStats.kong_swaps;
-            split_swaps = globalStats.split_swaps;
-            total_sends = globalStats.total_sends;
-            total_deposits = globalStats.total_deposits;
-            total_withdrawals = globalStats.total_withdrawals + 1;
-        };
 
-        // Update token stats
-        let token_stats = getOrCreateTokenStats(token);
-        tokenStats.put(token, {
-            total_swaps = token_stats.total_swaps;
-            icpswap_swaps = token_stats.icpswap_swaps;
-            kong_swaps = token_stats.kong_swaps;
-            split_swaps = token_stats.split_swaps;
-            volume_e8s = token_stats.volume_e8s;
-            total_sends = token_stats.total_sends;
-            sends_volume_e8s = token_stats.sends_volume_e8s;
-            total_deposits = token_stats.total_deposits;
-            deposits_volume_e8s = token_stats.deposits_volume_e8s;
-            total_withdrawals = token_stats.total_withdrawals + 1;
-            withdrawals_volume_e8s = token_stats.withdrawals_volume_e8s + amount_e8s;
-        });
+        let statsContext : T.StatsContext = getStatsContext();
+        let new_global_stats = await Stats.record_withdrawal(user, token, amount_e8s, statsContext);
+        globalStats := new_global_stats;
 
-        // Update user stats
-        let user_stats = getOrCreateUserStats(Principal.toText(user));
-        userStats.put(Principal.toText(user), {
-            total_swaps = user_stats.total_swaps;
-            icpswap_swaps = user_stats.icpswap_swaps;
-            kong_swaps = user_stats.kong_swaps;
-            split_swaps = user_stats.split_swaps;
-            total_sends = user_stats.total_sends;
-            total_deposits = user_stats.total_deposits;
-            total_withdrawals = user_stats.total_withdrawals + 1;
-        });
-
-        // Update user-token stats for the sent token
-        let user_token_stats = getOrCreateUserTokenStats(user, token);
-        userTokenStats.put(getUserTokenStatsKey(user, token), {
-            swaps_as_input_icpswap = user_token_stats.swaps_as_input_icpswap;
-            swaps_as_input_kong = user_token_stats.swaps_as_input_kong;
-            swaps_as_input_split = user_token_stats.swaps_as_input_split;
-            input_volume_e8s_icpswap = user_token_stats.input_volume_e8s_icpswap;
-            input_volume_e8s_kong = user_token_stats.input_volume_e8s_kong;
-            input_volume_e8s_split = user_token_stats.input_volume_e8s_split;
-            swaps_as_output_icpswap = user_token_stats.swaps_as_output_icpswap;
-            swaps_as_output_kong = user_token_stats.swaps_as_output_kong;
-            swaps_as_output_split = user_token_stats.swaps_as_output_split;
-            output_volume_e8s_icpswap = user_token_stats.output_volume_e8s_icpswap;
-            output_volume_e8s_kong = user_token_stats.output_volume_e8s_kong;
-            output_volume_e8s_split = user_token_stats.output_volume_e8s_split;
-            savings_as_output_icpswap_e8s = user_token_stats.savings_as_output_icpswap_e8s;
-            savings_as_output_kong_e8s = user_token_stats.savings_as_output_kong_e8s;
-            savings_as_output_split_e8s = user_token_stats.savings_as_output_split_e8s;
-            total_sends = user_token_stats.total_sends;
-            total_deposits = user_token_stats.total_deposits;
-            total_withdrawals = user_token_stats.total_withdrawals + 1;
-        });
         // Add pools to user's tracked pools
         ignore await add_pool_impl(user, pool_id);
     };
@@ -1382,44 +821,10 @@ actor {
         amount_e8s: Nat,
         pool_id: Principal,  // Add pool_id parameter
     ) : async () {
-        // Update global stats
-        globalStats := {
-            total_swaps = globalStats.total_swaps;
-            icpswap_swaps = globalStats.icpswap_swaps;
-            kong_swaps = globalStats.kong_swaps;
-            split_swaps = globalStats.split_swaps;
-            total_sends = globalStats.total_sends + 1;
-            total_deposits = globalStats.total_deposits;
-            total_withdrawals = globalStats.total_withdrawals;
-        };
 
-        // Update token stats
-        let token_stats = getOrCreateTokenStats(token);
-        tokenStats.put(token, {
-            total_swaps = token_stats.total_swaps;
-            icpswap_swaps = token_stats.icpswap_swaps;
-            kong_swaps = token_stats.kong_swaps;
-            split_swaps = token_stats.split_swaps;
-            volume_e8s = token_stats.volume_e8s;
-            total_sends = token_stats.total_sends + 1;
-            sends_volume_e8s = token_stats.sends_volume_e8s + amount_e8s;
-            total_deposits = token_stats.total_deposits;
-            deposits_volume_e8s = token_stats.deposits_volume_e8s;
-            total_withdrawals = token_stats.total_withdrawals;
-            withdrawals_volume_e8s = token_stats.withdrawals_volume_e8s;
-        });
-
-        // Update user stats
-        let user_stats = getOrCreateUserStats(Principal.toText(user));
-        userStats.put(Principal.toText(user), {
-            total_swaps = user_stats.total_swaps;
-            icpswap_swaps = user_stats.icpswap_swaps;
-            kong_swaps = user_stats.kong_swaps;
-            split_swaps = user_stats.split_swaps;
-            total_sends = user_stats.total_sends + 1;
-            total_deposits = user_stats.total_deposits;
-            total_withdrawals = user_stats.total_withdrawals;
-        });
+        let statsContext : T.StatsContext = getStatsContext();
+        let new_global_stats = await Stats.record_transfer(user, token, amount_e8s, statsContext);
+        globalStats := new_global_stats;
 
         // Add pools to user's tracked pools
         ignore await add_pool_impl(user, pool_id);
@@ -1456,6 +861,11 @@ actor {
     // Get all token savings stats
     public query func get_all_token_savings_stats() : async [(Text, T.TokenSavingsStats)] {
         Iter.toArray(tokenSavingsStats.entries())
+    };
+
+    // Add after other helper functions but before record methods
+    private func getUserTokenStatsKey(user: Principal, token: Text) : Text {
+        Principal.toText(user) # "_" # token
     };
 
     // Get user-token stats for the caller
@@ -1909,7 +1319,7 @@ actor {
         };
 
         try {
-            let icpswap = actor(ICPSWAP_TOKEN_CANISTER_ID) : T. ICPSwapListInterface;
+            let icpswap = actor(ICPSWAP_TOKEN_CANISTER_ID) : T.ICPSwapListInterface;
             let tokenListResult = await icpswap.getList();
             
             switch (tokenListResult) {
@@ -2600,7 +2010,7 @@ actor {
             case (null) 0;
             case (?l) l.size();
         };
-        principalSize + logoSize
+        principalSize + logoSize    
     };
 
     public query func get_paginated_logos(start_index: Nat) : async T.PaginatedLogosResponse {
@@ -3153,10 +2563,17 @@ actor {
 
     // Wallet feature: Add token to user's wallet
     public shared(msg) func add_wallet_token(token_canister_id: Text) : async Bool {
+        await add_wallet_token_impl(msg.caller, token_canister_id)
+    };
+
+    private func add_wallet_token_impl(caller: Principal, token_canister_id: Text) : async Bool {
         // Verify caller is authenticated
-        let caller = msg.caller;
         if (Principal.isAnonymous(caller)) {
             throw Error.reject("Caller must be authenticated");
+        };
+
+        if (token_canister_id != Principal.toText(ICP_PRINCIPAL)) {
+            return false; // Not neede, it is always in wallet.
         };
 
         let tokenPrincipal = Principal.fromText(token_canister_id);
@@ -3300,9 +2717,10 @@ actor {
         }
     };
 
-    private func getUserIndex(principal: Principal) : async Nat16 {
-        getOrCreateUserIndex(principal)
-    };
+    // Safe token index getter (no creation)
+    private func getUserIndex(principal: Principal) : ?Nat16 {
+        principalToIndex.get(principal)
+    };    
 
     private func getPrincipalByIndex(index: Nat16) : async Result.Result<Principal, Text> {
         switch (indexToPrincipal.get(index)) {
@@ -3313,6 +2731,137 @@ actor {
 
     public query func get_next_user_index() : async Nat16 {
         nextUserIndex
+    };
+
+    // Helper function to generate balance key from user and token indices
+    private func getUserBalanceKey(user: Principal, token_index: Nat16) : Text {
+        Principal.toText(user) # ":" # Nat16.toText(token_index)
+    };
+
+    // Get user balance
+    public shared query(msg) func get_user_balance(token_id: Principal) : async Nat {
+        switch (getUserIndex(token_id)) {
+            case (?token_index) getUserBalance(msg.caller, token_index);
+            case null 0;
+        }
+    };
+
+    // Internal function to get balance
+    private func getUserBalance(user: Principal, token_index: Nat16) : Nat {
+        let key = getUserBalanceKey(user, token_index);
+        switch (userBalances.get(key)) {
+            case (?balance) balance;
+            case null 0;
+        }
+    };
+
+    // Internal function to set balance
+    private func setUserBalance(user: Principal, token_index: Nat16, amount: Nat) {
+        let key = getUserBalanceKey(user, token_index);
+        if (amount == 0) {
+            userBalances.delete(key);
+        } else {
+            userBalances.put(key, amount);
+        };
+    };
+
+    private func addToUserBalance(user: Principal, token_index: Nat16, amount: Nat) {
+        let current = getUserBalance(user, token_index);
+        setUserBalance(user, token_index, current + amount);
+    };
+
+    private func subtractFromUserBalance(user: Principal, token_index: Nat16, amount: Nat) : Bool {
+        let current = getUserBalance(user, token_index);
+        if (current >= amount) {
+            setUserBalance(user, token_index, current - amount);
+            true
+        } else {
+            false
+        }
+    };
+
+    // Helper functions for allocation balances
+    private func getAllocationBalanceKey(alloc_id: Nat, token_index: Nat16) : Text {
+        Nat.toText(alloc_id) # ":" # Nat16.toText(token_index)
+    };
+
+    private func getAllocationBalance(alloc_id: Nat, token_index: Nat16) : Nat {
+        let key = getAllocationBalanceKey(alloc_id, token_index);
+        switch (allocationBalances.get(key)) {
+            case (?balance) balance;
+            case null 0;
+        }
+    };
+
+    private func setAllocationBalance(alloc_id: Nat, token_index: Nat16, amount: Nat) {
+        let key = getAllocationBalanceKey(alloc_id, token_index);
+        if (amount == 0) {
+            allocationBalances.delete(key);
+        } else {
+            allocationBalances.put(key, amount);
+        };
+    };
+
+    private func addToAllocationBalance(alloc_id: Nat, token_index: Nat16, amount: Nat) {
+        let current = getAllocationBalance(alloc_id, token_index);
+        setAllocationBalance(alloc_id, token_index, current + amount);
+    };
+
+    private func subtractFromAllocationBalance(alloc_id: Nat, token_index: Nat16, amount: Nat) : Bool {
+        let current = getAllocationBalance(alloc_id, token_index);
+        if (current >= amount) {
+            setAllocationBalance(alloc_id, token_index, current - amount);
+            true
+        } else {
+            false
+        }
+    };
+
+    // Public query method for allocation balances
+    public shared query func get_allocation_balance(alloc_id: Nat, token_id: Principal) : async Nat {
+        switch (getUserIndex(token_id)) {
+            case (?token_index) getAllocationBalance(alloc_id, token_index);
+            case null 0;
+        }
+    };
+
+
+    // Helper functions for server balances
+    private func getServerBalance(token_index: Nat16) : Nat {
+        switch (serverBalances.get(token_index)) {
+            case (?balance) balance;
+            case null 0;
+        }
+    };
+
+    private func setServerBalance(token_index: Nat16, amount: Nat) {
+        if (amount == 0) {
+            serverBalances.delete(token_index);
+        } else {
+            serverBalances.put(token_index, amount);
+        };
+    };
+
+    private func addToServerBalance(token_index: Nat16, amount: Nat) {
+        let current = getServerBalance(token_index);
+        setServerBalance(token_index, current + amount);
+    };
+
+    private func subtractFromServerBalance(token_index: Nat16, amount: Nat) : Bool {
+        let current = getServerBalance(token_index);
+        if (current >= amount) {
+            setServerBalance(token_index, current - amount);
+            true
+        } else {
+            false
+        }
+    };
+
+    public shared query func get_server_balance(token_id: Principal) : async Nat {
+        switch (getUserIndex(token_id)) {
+            case (?token_index) getServerBalance(token_index);
+            case null 0;
+        }
     };
 
     public shared({caller}) func add_pool(pool_canister_id: Principal) : async Result.Result<(), Text> {
@@ -3691,4 +3240,633 @@ actor {
             case null #ok([]);
         };
     };
+
+    // Add public endpoints for achievements
+    public shared({caller}) func scan_for_new_achievements() : async {
+        new_achievements: [T.UserAchievement];
+        available_claims: [{
+            achievement_id: Text;
+            allocation_id: Text;
+            claimable_amount: {
+                min_e8s: Nat;
+                max_e8s: Nat;
+            };
+        }];
+    } {
+        let context : T.Context = {
+            achievements = achievementRegistry;
+            conditions = conditionRegistry;
+            global_stats = globalStats;
+            token_stats = tokenStats;
+            user_achievements = userAchievements;
+            user_stats = userStats;
+            user_token_stats = userTokenStats;
+            user_logins = userLogins;
+        };
+        
+        let result = await Achievement.scan_for_new_achievements(context, caller);
+        
+        // Store any new achievements
+        if (Array.size(result.new_achievements) > 0) {
+            Debug.print("Storing " # Nat.toText(Array.size(result.new_achievements)) # " new achievements");
+            let existing = switch (userAchievements.get(Principal.toText(caller))) {
+                case null { [] };
+                case (?ua) { ua };
+            };
+            userAchievements.put(Principal.toText(caller), Array.append(existing, result.new_achievements));
+            Debug.print("Successfully stored new achievements");
+        };
+        
+        return result;
+    };
+
+    // Achievement management (admin only)
+    public shared({caller}) func add_achievement(achievement: T.Achievement) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        
+        // Validate achievement
+        switch (achievementRegistry.get(achievement.id)) {
+            case (?_) {
+                return #err("Achievement with ID " # achievement.id # " already exists");
+            };
+            case null {
+                achievementRegistry.put(achievement.id, achievement);
+                return #ok();
+            };
+        };
+    };
+
+    public shared({caller}) func remove_achievement(id: Text) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        
+        switch (achievementRegistry.get(id)) {
+            case null {
+                return #err("Achievement not found");
+            };
+            case (?_) {
+                achievementRegistry.delete(id);
+                return #ok();
+            };
+        };
+    };
+
+    public shared({caller}) func update_achievement(achievement: T.Achievement) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        
+        switch (achievementRegistry.get(achievement.id)) {
+            case null {
+                return #err("Achievement not found");
+            };
+            case (?_) {
+                achievementRegistry.put(achievement.id, achievement);
+                return #ok();
+            };
+        };
+    };
+
+    // Achievement queries
+    public query({caller}) func get_user_achievements() : async [T.UserAchievement] {
+        switch (userAchievements.get(Principal.toText(caller))) {
+            case null [];
+            case (?achievements) achievements;
+        }
+    };
+
+    public query func get_all_achievements() : async [T.Achievement] {
+        Iter.toArray(achievementRegistry.vals())
+    };
+
+    public query func get_achievement_details(id: Text) : async Result.Result<T.Achievement, Text> {
+        switch (achievementRegistry.get(id)) {
+            case null #err("Achievement not found");
+            case (?achievement) #ok(achievement);
+        }
+    };
+
+    public shared query func get_all_conditions() : async [T.Condition] {
+        let conditions = Buffer.Buffer<T.Condition>(conditionRegistry.size());
+        for ((_, condition) in conditionRegistry.entries()) {
+            conditions.add(condition);
+        };
+        Buffer.toArray(conditions)
+    };
+
+    public shared({caller}) func withdraw_from_balance(token_id: Principal, amount_e8s: Nat) : async Result.Result<Nat, Text> {
+        await withdraw_from_balance_impl(caller, token_id, amount_e8s)
+    };
+
+    private func withdraw_from_balance_impl(caller: Principal, token_id: Principal, amount_e8s: Nat) : async Result.Result<Nat, Text> {
+        // Check if token exists and get metadata
+        switch (getTokenMetadata(token_id)) {
+            case null #err("Token not found");
+            case (?token_metadata) {
+                let fee = switch (token_metadata.fee) {
+                    case null 0;
+                    case (?fee) fee;
+                };
+                if (fee >= amount_e8s) {
+                    return #err("Insufficient withdrawal amount");
+                };
+                let amount = amount_e8s - fee;
+
+                let token_index = getOrCreateUserIndex(token_id);
+                switch (subtractFromUserBalance(caller, token_index, amount_e8s)) {
+                    case false #err("Insufficient balance");
+                    case true {
+
+                        // Create actor to interact with token ledger
+                        let token_actor : T.ICRC1Interface = actor(Principal.toText(token_id));
+                        
+                        let from_subaccount = Util.PrincipalToSubaccount(token_id);
+
+                        // Prepare transfer arguments
+                        let transfer_args : T.TransferArgs = {
+                            from_subaccount = ?from_subaccount;
+                            to = {
+                                owner = caller;
+                                subaccount = null;
+                            };
+                            amount = amount;
+                            fee = ?fee;
+                            memo = null;
+                            created_at_time = null;
+                        };
+
+                        try {
+                            let transfer_result = await token_actor.icrc1_transfer(transfer_args);
+                            switch (transfer_result) {
+                                case (#Ok(block_index)) {
+                                    // Update user balance
+                                    
+                                    #ok(amount)
+                                };
+                                case (#Err(transfer_error)) {
+                                    #err("Transfer failed: " # debug_show(transfer_error))
+                                };
+                            };
+                        } catch (error) {
+                            #err("Transfer failed: " # Error.message(error))
+                        };
+                    };
+                };
+            };
+        };
+    };
+
+    // Create a new allocation
+    public shared({caller}) func create_allocation(args: T.CreateAllocationArgs) : async Result.Result<T.Allocation, Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        // Verify token is whitelisted
+        if (not isWhitelisted(args.token_canister_id)) {
+            return #err("Token is not whitelisted");
+        };
+
+        let allocation_id = Nat.toText(getNextAllocationId());
+        
+        switch(Allocation.create_allocation(
+            caller,
+            args,
+            achievementRegistry,
+            allocations,
+            allocation_id,
+        )) {
+            case (#ok(allocation)) {
+                allocations.put(allocation_id, allocation);
+                allocation_statuses.put(allocation_id, #Draft);
+                #ok(allocation)
+            };
+            case (#err(msg)) #err(msg);
+        }
+    };
+
+    public shared({caller}) func get_derived_subaccount(principal: Principal, allocation_id: Nat) : async Result.Result<[Nat8], Text> { // We need to use a Nat allocation_id because we need to extract its bytes
+        #ok(Allocation.derive_backend_subaccount(principal, allocation_id))
+    };
+
+
+    // Activate an allocation to allow claims
+    public shared({caller}) func activate_allocation(allocation_id: Nat) : async Result.Result<(), Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        // Get allocation for stats recording
+        let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
+            case null return #err("Allocation not found");
+            case (?a) a;
+        };
+
+        // Call allocation module to handle activation
+        let activate_result = await Allocation.activate_allocation(
+            caller,
+            allocation_id,
+            allocations,
+            allocation_statuses,
+            allocation_fee_config,
+            Principal.fromActor(this),
+            payment_account,
+            cut_account,
+            getOrCreateUserIndex,
+            addToAllocationBalance,
+            addToServerBalance,
+        );
+
+        Debug.print("activate_allocation: " # Nat.toText(allocation_id) # " " # debug_show(activate_result));
+
+        // If activation was successful, update the status and record stats
+        switch (activate_result) {
+            case (#err(e)) { return #err(e) };
+            case (#ok(_)) {
+                allocation_statuses.put(Nat.toText(allocation_id), #Active);
+                Debug.print("record_allocation_creation: " # Nat.toText(allocation_id));
+                // Record allocation stats
+                await Stats.record_allocation_creation(
+                    caller,
+                    Principal.toText(allocation.token.canister_id),
+                    allocation.token.total_amount_e8s,
+                    allocation_fee_config.icp_fee_e8s,
+                    allocation.token.total_amount_e8s * allocation_fee_config.cut_basis_points / 10000,
+                    getStatsContext()
+                );
+                Debug.print("recorded allocation creation: " # Nat.toText(allocation_id));
+
+                #ok(())
+            };
+        }
+    };
+
+    public shared({caller}) func claim_and_withdraw_allocation(allocation_id: Nat) : async Result.Result<Nat, Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        // Try to claim the allocation, and if successfull withdraw everything in the user's balance
+        switch(await claim_allocation_impl(caller, allocation_id)) {
+            case (#ok(claim_amount)) {
+
+                let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
+                    case null return #err("Allocation not found");
+                    case (?a) a;
+                };
+                
+                let fee = switch (getTokenMetadata(allocation.token.canister_id)) {
+                    case null 0;
+                    case (?token_metadata) switch (token_metadata.fee) {
+                        case null 0;
+                        case (?fee) fee;
+                    };
+                };
+                if (claim_amount <= fee) {
+                    return #ok(claim_amount);
+                };
+
+                // Add token to user's wallet
+                ignore add_wallet_token_impl(caller, Principal.toText(allocation.token.canister_id));
+                Debug.print("Added token " # Principal.toText(allocation.token.canister_id) # " to user's wallet");
+
+                // Continue with withdrawal
+                await withdraw_from_balance_impl(caller, allocation.token.canister_id, claim_amount)
+            };
+            case (#err(msg)) #err(msg);
+        }
+    };
+
+    public shared({caller}) func claim_allocation(allocation_id: Nat) : async Result.Result<Nat, Text> {
+        await claim_allocation_impl(caller, allocation_id)
+    };
+
+    // Claim from an allocation
+    private func claim_allocation_impl(caller: Principal, allocation_id: Nat) : async Result.Result<Nat, Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        // Create unique key for this claim attempt
+        let claim_key = Allocation.get_claim_key(caller, Nat.toText(allocation_id));
+        
+        // Check if already claiming
+        switch (currently_claiming.get(claim_key)) {
+            case (?true) return #err("Claim already in progress");
+            case _ {};
+        };
+
+        // Set claiming flag
+        currently_claiming.put(claim_key, true);
+
+        try {
+            switch(Allocation.process_claim(
+                caller,
+                allocation_id,
+                allocations,
+                allocation_statuses,
+                allocation_claims,
+                userAchievements,
+                getAllocationBalance,
+                getOrCreateUserIndex
+            )) {
+                case (#ok(claim_amount)) {
+                    // Get allocation and token index
+                    let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
+                        case null { 
+                            currently_claiming.delete(claim_key);
+                            return #err("Allocation not found"); 
+                        };
+                        case (?a) a;
+                    };
+
+                    let token_index = getOrCreateUserIndex(allocation.token.canister_id);
+
+                    // Verify allocation has enough balance
+                    if (getAllocationBalance(allocation_id, token_index) < claim_amount) {
+                        currently_claiming.delete(claim_key);
+                        return #err("Insufficient allocation balance");
+                    };
+
+                    // Move tokens from allocation balance to user balance
+                    if (not subtractFromAllocationBalance(allocation_id, token_index, claim_amount)) {
+                        currently_claiming.delete(claim_key);
+                        return #err("Failed to subtract from allocation balance");
+                    };
+                    addToUserBalance(caller, token_index, claim_amount);
+
+                    // Record the claim
+                    let claim : T.AllocationClaim = {
+                        allocation_id = Nat.toText(allocation_id);
+                        user = caller;
+                        amount_e8s = claim_amount;
+                        claimed_at = Time.now();
+                    };
+                    allocation_claims.put(Allocation.get_claim_key(caller, Nat.toText(allocation_id)), claim);
+
+                    // Record claim stats
+                    await Stats.record_allocation_claim(
+                        caller,
+                        Principal.toText(allocation.token.canister_id),
+                        claim_amount,
+                        getStatsContext()
+                    );
+
+                    // Check if allocation is now depleted
+                    if (getAllocationBalance(allocation_id, token_index) == 0) {
+                        allocation_statuses.put(Nat.toText(allocation_id), #Depleted);
+                    };
+
+                    // Clear claiming flag before returning
+                    currently_claiming.delete(claim_key);
+                    #ok(claim_amount)
+                };
+                case (#err(msg)) {
+                    // Clear claiming flag on error
+                    currently_claiming.delete(claim_key);
+                    #err(msg)
+                };
+            };
+        } catch (e) {
+            // Clear claiming flag on any error
+            currently_claiming.delete(claim_key);
+            #err("Unexpected error during claim: " # Error.message(e))
+        };
+    };
+
+    // Query allocation details
+    public query func get_allocation(allocation_id: Text) : async Result.Result<{
+        allocation: T.Allocation;
+        status: T.AllocationStatus;
+    }, Text> {
+        let allocation = switch (allocations.get(allocation_id)) {
+            case null return #err("Allocation not found");
+            case (?a) a;
+        };
+
+        let status = switch (allocation_statuses.get(allocation_id)) {
+            case null return #err("Allocation status not found");
+            case (?s) s;
+        };
+
+        #ok({
+            allocation = allocation;
+            status = status;
+        })
+    };
+
+    // Query all allocations for an achievement
+    public query func get_achievement_allocations(achievement_id: Text) : async [{
+        allocation: T.Allocation;
+        status: T.AllocationStatus;
+    }] {
+        let results = Buffer.Buffer<{
+            allocation: T.Allocation;
+            status: T.AllocationStatus;
+        }>(0);
+
+        for ((id, allocation) in allocations.entries()) {
+            if (allocation.achievement_id == achievement_id) {
+                switch (allocation_statuses.get(id)) {
+                    case (?status) {
+                        results.add({
+                            allocation = allocation;
+                            status = status;
+                        });
+                    };
+                    case null {};
+                };
+            };
+        };
+
+        Buffer.toArray(results)
+    };
+
+    // Query user's claims for an allocation
+    public query func get_user_claim(allocation_id: Text, user: Principal) : async ?T.AllocationClaim {
+        allocation_claims.get(Allocation.get_claim_key(user, allocation_id))
+    };
+
+    // Query allocations created by a user
+    public query({caller}) func get_my_created_allocations() : async Result.Result<[{
+        allocation: T.Allocation;
+        status: T.AllocationStatus;
+    }], Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        #ok(Allocation.get_user_created_allocations(
+            caller,
+            allocations,
+            allocation_statuses,
+        ))
+    };
+
+    // ... existing code ...
+    // Add before system_started()
+    public shared query func get_payment_account() : async ?T.Account {
+        payment_account
+    };
+
+    public shared query func get_cut_account() : async ?T.Account {
+        cut_account
+    };
+
+    public shared({caller}) func update_payment_account(account: T.Account) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        payment_account := ?account;
+        #ok()
+    };
+
+    public shared({caller}) func update_cut_account(account: T.Account) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        cut_account := ?account;
+        #ok()
+    };
+
+    // ... existing code ...
+
+    // Cancel an allocation
+    public shared ({ caller }) func cancel_allocation(allocation_id: Nat) : async Result.Result<(), Text> {
+        // Check if caller is admin
+        let is_admin = isAdmin(caller);
+
+        // Call allocation module to handle cancellation
+        let cancel_result = await Allocation.cancel_allocation(
+            caller,
+            allocation_id,
+            allocations,
+            allocation_statuses,
+            is_admin,
+            Principal.fromActor(this)
+        );
+
+        // If cancellation was successful, update the status to Cancelled
+        switch (cancel_result) {
+            case (#err(e)) { return #err(e) };
+            case (#ok(_)) {
+                allocation_statuses.put(Nat.toText(allocation_id), #Cancelled);
+                #ok(())
+            };
+        }
+    };
+
+    // Get all allocations created by a user
+    public query({caller}) func get_all_user_allocations() : async [{
+        allocation: T.Allocation;
+        status: T.AllocationStatus;
+    }] {
+        let results = Buffer.Buffer<{
+            allocation: T.Allocation;
+            status: T.AllocationStatus;
+        }>(0);
+
+        for ((id, allocation) in allocations.entries()) {
+            results.add({
+                allocation = allocation;
+                status = switch (allocation_statuses.get(id)) {
+                    case (?status) status;
+                    case null #Cancelled;
+                };
+            });
+        };
+
+        Buffer.toArray(results)
+    };
+
+    // Get all available claims for the current user
+    public query({caller}) func get_available_claims() : async [{
+        achievement_id: Text;
+        allocation_id: Text;
+        token_canister_id: Principal;
+        claimable_amount: {
+            min_e8s: Nat;
+            max_e8s: Nat;
+        };
+    }] {
+        if (Principal.isAnonymous(caller)) {
+            return [];
+        };
+
+        Allocation.get_available_claims(
+            caller,
+            allocations,
+            allocation_statuses,
+            allocation_claims,
+            userAchievements,
+        )
+    };
+
+    // Get all claims for a user
+    public query({caller}) func get_user_claims() : async [{
+        allocation: T.Allocation;
+        claim: T.AllocationClaim;
+    }] {
+        if (Principal.isAnonymous(caller)) {
+            return [];
+        };
+
+        let results = Buffer.Buffer<{
+            allocation: T.Allocation;
+            claim: T.AllocationClaim;
+        }>(0);
+
+        for ((claim_key, claim) in allocation_claims.entries()) {
+            if (claim.user == caller) {
+                switch (allocations.get(claim.allocation_id)) {
+                    case (?allocation) {
+                        results.add({
+                            allocation = allocation;
+                            claim = claim;
+                        });
+                    };
+                    case null {}; // Skip if allocation not found
+                };
+            };
+        };
+
+        Buffer.toArray(results)
+    };
+
+    public shared func get_actual_server_balance(token_id: Principal) : async Nat {
+        let token_actor : T.ICRC1Interface = actor(Principal.toText(token_id));
+        let server_subaccount = Allocation.derive_backend_subaccount(token_id, 0);
+        await token_actor.icrc1_balance_of({ 
+            owner = this_canister_id(); 
+            subaccount = ?server_subaccount
+        });
+    };
+
+    // Statistics methods
+
+    // Get all token allocation stats
+    public query func get_all_token_allocation_stats() : async [(Text, T.TokenAllocationStats)] {
+        Iter.toArray(tokenAllocationStats.entries())
+    };
+
+    // Get user token allocation stats
+    public query func get_user_token_allocation_stats(user: Text) : async [(Text, T.UserTokenAllocationStats)] {
+        let userStats = Buffer.Buffer<(Text, T.UserTokenAllocationStats)>(0);
+        for ((key, stats) in tokenAllocationStats.entries()) {
+            switch (userTokenAllocationStats.get(Stats.getUserTokenStatsKey(Principal.fromText(user), key))) {
+                case (?userStats_) {
+                    userStats.add((key, userStats_));
+                };
+                case null {};
+            };
+        };
+        Buffer.toArray(userStats)
+    };
+
+    // Add after other HashMap declarations
+    private var currently_claiming = HashMap.HashMap<Text, Bool>(100, Text.equal, Text.hash);
+
 }

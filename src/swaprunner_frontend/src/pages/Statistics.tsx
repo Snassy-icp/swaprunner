@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { statsService, GlobalStats, TokenStats, TokenSavingsStats } from '../services/stats';
+import { statsService, GlobalStats, TokenStats, TokenSavingsStats, TokenAllocationStats } from '../services/stats';
 import { tokenService } from '../services/token';
 import { TokenMetadata } from '../types/token';
 import { formatTokenAmount } from '../utils/format';
@@ -15,6 +15,7 @@ export function Statistics() {
   const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
   const [tokenStats, setTokenStats] = useState<[string, TokenStats][]>([]);
   const [tokenSavingsStats, setTokenSavingsStats] = useState<Record<string, TokenSavingsStats>>({});
+  const [tokenAllocationStats, setTokenAllocationStats] = useState<[string, TokenAllocationStats][]>([]);
   const [uniqueUsers, setUniqueUsers] = useState<bigint>(0n);
   const [uniqueTraders, setUniqueTraders] = useState<bigint>(0n);
   const [tokenMetadata, setTokenMetadata] = useState<Record<string, TokenMetadata>>({});
@@ -28,9 +29,10 @@ export function Statistics() {
   const [loadingTokens, setLoadingTokens] = useState(true);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingGlobal, setLoadingGlobal] = useState(true);
+  const [loadingAllocationStats, setLoadingAllocationStats] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loading = loadingTokens || loadingUsers || loadingGlobal || Object.values(loadingUSDPrices).some(isLoading => isLoading);
+  const loading = loadingTokens || loadingUsers || loadingGlobal || Object.values(loadingUSDPrices).some(isLoading => isLoading) || loadingAllocationStats;
 
   const fetchStats = async () => {
     try {
@@ -38,14 +40,17 @@ export function Statistics() {
       setLoadingTokens(true);
       setLoadingUsers(true);
       setLoadingGlobal(true);
+      setLoadingAllocationStats(true);
 
-      // Fetch token stats and savings stats first
-      const [tokenStatsResult, savingsStatsResult] = await Promise.all([
+      // Fetch token stats, savings stats, and allocation stats in parallel
+      const [tokenStatsResult, savingsStatsResult, allocationStatsResult] = await Promise.all([
         statsService.getAllTokenStats(),
-        statsService.getAllTokenSavingsStats()
+        statsService.getAllTokenSavingsStats(),
+        statsService.getAllTokenAllocationStats()
       ]);
       
       setTokenStats(tokenStatsResult);
+      setTokenAllocationStats(allocationStatsResult);
       
       // Convert savings stats array to record for easier lookup
       const savingsRecord: Record<string, TokenSavingsStats> = {};
@@ -55,6 +60,7 @@ export function Statistics() {
       setTokenSavingsStats(savingsRecord);
       
       setLoadingTokens(false);
+      setLoadingAllocationStats(false);
       
       // Fetch other stats in parallel
       const [uniqueUsersResult, uniqueTradersResult, globalStatsResult] = await Promise.all([
@@ -101,6 +107,7 @@ export function Statistics() {
       setLoadingTokens(false);
       setLoadingUsers(false);
       setLoadingGlobal(false);
+      setLoadingAllocationStats(false);
     }
   };
 
@@ -420,6 +427,104 @@ export function Statistics() {
                           <span className="usd-value"> • {usdSavings}</span>
                         )}
                       </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </section>
+
+      {/* Allocation Statistics */}
+      <section className="statistics-section">
+        <h2>Allocation Statistics</h2>
+        <div className="token-statistics-table">
+          {loadingAllocationStats ? (
+            <LoadingSpinner />
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Token</th>
+                  <th>Total Allocated</th>
+                  <th>Total Claimed</th>
+                  <th>Total Fees</th>
+                  <th>Total Cuts</th>
+                  <th>Allocations</th>
+                  <th>Claims</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tokenAllocationStats.map(([tokenId, stats]) => {
+                  const metadata = tokenMetadata[tokenId];
+                  const formattedAllocated = metadata ? formatTokenAmount(stats.total_allocated_e8s, tokenId) : formatAmount(stats.total_allocated_e8s);
+                  const formattedClaimed = metadata ? formatTokenAmount(stats.total_claimed_e8s, tokenId) : formatAmount(stats.total_claimed_e8s);
+                  const formattedFees = formatTokenAmount(stats.total_fees_paid_e8s, "ryjl3-tyaaa-aaaaa-aaaba-cai"); // ICP
+                  const formattedCuts = metadata ? formatTokenAmount(stats.total_cuts_paid_e8s, tokenId) : formatAmount(stats.total_cuts_paid_e8s);
+                  const isLoadingUSD = loadingUSDPrices[tokenId];
+
+                  const usdAllocated = tokenUSDPrices[tokenId] !== undefined 
+                    ? calculateUSDValue(stats.total_allocated_e8s, tokenId)
+                    : undefined;
+                  const usdClaimed = tokenUSDPrices[tokenId] !== undefined 
+                    ? calculateUSDValue(stats.total_claimed_e8s, tokenId)
+                    : undefined;
+                  const usdCuts = tokenUSDPrices[tokenId] !== undefined 
+                    ? calculateUSDValue(stats.total_cuts_paid_e8s, tokenId)
+                    : undefined;
+
+                  return (
+                    <tr key={tokenId}>
+                      <td className="token-cell">
+                        {metadata && (
+                          <img 
+                            src={metadata.logo || '/generic_token.svg'}
+                            alt={metadata.symbol}
+                            className="token-logo"
+                            onError={(e) => {
+                              const img = e.target as HTMLImageElement;
+                              img.src = metadata.symbol === 'ICP' ? '/icp_symbol.svg' : '/generic_token.svg';
+                            }}
+                          />
+                        )}
+                        <div className="token-info">
+                          <span className="token-symbol">{metadata?.symbol || 'Unknown'}</span>
+                        </div>
+                      </td>
+                      <td>
+                        {formattedAllocated}
+                        {isLoadingUSD ? (
+                          <span className="usd-value">
+                            <FiLoader className="spinner" />
+                          </span>
+                        ) : usdAllocated !== '-' && (
+                          <span className="usd-value"> • {usdAllocated}</span>
+                        )}
+                      </td>
+                      <td>
+                        {formattedClaimed}
+                        {isLoadingUSD ? (
+                          <span className="usd-value">
+                            <FiLoader className="spinner" />
+                          </span>
+                        ) : usdClaimed !== '-' && (
+                          <span className="usd-value"> • {usdClaimed}</span>
+                        )}
+                      </td>
+                      <td>{formattedFees}</td>
+                      <td>
+                        {formattedCuts}
+                        {isLoadingUSD ? (
+                          <span className="usd-value">
+                            <FiLoader className="spinner" />
+                          </span>
+                        ) : usdCuts !== '-' && (
+                          <span className="usd-value"> • {usdCuts}</span>
+                        )}
+                      </td>
+                      <td>{formatAmount(stats.allocation_count)}</td>
+                      <td>{formatAmount(stats.claim_count)}</td>
                     </tr>
                   );
                 })}

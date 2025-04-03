@@ -32,6 +32,7 @@ import { useLogoLoading } from '../contexts/LogoLoadingContext';
 import { Principal } from '@dfinity/principal';
 import { principalToSubAccount } from "@dfinity/utils";
 import { usePool } from '../contexts/PoolContext';
+import { useAchievements } from '../contexts/AchievementContext';
 
 // Add this near the other type definitions at the top
 type DexType = 'icpswap' | 'kong' | 'split' | null;
@@ -208,6 +209,7 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
   const [isLoadingFromToken, setIsLoadingFromToken] = useState(true);
   const [isLoadingToToken, setIsLoadingToToken] = useState(true);
   const { keepTokensInPool, setKeepTokensInPool } = usePool();
+  const { setNeedsScan } = useAchievements();
   
   // Set ICP as default fromToken on mount ONLY if no URL parameter
   useEffect(() => {
@@ -1139,6 +1141,10 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
       /*await*/ refreshBalances();
       //console.log('Resetting form after swap');
       //resetForm();
+      
+      // After successful swap
+      setNeedsScan(true);
+      
       return { success: true };
     } catch (error) {
       console.error('Swap execution failed:', error);

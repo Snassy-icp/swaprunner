@@ -56,17 +56,21 @@ export class ICRC1Service {
   }
 
   async getBalanceWithSubaccount(tokenId: string, subaccount?: number[]): Promise<{ balance_e8s: bigint }> {
+    const userPrincipal = await authService.getPrincipal();
+    if (!userPrincipal) {
+      throw new Error('No principal available');
+    }
+    return this.getOwnerBalanceWithSubaccount(tokenId, userPrincipal, subaccount);
+  }
+
+  async getOwnerBalanceWithSubaccount(tokenId: string, owner: Principal, subaccount?: number[]): Promise<{ balance_e8s: bigint }> {
     try {
       const tokenActor = await this.getTokenActor(tokenId);
-      const userPrincipal = await authService.getPrincipal();
-      if (!userPrincipal) {
-        throw new Error('No principal available');
-      }
 
       const parsedSubaccount: [] | [number[]] = subaccount ? [[...subaccount]] : [];
       
       const balance = await tokenActor.icrc1_balance_of({
-        owner: userPrincipal,
+        owner: owner,
         subaccount: parsedSubaccount
       });
       

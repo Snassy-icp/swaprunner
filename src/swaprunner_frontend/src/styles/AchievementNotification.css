@@ -1,0 +1,97 @@
+.achievement-notifications {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.achievement-notification {
+    position: absolute;
+    right: 0;
+    display: flex;
+    align-items: center;
+    background: rgba(26, 26, 26, 0.95);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    width: 300px;
+    pointer-events: auto;
+    animation: slideIn 0.3s ease-out forwards;
+    transition: transform 0.3s ease;
+}
+
+.achievement-notification:hover {
+    transform: translateX(-5px);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.achievement-icon-wrapper {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+}
+
+.achievement-logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.achievement-icon {
+    color: #ffd700;
+}
+
+.achievement-info {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.achievement-info h3 {
+    margin: 0;
+    color: #ffd700;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.achievement-name {
+    color: #fff;
+    font-size: 16px;
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dismiss-button {
+    background: none;
+    border: none;
+    color: #666;
+    padding: 4px;
+    cursor: pointer;
+    margin-left: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.dismiss-button:hover {
+    opacity: 1;
+} 

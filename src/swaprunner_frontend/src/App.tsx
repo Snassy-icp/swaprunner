@@ -5,6 +5,7 @@ import { SlippageProvider } from './contexts/SlippageContext';
 import { LogoLoadingProvider } from './contexts/LogoLoadingContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { PoolProvider } from './contexts/PoolContext';
+import { ClaimProvider } from './contexts/ClaimContext';
 import { AppRoutes } from './routes';
 import { Header } from './components/Header';
 import { analyticsService } from './services/analytics';
@@ -15,6 +16,9 @@ import './App.css';
 import { tokenService } from './services/token';
 import { priceService } from './services/price';
 import { clearTokenMetadataCache } from './utils/format';
+import { AchievementProvider } from './contexts/AchievementContext';
+import { AchievementNotification } from './components/AchievementNotification';
+import { useAchievements } from './contexts/AchievementContext';
 
 // Initialize analytics with your measurement ID
 const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
@@ -260,28 +264,52 @@ const FixedHeader: React.FC = () => {
   );
 };
 
+// Add AuthStateListener component
+const AuthStateListener: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  const { setNeedsScan } = useAchievements();
+  const hasTriggeredScan = useRef(false);
+
+  useEffect(() => {
+    if (isAuthenticated && !hasTriggeredScan.current) {
+      hasTriggeredScan.current = true;
+      setNeedsScan(true);
+    } else if (!isAuthenticated) {
+      hasTriggeredScan.current = false;
+    }
+  }, [isAuthenticated]);
+
+  return null;
+};
+
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <TokenProvider>
-        <LogoLoadingProvider>
+    <Router>
+      <AuthProvider>
+        <TokenProvider>
           <SlippageProvider>
-            <PoolProvider>
-              <Router>
-                <RouteTracker />
-                <FixedHeader />
-                <div className="app">
-                  <Header />
-                  <main>
-                    <AppRoutes />
-                  </main>
-                </div>
-              </Router>
-            </PoolProvider>
+            <LogoLoadingProvider>
+              <PoolProvider>
+                <ClaimProvider>
+                  <AchievementProvider>
+                    <RouteTracker />
+                    <AuthStateListener />
+                    <FixedHeader />
+                    <div className="app">
+                      <Header />
+                      <main>
+                        <AppRoutes />
+                      </main>
+                    </div>
+                    <AchievementNotification />
+                  </AchievementProvider>
+                </ClaimProvider>
+              </PoolProvider>
+            </LogoLoadingProvider>
           </SlippageProvider>
-        </LogoLoadingProvider>
-      </TokenProvider>
-    </AuthProvider>
+        </TokenProvider>
+      </AuthProvider>
+    </Router>
   );
 };
 

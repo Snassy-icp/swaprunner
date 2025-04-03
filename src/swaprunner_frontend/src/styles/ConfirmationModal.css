@@ -30,6 +30,8 @@
   font-size: 14px;
   line-height: 1.5;
   margin: 0;
+  white-space: pre-wrap;
+  font-family: monospace;
 }
 
 .confirmation-modal-actions {

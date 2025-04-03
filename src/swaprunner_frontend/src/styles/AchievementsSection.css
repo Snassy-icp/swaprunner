@@ -1,0 +1,439 @@
+.achievements-section {
+    background: #080808;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.achievements-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.achievements-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.achievements-title h2 {
+    margin: 0;
+}
+
+.achievements-content {
+    padding: 20px 0;
+}
+
+.achievements-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.refresh-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    background-color: #28a745;
+}
+
+.refresh-button:hover {
+    background-color: #218838;
+}
+
+.refresh-button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.refresh-button .spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.scan-button:disabled,
+.refresh-button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.scan-button .spinning,
+.refresh-button .spinning {
+    animation: spin 1s linear infinite;
+}
+
+.achievements-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.achievement-card {
+    background: #1a1a1a;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.achievement-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.achievement-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.achievement-icon-wrapper {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+}
+
+.achievement-logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.achievement-icon {
+    color: #ffd700;
+}
+
+.achievement-info {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.achievement-info h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 16px;
+    line-height: 1.2;
+    font-weight: 500;
+}
+
+.achievement-date {
+    color: #888;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.achievement-expand {
+    flex-shrink: 0;
+    color: #666;
+    display: flex;
+    align-items: center;
+    margin-left: 16px;
+}
+
+.achievement-details {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    animation: expandDetails 0.3s ease-out;
+}
+
+@keyframes expandDetails {
+    from {
+        max-height: 0;
+        opacity: 0;
+    }
+    to {
+        max-height: 500px;
+        opacity: 1;
+    }
+}
+
+.achievement-details-content {
+    padding: 20px;
+}
+
+.achievement-details-content h4 {
+    margin: 0 0 12px 0;
+    color: #ffd700;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.achievement-details-content p {
+    margin: 0 0 16px 0;
+    color: #fff;
+    line-height: 1.5;
+    font-size: 16px;
+}
+
+.achievement-criteria {
+    margin: 16px 0;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+}
+
+.achievement-criteria h5 {
+    margin: 0 0 8px 0;
+    color: #ffd700;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.achievement-criteria p {
+    margin: 0;
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.achievement-details-date {
+    color: #888;
+    font-size: 12px;
+    font-style: italic;
+    margin-bottom: 20px;
+}
+
+.achievement-rewards {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rewards-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #888;
+    font-size: 16px;
+}
+
+.rewards-loading .spinning {
+    animation: spin 1s linear infinite;
+}
+
+.rewards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.reward-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.reward-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.reward-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.reward-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: rgba(255, 215, 0, 0.15);
+    color: #FFD700;
+    margin-right: 12px;
+    transform-origin: center;
+    position: relative;
+}
+
+.reward-icon.has-reward {
+    animation: shake 3s ease-in-out infinite;
+    background-color: rgba(255, 215, 0, 0.2);
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.reward-icon.has-reward:hover {
+    background-color: rgba(255, 215, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.reward-icon.has-reward:active {
+    transform: scale(0.95);
+}
+
+@keyframes shake {
+    0%, 80%, 100% { 
+        transform: rotate(0deg);
+    }
+    82% { 
+        transform: rotate(-12deg);
+    }
+    84% { 
+        transform: rotate(12deg);
+    }
+    86% { 
+        transform: rotate(-8deg);
+    }
+    88% { 
+        transform: rotate(4deg);
+    }
+    90% { 
+        transform: rotate(0deg);
+    }
+}
+
+.reward-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.reward-icon.has-reward svg {
+    filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.7));
+}
+
+.reward-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.reward-amount {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.claim-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.2s;
+}
+
+.claim-button:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.claim-button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.claim-button .spinning {
+    animation: spin 1s linear infinite;
+}
+
+.no-rewards {
+    color: #888;
+    font-size: 16px;
+    text-align: center;
+    padding: 20px;
+}
+
+.no-achievements {
+    text-align: center;
+    color: #666;
+    padding: 40px;
+}
+
+.achievements-loading {
+    text-align: center;
+    color: #666;
+    padding: 40px;
+}
+
+.error-message {
+    color: #dc3545;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #dc3545;
+    border-radius: 4px;
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.achievement-rewards.claimed {
+    margin-bottom: 20px;
+}
+
+.reward-item.claimed {
+    background-color: rgba(255, 255, 255, 0.03);
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.reward-item.claimed:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.reward-date {
+    color: #888;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.achievement-header .small-gift {
+    font-size: 16px;
+    color: #FFD700;
+    margin-left: 8px;
+    transform-origin: center;
+    position: relative;
+    animation: shake 3s ease-in-out infinite;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.achievement-header .small-gift:hover {
+    transform: scale(1.2);
+}
+
+.achievement-header .small-gift:active {
+    transform: scale(0.9);
+}
+
+.reward-icon.claiming {
+    animation: spin-claim 1s linear infinite !important;
+    background-color: rgba(255, 215, 0, 0.1) !important;
+    cursor: not-allowed !important;
+}
+
+.achievement-header .small-gift.claiming {
+    animation: spin-claim 1s linear infinite !important;
+    cursor: not-allowed !important;
+}
+
+@keyframes spin-claim {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+} 
