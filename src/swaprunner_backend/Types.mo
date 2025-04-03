@@ -493,7 +493,8 @@ module {
         social_links: [SocialLink];
         created_at: Nat64;
         updated_at: Nat64;
-        created_by: Principal;  // Admin who created the profile
+        created_by: Principal;
+        verified: Bool;
     };
 
     public type CreateUserProfileArgs = {
@@ -509,6 +510,7 @@ module {
         description: ?Text;
         logo_url: ?Text;
         social_links: ?[SocialLink];
+        verified: ?Bool;
     };
 
 }

@@ -60,6 +60,7 @@ module {
                 created_at = Nat64.fromNat(Int.abs(now));
                 updated_at = Nat64.fromNat(Int.abs(now));
                 created_by = caller;
+                verified = false;  // New profiles start as unverified
             };
 
             profiles.put(args.principal, profile);
@@ -72,9 +73,19 @@ module {
                 return #err(#NotAuthorized);
             };
 
+
             switch (profiles.get(userPrincipal)) {
                 case (null) { #err(#NotFound) };
                 case (?existing) {
+            // Handle verified status - only admins can change it
+                    let verified_value = if (is_admin) {
+                        switch (args.verified) {
+                            case (?v) { v };
+                            case null { existing.verified };
+                        };
+                    } else {
+                        existing.verified;
+                    };                    
                     let updated: UserProfile = {
                         principal = existing.principal;
                         name = switch (args.name) {
@@ -103,6 +114,7 @@ module {
                             case (?links) { links };
                             case null { existing.social_links };
                         };
+                        verified = verified_value;
                         created_at = existing.created_at;
                         updated_at = Nat64.fromNat(Int.abs(Time.now()));
                         created_by = existing.created_by;
