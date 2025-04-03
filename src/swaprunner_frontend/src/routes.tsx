@@ -14,6 +14,7 @@ import { Statistics } from './pages/Statistics';
 import { Verification } from './pages/help/Verification';
 import { Me } from './pages/Me';
 import AdminAchievementsPage from './components/AdminAchievementsPage';
+import AdminUsersPage from './components/AdminUsersPage';
 
 // Wrapper component to handle URL parameters
 const SwapInterfaceWithParams: React.FC = () => {
@@ -56,6 +57,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/admin/tokens" element={<AdminTokensPage />} />
             <Route path="/admin/prices" element={<AdminPricesPage />} />
             <Route path="/admin/achievements" element={<AdminAchievementsPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/stats" element={<Stats />} />
             <Route path="/help/verification" element={<Verification />} />
         </Routes>
