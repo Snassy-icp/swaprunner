@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { backendService } from '../services/backend';
+import { adminService } from '../services/admin';
 import { FiCheck, FiX, FiEdit2, FiTrash2, FiUserPlus } from 'react-icons/fi';
 import '../styles/AdminUsersPage.css';
+import { Principal } from '@dfinity/principal';
 
 interface UserProfile {
     principal: string;
     name: string;
     description: string;
-    logo_url?: string;
+    logo_url: [string] | [];
     social_links: Array<{
         platform: string;
         url: string;
@@ -20,10 +21,10 @@ interface UserProfile {
 }
 
 interface CreateUserProfileArgs {
-    principal: string;
+    principal: Principal;
     name: string;
     description: string;
-    logo_url?: string;
+    logo_url: [string] | [];
     social_links: Array<{
         platform: string;
         url: string;
@@ -33,7 +34,7 @@ interface CreateUserProfileArgs {
 interface UpdateUserProfileArgs {
     name?: string;
     description?: string;
-    logo_url?: string;
+    logo_url: [string] | [];
     social_links?: Array<{
         platform: string;
         url: string;
@@ -42,10 +43,10 @@ interface UpdateUserProfileArgs {
 }
 
 const AdminUsersPage: React.FC = () => {
-    const { isAuthenticated, isAdmin } = useAuth();
-    const [profiles, setProfiles] = useState<UserProfile[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [profiles, setProfiles] = useState<UserProfile[]>([]);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [editingProfile, setEditingProfile] = useState<UserProfile | null>(null);
     const [offset, setOffset] = useState(0);
@@ -53,14 +54,36 @@ const AdminUsersPage: React.FC = () => {
     const LIMIT = 10;
 
     useEffect(() => {
-        if (isAuthenticated && isAdmin) {
-            loadProfiles();
-        }
-    }, [isAuthenticated, isAdmin, offset]);
+        const init = async () => {
+            try {
+                console.log('Initializing admin users page...');
+                setIsLoading(true);
+                setError(null);
+                
+                console.log('Checking admin status...');
+                const adminStatus = await adminService.isAdmin();
+                console.log('Admin status:', adminStatus);
+                setIsAdmin(adminStatus);
+                
+                if (adminStatus) {
+                    await loadProfiles();
+                } else {
+                    console.log('Not an admin, skipping profile fetch');
+                    setError('You do not have admin access.');
+                }
+            } catch (err) {
+                console.error('Error initializing admin users page:', err);
+                setError(err instanceof Error ? err.message : 'Failed to load user profiles');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        init();
+    }, [offset]);
 
     const loadProfiles = async () => {
         try {
-            setLoading(true);
             const actor = await backendService.getActor();
             const result = await actor.listUserProfiles(offset, LIMIT);
             if (result.length < LIMIT) {
@@ -74,8 +97,6 @@ const AdminUsersPage: React.FC = () => {
         } catch (err) {
             setError('Failed to load user profiles');
             console.error('Error loading profiles:', err);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -133,7 +154,8 @@ const AdminUsersPage: React.FC = () => {
     const handleToggleVerification = async (profile: UserProfile) => {
         try {
             await handleUpdateProfile(profile.principal, {
-                verified: !profile.verified
+                verified: !profile.verified,
+                logo_url: profile.logo_url
             });
         } catch (err) {
             setError('Failed to toggle verification');
@@ -145,11 +167,18 @@ const AdminUsersPage: React.FC = () => {
         return new Date(Number(timestamp)).toLocaleString();
     };
 
-    if (!isAuthenticated || !isAdmin) {
+    if (isLoading) {
         return (
             <div className="admin-users-page">
-                <h1>Unauthorized</h1>
-                <p>You must be an admin to access this page.</p>
+                <div className="loading">Loading...</div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="admin-users-page">
+                <div className="error-message">{error}</div>
             </div>
         );
     }
@@ -165,13 +194,6 @@ const AdminUsersPage: React.FC = () => {
                     <FiUserPlus /> Add User
                 </button>
             </div>
-
-            {error && (
-                <div className="error-message">
-                    {error}
-                    <button onClick={() => setError(null)}><FiX /></button>
-                </div>
-            )}
 
             {showCreateForm && (
                 <CreateProfileForm
@@ -243,9 +265,7 @@ const AdminUsersPage: React.FC = () => {
                 ))}
             </div>
 
-            {loading && <div className="loading">Loading profiles...</div>}
-            
-            {hasMore && !loading && (
+            {hasMore && !isLoading && (
                 <button 
                     className="load-more-button"
                     onClick={() => setOffset(prev => prev + LIMIT)}
@@ -264,10 +284,10 @@ interface CreateProfileFormProps {
 
 const CreateProfileForm: React.FC<CreateProfileFormProps> = ({ onSubmit, onCancel }) => {
     const [formData, setFormData] = useState<CreateUserProfileArgs>({
-        principal: '',
+        principal: Principal.anonymous(),
         name: '',
         description: '',
-        logo_url: '',
+        logo_url: [],
         social_links: []
     });
 
@@ -284,8 +304,8 @@ const CreateProfileForm: React.FC<CreateProfileFormProps> = ({ onSubmit, onCance
                 <label>Principal ID:</label>
                 <input
                     type="text"
-                    value={formData.principal}
-                    onChange={e => setFormData(prev => ({ ...prev, principal: e.target.value }))}
+                    value={formData.principal.toText()}
+                    onChange={e => setFormData(prev => ({ ...prev, principal: Principal.fromText(e.target.value) }))}
                     required
                 />
             </div>
@@ -314,7 +334,7 @@ const CreateProfileForm: React.FC<CreateProfileFormProps> = ({ onSubmit, onCance
                 <input
                     type="url"
                     value={formData.logo_url || ''}
-                    onChange={e => setFormData(prev => ({ ...prev, logo_url: e.target.value }))}
+                    onChange={e => setFormData(prev => ({ ...prev, logo_url: [e.target.value] }))}
                 />
             </div>
 
@@ -371,7 +391,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSubmit, on
                 <input
                     type="url"
                     value={formData.logo_url || ''}
-                    onChange={e => setFormData(prev => ({ ...prev, logo_url: e.target.value }))}
+                    onChange={e => setFormData(prev => ({ ...prev, logo_url: [e.target.value] }))}
                 />
             </div>
 
