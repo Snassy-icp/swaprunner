@@ -3877,4 +3877,9 @@ shared (deployer) actor class SwapRunner() = this {
         Buffer.toArray(userStats)
     };
 
+    public shared func debug_clear_user_achievements(user: Principal) : async () {
+        userAchievements.delete(Principal.toText(user));
+        allocation_claims.delete(Principal.toText(user));
+    };
+
 }
