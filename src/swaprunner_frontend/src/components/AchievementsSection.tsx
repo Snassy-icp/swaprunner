@@ -1080,18 +1080,27 @@ export const AchievementsSection: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     Achievements
                     {availableClaims.length > 0 && (
-                        <FiGift 
-                            className={`small-gift ${claiming ? 'claiming' : ''}`}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (availableClaims.length > 0) {
-                                    const firstClaim = availableClaims[0];
-                                    handleClaim(firstClaim.allocation_id, firstClaim.token_canister_id.toString());
-                                }
-                            }}
-                            role="button"
-                            title="Click to claim first available reward"
-                        />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <FiGift 
+                                className={`small-gift ${claiming ? 'claiming' : ''}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (availableClaims.length > 0) {
+                                        const firstClaim = availableClaims[0];
+                                        handleClaim(firstClaim.allocation_id, firstClaim.token_canister_id.toString());
+                                    }
+                                }}
+                                role="button"
+                                title="Click to claim first available reward"
+                            />
+                            <span style={{ 
+                                fontSize: '0.85em', 
+                                opacity: 0.9,
+                                color: '#FFD700'
+                            }}>
+                                × {availableClaims.length}
+                            </span>
+                        </div>
                     )}
                 </div>
             }
