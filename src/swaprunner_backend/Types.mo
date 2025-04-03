@@ -5,6 +5,7 @@ import TrieMap "mo:base/TrieMap";
 import Nat8 "mo:base/Nat8";
 import Int "mo:base/Int";
 import HashMap "mo:base/HashMap";
+import Time "mo:base/Time";
 
 module {
 
@@ -473,6 +474,41 @@ module {
         total_cuts_paid_e8s: Nat;  // Total cuts taken from this user's allocations
         allocation_count: Nat;     // Number of allocations user has created
         claim_count: Nat;          // Number of claims user has made
+    };
+
+    //--------------------------------  
+    // Types for User Profiles
+    //--------------------------------
+
+    public type SocialLink = {
+        platform: Text;  // e.g., "twitter", "discord", "website", etc.
+        url: Text;
+    };
+
+    public type UserProfile = {
+        principal: Principal;
+        name: Text;
+        description: Text;
+        logo_url: ?Text;
+        social_links: [SocialLink];
+        created_at: Nat64;
+        updated_at: Nat64;
+        created_by: Principal;  // Admin who created the profile
+    };
+
+    public type CreateUserProfileArgs = {
+        principal: Principal;
+        name: Text;
+        description: Text;
+        logo_url: ?Text;
+        social_links: [SocialLink];
+    };
+
+    public type UpdateUserProfileArgs = {
+        name: ?Text;
+        description: ?Text;
+        logo_url: ?Text;
+        social_links: ?[SocialLink];
     };
 
 }
