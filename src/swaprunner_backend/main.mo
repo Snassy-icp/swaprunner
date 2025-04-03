@@ -3866,14 +3866,6 @@ shared (deployer) actor class SwapRunner() = this {
         Buffer.toArray(userStats)
     };
 
-    public shared func debug_clear_user_achievements(user: Principal) : async () {
-        userAchievements.delete(Principal.toText(user));
-        // delete all allocation claims for the user
-        for ((key, _) in allocation_claims.entries()) {
-            allocation_claims.delete(key);
-        };
-    };
-
     // Add after other HashMap declarations
     private var currently_claiming = HashMap.HashMap<Text, Bool>(100, Text.equal, Text.hash);
 
