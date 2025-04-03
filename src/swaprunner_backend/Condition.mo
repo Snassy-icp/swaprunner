@@ -55,7 +55,7 @@ module {
     private let TOKEN_TRADE_VOLUME : T.Condition = {
         key = "token_trade_volume";
         name = "Token Volume Achievement";
-        description = "Trade a certain volume of a specific token";
+        description = "Trade a certain volume of a specific token, with optional filters for swap type (icpswap/kong/split) and direction (buy/sell)";
         parameter_specs = [
             {
                 name = "token_id";
@@ -66,6 +66,16 @@ module {
                 name = "min_volume_e8s";
                 param_type = #Nat;
                 default_value = null;
+            },
+            {
+                name = "swap_type";
+                param_type = #Text;
+                default_value = null;  // any/icpswap/kong/split
+            },
+            {
+                name = "swap_direction";
+                param_type = #Text;
+                default_value = null;  // any/buy/sell
             }
         ];
     };
@@ -366,6 +376,50 @@ module {
                 null;
             };
         };
+
+        // Get optional swap_type parameter
+        let swap_type = if (parameters.size() > 2) {
+            switch (parameters[2]) {
+                case (#Text(type_)) {
+                    Debug.print("Swap type parameter: " # type_);
+                    if (type_ == "icpswap" or type_ == "kong" or type_ == "split") {
+                        ?type_;
+                    } else {
+                        Debug.print("Non-specific swap type, using any");
+                        null;
+                    };
+                };
+                case _ {
+                    Debug.print("Invalid swap_type parameter type");
+                    null;
+                };
+            };
+        } else {
+            Debug.print("No swap_type specified, using any");
+            null;
+        };
+
+        // Get optional swap_direction parameter
+        let swap_direction = if (parameters.size() > 3) {
+            switch (parameters[3]) {
+                case (#Text(direction)) {
+                    Debug.print("Swap direction parameter: " # direction);
+                    if (direction == "buy" or direction == "sell") {
+                        ?direction;
+                    } else {
+                        Debug.print("Non-specific direction, using any");
+                        null;
+                    };
+                };
+                case _ {
+                    Debug.print("Invalid swap_direction parameter type");
+                    null;
+                };
+            };
+        } else {
+            Debug.print("No swap_direction specified, using any");
+            null;
+        };
         
         switch (token_id, min_volume) {
             case (?id, ?min) {
@@ -379,13 +433,58 @@ module {
                         stats;
                     };
                 };
-                let total_volume = stats.input_volume_e8s_icpswap + 
-                                 stats.input_volume_e8s_kong +
-                                 stats.input_volume_e8s_split;
+
+                // Calculate total volume based on direction and swap type
+                let total_volume = switch(swap_direction, swap_type) {
+                    case (?direction, ?type_) {
+                        switch(direction) {
+                            case "buy" {
+                                switch(type_) {
+                                    case "icpswap" stats.output_volume_e8s_icpswap;
+                                    case "kong" stats.output_volume_e8s_kong;
+                                    case "split" stats.output_volume_e8s_split;
+                                    case _ stats.output_volume_e8s_icpswap + stats.output_volume_e8s_kong + stats.output_volume_e8s_split;
+                                };
+                            };
+                            case "sell" {
+                                switch(type_) {
+                                    case "icpswap" stats.input_volume_e8s_icpswap;
+                                    case "kong" stats.input_volume_e8s_kong;
+                                    case "split" stats.input_volume_e8s_split;
+                                    case _ stats.input_volume_e8s_icpswap + stats.input_volume_e8s_kong + stats.input_volume_e8s_split;
+                                };
+                            };
+                            case _ 0;
+                        };
+                    };
+                    case (?direction, null) {
+                        switch(direction) {
+                            case "buy" stats.output_volume_e8s_icpswap + stats.output_volume_e8s_kong + stats.output_volume_e8s_split;
+                            case "sell" stats.input_volume_e8s_icpswap + stats.input_volume_e8s_kong + stats.input_volume_e8s_split;
+                            case _ 0;
+                        };
+                    };
+                    case (null, ?type_) {
+                        switch(type_) {
+                            case "icpswap" stats.input_volume_e8s_icpswap + stats.output_volume_e8s_icpswap;
+                            case "kong" stats.input_volume_e8s_kong + stats.output_volume_e8s_kong;
+                            case "split" stats.input_volume_e8s_split + stats.output_volume_e8s_split;
+                            case _ 0;
+                        };
+                    };
+                    case (null, null) {
+                        stats.input_volume_e8s_icpswap + stats.input_volume_e8s_kong + stats.input_volume_e8s_split +
+                        stats.output_volume_e8s_icpswap + stats.output_volume_e8s_kong + stats.output_volume_e8s_split;
+                    };
+                };
+
                 let result = total_volume >= min;
                 Debug.print("Token volume condition result: " # Bool.toText(result) # 
                           " (required: " # Nat.toText(min) # 
-                          ", actual: " # Nat.toText(total_volume) # ")");
+                          ", actual: " # Nat.toText(total_volume) # 
+                          ", token: " # id # 
+                          ", direction: " # (switch(swap_direction) { case(?d) d; case null "any"; }) #
+                          ", type: " # (switch(swap_type) { case(?t) t; case null "any"; }));
                 return result;
             };
             case _ {
