@@ -32,14 +32,14 @@ interface CreateUserProfileArgs {
 }
 
 interface UpdateUserProfileArgs {
-    name?: string;
-    description?: string;
+    name: [string] | [];
+    description: [string] | [];
     logo_url: [string] | [];
     social_links?: Array<{
         platform: string;
         url: string;
     }>;
-    verified?: boolean;
+    verified: [boolean] | [];
 }
 
 const AdminUsersPage: React.FC = () => {
@@ -154,7 +154,9 @@ const AdminUsersPage: React.FC = () => {
     const handleToggleVerification = async (profile: UserProfile) => {
         try {
             await handleUpdateProfile(profile.principal, {
-                verified: !profile.verified,
+                verified: !profile.verified ? [true] : [false],
+                name: profile.name ? [profile.name] : [],
+                description: profile.description ? [profile.description] : [],
                 logo_url: profile.logo_url
             });
         } catch (err) {
@@ -354,10 +356,11 @@ interface EditProfileFormProps {
 
 const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSubmit, onCancel }) => {
     const [formData, setFormData] = useState<UpdateUserProfileArgs>({
-        name: profile.name,
-        description: profile.description,
+        name: profile.name ? [profile.name] : [],
+        description: profile.description ? [profile.description] : [],
         logo_url: profile.logo_url,
-        social_links: profile.social_links
+        social_links: profile.social_links,
+        verified: profile.verified ? [true] : [false]
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -371,8 +374,8 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSubmit, on
                 <label>Name:</label>
                 <input
                     type="text"
-                    value={formData.name || ''}
-                    onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    value={formData.name[0] || ''}
+                    onChange={e => setFormData(prev => ({ ...prev, name: e.target.value ? [e.target.value] : [] }))}
                     required
                 />
             </div>
@@ -380,8 +383,8 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSubmit, on
             <div className="form-group">
                 <label>Description:</label>
                 <textarea
-                    value={formData.description || ''}
-                    onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    value={formData.description[0] || ''}
+                    onChange={e => setFormData(prev => ({ ...prev, description: e.target.value ? [e.target.value] : [] }))}
                     required
                 />
             </div>
@@ -393,6 +396,17 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSubmit, on
                     value={formData.logo_url[0] || ''}
                     onChange={e => setFormData(prev => ({ ...prev, logo_url: e.target.value ? [e.target.value] : [] }))}
                 />
+            </div>
+
+            <div className="form-group checkbox-group">
+                <label>
+                    <input
+                        type="checkbox"
+                        checked={formData.verified[0]}
+                        onChange={e => setFormData(prev => ({ ...prev, verified: e.target.checked ? [true] : [false] }))}
+                    />
+                    Verified
+                </label>
             </div>
 
             <div className="form-actions">
