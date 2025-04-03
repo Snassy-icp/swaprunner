@@ -24,6 +24,7 @@ import Condition "./Condition";
 import Achievement "./Achievement";
 import Allocation "./Allocation";
 import Util "./Util";
+import UserProfile "./UserProfile";
 
 shared (deployer) actor class SwapRunner() = this {
     //type This = SwapRunner;
@@ -3868,5 +3869,37 @@ shared (deployer) actor class SwapRunner() = this {
 
     // Add after other HashMap declarations
     private var currently_claiming = HashMap.HashMap<Text, Bool>(100, Text.equal, Text.hash);
+
+    // Initialize UserProfileManager with admin principals
+    private let userProfileManager = UserProfile.UserProfileManager();
+
+    // User Profile Methods
+    public shared(msg) func createUserProfile(args: T.CreateUserProfileArgs) : async Result.Result<T.UserProfile, UserProfile.ProfileError> {
+        await userProfileManager.createProfile(isAdmin(msg.caller), msg.caller, args)
+    };
+
+    public shared(msg) func updateUserProfile(userPrincipal: Principal, args: T.UpdateUserProfileArgs) : async Result.Result<T.UserProfile, UserProfile.ProfileError> {
+        await userProfileManager.updateProfile(isAdmin(msg.caller), msg.caller, userPrincipal, args)
+    };
+
+    public shared(msg) func deleteUserProfile(userPrincipal: Principal) : async Result.Result<(), UserProfile.ProfileError> {
+        await userProfileManager.deleteProfile(isAdmin(msg.caller), msg.caller, userPrincipal)
+    };
+
+    public query func getUserProfile(userPrincipal: Principal) : async Result.Result<T.UserProfile, UserProfile.ProfileError> {
+        userProfileManager.getProfile(userPrincipal)
+    };
+
+    public query func listUserProfiles(offset: Nat, limit: Nat) : async [T.UserProfile] {
+        userProfileManager.listProfiles(offset, limit)
+    };
+
+    public query func getUserProfileCount() : async Nat {
+        userProfileManager.getProfileCount()
+    };
+
+    public query func searchUserProfiles(profile_query: Text) : async [T.UserProfile] {
+        userProfileManager.searchProfiles(profile_query)
+    };
 
 }

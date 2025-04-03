@@ -1357,6 +1357,7 @@
 .collapsible-section .section-content .submit-button,
 .collapsible-section .section-content .cancel-button {
     padding: 8px 12px;
+    margin: 10px 0px;
     border-radius: 8px;
     font-size: 12px;
     cursor: pointer;
@@ -1784,4 +1785,49 @@
 
 .allocation-details .status-requirements li.completed svg {
     color: #28a745;
+}
+
+.achievement-preview {
+    margin-top: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px;
+    background-color: #f8f9fa;
+}
+
+.achievement-preview-content {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.achievement-preview-logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.achievement-preview-info {
+    flex: 1;
+}
+
+.achievement-preview-info h4 {
+    margin: 0 0 8px 0;
+    color: #333;
+}
+
+.achievement-preview-description {
+    margin: 0 0 8px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.achievement-preview-criteria {
+    font-size: 14px;
+    color: #444;
+}
+
+.achievement-preview-criteria strong {
+    color: #333;
 } 
