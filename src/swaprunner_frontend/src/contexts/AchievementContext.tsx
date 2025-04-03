@@ -40,6 +40,12 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const isScanning = useRef(false);
+    const needsScanRef = useRef(needsScan);
+
+    // Update ref when needsScan changes
+    useEffect(() => {
+        needsScanRef.current = needsScan;
+    }, [needsScan]);
 
     // Clean up existing timer
     const cleanupTimer = useCallback(() => {
@@ -75,67 +81,68 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
         refreshAchievements();
     }, [refreshAchievements]);
 
-    const performScan = useCallback(async () => {
-        if (!needsScan) {
-            console.log('[Achievement Scanner] Scan requested but needsScan is false, skipping');
-            return;
-        }
-
-        if (isScanning.current) {
-            console.log('[Achievement Scanner] Scan already in progress, skipping');
-            return;
-        }
-        
-        console.log('[Achievement Scanner] Starting achievement scan');
-        isScanning.current = true;
-        
-        try {
-            const actor = await backendService.getActor();
-            const result = await actor.scan_for_new_achievements();
-            
-            if (result.new_achievements.length > 0) {
-                console.log(`[Achievement Scanner] Found ${result.new_achievements.length} new achievements, fetching details`);
-                // Fetch details for each new achievement
-                const newAchievementsWithDetails: Achievement[] = [];
-                
-                // Update the achievements list first
-                setUserAchievements(prev => [...prev, ...result.new_achievements]);
-                
-                // Then get details for notifications
-                for (const achievement of result.new_achievements) {
-                    const details = await actor.get_achievement_details(achievement.achievement_id);
-                    if ('ok' in details) {
-                        newAchievementsWithDetails.push(details.ok);
-                    }
-                }
-                
-                console.log('[Achievement Scanner] Setting new achievements for notification:', newAchievementsWithDetails);
-                setNewAchievements(prev => {
-                    console.log('[Achievement Scanner] Previous achievements:', prev);
-                    const updated = [...prev, ...newAchievementsWithDetails];
-                    console.log('[Achievement Scanner] Updated achievements:', updated);
-                    return updated;
-                });
-            } else {
-                console.log('[Achievement Scanner] No new achievements found');
-            }
-        } catch (error) {
-            console.error('[Achievement Scanner] Error scanning for achievements:', error);
-        } finally {
-            console.log('[Achievement Scanner] Scan complete, resetting needsScan flag');
-            setNeedsScan(false);
-            isScanning.current = false;
-        }
-    }, [needsScan]); // Keep needsScan dependency since we're using isScanning ref to prevent loops
-
+    // Set up the periodic scan timer
     useEffect(() => {
+        const performScan = async () => {
+            if (!needsScanRef.current) {
+                console.log('[Achievement Scanner] Scan requested but needsScan is false, skipping');
+                return;
+            }
+
+            if (isScanning.current) {
+                console.log('[Achievement Scanner] Scan already in progress, skipping');
+                return;
+            }
+            
+            console.log('[Achievement Scanner] Starting achievement scan');
+            isScanning.current = true;
+            
+            try {
+                const actor = await backendService.getActor();
+                const result = await actor.scan_for_new_achievements();
+                
+                if (result.new_achievements.length > 0) {
+                    console.log(`[Achievement Scanner] Found ${result.new_achievements.length} new achievements, fetching details`);
+                    // Fetch details for each new achievement
+                    const newAchievementsWithDetails: Achievement[] = [];
+                    
+                    // Update the achievements list first
+                    setUserAchievements(prev => [...prev, ...result.new_achievements]);
+                    
+                    // Then get details for notifications
+                    for (const achievement of result.new_achievements) {
+                        const details = await actor.get_achievement_details(achievement.achievement_id);
+                        if ('ok' in details) {
+                            newAchievementsWithDetails.push(details.ok);
+                        }
+                    }
+                    
+                    console.log('[Achievement Scanner] Setting new achievements for notification:', newAchievementsWithDetails);
+                    setNewAchievements(prev => {
+                        console.log('[Achievement Scanner] Previous achievements:', prev);
+                        const updated = [...prev, ...newAchievementsWithDetails];
+                        console.log('[Achievement Scanner] Updated achievements:', updated);
+                        return updated;
+                    });
+                } else {
+                    console.log('[Achievement Scanner] No new achievements found');
+                }
+            } catch (error) {
+                console.error('[Achievement Scanner] Error scanning for achievements:', error);
+            } finally {
+                console.log('[Achievement Scanner] Scan complete, resetting needsScan flag');
+                setNeedsScan(false);
+                isScanning.current = false;
+            }
+        };
+
         // Clean up any existing timer first
         cleanupTimer();
 
         // Set up periodic scanning
         console.log('[Achievement Scanner] Setting up periodic scan timer');
         const timer = setInterval(() => {
-            if (needsScan) {
+            if (needsScanRef.current) {
                 console.log('[Achievement Scanner] Periodic scan timer triggered, needsScan is true');
                 performScan();
             } else {
@@ -145,20 +152,68 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
         
         timerRef.current = timer;
         
-        // Clean up on unmount or when dependencies change
+        // Clean up on unmount
         return () => {
             console.log('[Achievement Scanner] Component cleanup: removing scan timer');
             cleanupTimer();
         };
-    }, [cleanupTimer, performScan]);
+    }, []); // Empty dependency array since we use refs
 
     // Perform immediate scan when needsScan is set to true
     useEffect(() => {
+        const performImmediateScan = async () => {
+            // Return early if conditions aren't met
+            if (!needsScan || isScanning.current) {
+                console.log('[Achievement Scanner] Skipping immediate scan:', 
+                    !needsScan ? 'needsScan is false' : 'scan already in progress');
+                return;
+            }
+            
+            console.log('[Achievement Scanner] Starting immediate scan');
+            isScanning.current = true;
+            
+            try {
+                const actor = await backendService.getActor();
+                const result = await actor.scan_for_new_achievements();
+                
+                if (result.new_achievements.length > 0) {
+                    console.log(`[Achievement Scanner] Found ${result.new_achievements.length} new achievements`);
+                    // Update achievements list first
+                    setUserAchievements(prev => [...prev, ...result.new_achievements]);
+                    
+                    // Then get details for notifications
+                    const newAchievementsWithDetails: Achievement[] = [];
+                    for (const achievement of result.new_achievements) {
+                        try {
+                            const details = await actor.get_achievement_details(achievement.achievement_id);
+                            if ('ok' in details) {
+                                newAchievementsWithDetails.push(details.ok);
+                            }
+                        } catch (error) {
+                            console.error('[Achievement Scanner] Error fetching achievement details:', error);
+                        }
+                    }
+                    
+                    if (newAchievementsWithDetails.length > 0) {
+                        setNewAchievements(prev => [...prev, ...newAchievementsWithDetails]);
+                    }
+                } else {
+                    console.log('[Achievement Scanner] No new achievements found');
+                }
+            } catch (error) {
+                console.error('[Achievement Scanner] Error in immediate scan:', error);
+            } finally {
+                // Always clean up scanning state
+                console.log('[Achievement Scanner] Immediate scan complete, cleaning up state');
+                isScanning.current = false;
+                setNeedsScan(false);
+            }
+        };
+        
         if (needsScan) {
-            console.log('[Achievement Scanner] needsScan changed to true, triggering immediate scan');
-            performScan();
+            performImmediateScan();
         }
-    }, [needsScan, performScan]);
+    }, [needsScan]);
 
     const dismissAchievement = (id: string) => {
         console.log(`[Achievement Scanner] Dismissing achievement notification: ${id}`);

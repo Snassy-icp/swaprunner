@@ -268,12 +268,16 @@ const FixedHeader: React.FC = () => {
 const AuthStateListener: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const { setNeedsScan } = useAchievements();
+  const hasTriggeredScan = useRef(false);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !hasTriggeredScan.current) {
+      hasTriggeredScan.current = true;
       setNeedsScan(true);
+    } else if (!isAuthenticated) {
+      hasTriggeredScan.current = false;
     }
-  }, [isAuthenticated, setNeedsScan]);
+  }, [isAuthenticated]);
 
   return null;
 };
