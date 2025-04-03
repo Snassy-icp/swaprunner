@@ -33,7 +33,6 @@
     margin-bottom: 20px;
 }
 
-.scan-button,
 .refresh-button {
     display: flex;
     align-items: center;
@@ -44,22 +43,25 @@
     color: white;
     cursor: pointer;
     transition: background-color 0.2s;
-}
-
-.scan-button {
-    background-color: #007bff;
-}
-
-.scan-button:hover {
-    background-color: #0056b3;
-}
-
-.refresh-button {
     background-color: #28a745;
 }
 
 .refresh-button:hover {
     background-color: #218838;
+}
+
+.refresh-button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.refresh-button .spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .scan-button:disabled,
@@ -71,11 +73,6 @@
 .scan-button .spinning,
 .refresh-button .spinning {
     animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
 }
 
 .achievements-list {
@@ -425,11 +422,6 @@
     transform: scale(0.9);
 }
 
-@keyframes spin-claim {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
 .reward-icon.claiming {
     animation: spin-claim 1s linear infinite !important;
     background-color: rgba(255, 215, 0, 0.1) !important;
@@ -439,4 +431,9 @@
 .achievement-header .small-gift.claiming {
     animation: spin-claim 1s linear infinite !important;
     cursor: not-allowed !important;
+}
+
+@keyframes spin-claim {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 } 
