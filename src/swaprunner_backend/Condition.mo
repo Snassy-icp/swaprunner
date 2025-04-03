@@ -92,8 +92,8 @@ module {
     };
 
     // Helper functions
-    private func getUserTokenStatsKey(user: Principal, token_id: Text) : Text {
-        Principal.toText(user) # ":" # token_id;
+    public func getUserTokenStatsKey(user: Principal, token: Text) : Text {
+        Principal.toText(user) # "_" # token
     };
 
     // Condition evaluation helpers

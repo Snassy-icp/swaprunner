@@ -10,6 +10,7 @@ import { formatTokenAmount } from '../utils/format';
 import { useTokens } from '../contexts/TokenContext';
 import { tokenService } from '../services/token';
 import { useClaims } from '../contexts/ClaimContext';
+import { useAchievements } from '../contexts/AchievementContext';
 
 interface Achievement {
     id: string;
@@ -924,6 +925,7 @@ export const AchievementsSection: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [claiming, setClaiming] = useState<string | null>(null);
     const { availableClaims } = useClaims();
+    const { refreshAchievements } = useAchievements();
 
     const loadAchievements = async () => {
         try {
@@ -958,6 +960,15 @@ export const AchievementsSection: React.FC = () => {
             setLoading(false);
         }
     };
+
+    // Update useEffect to use refreshAchievements
+    useEffect(() => {
+        const init = async () => {
+            await refreshAchievements();
+            await loadAchievements();
+        };
+        init();
+    }, [refreshAchievements]);
 
     const scanForNewAchievements = async () => {
         try {
@@ -1000,10 +1011,6 @@ export const AchievementsSection: React.FC = () => {
             setClaiming(null);
         }
     };
-
-    useEffect(() => {
-        loadAchievements();
-    }, []);
 
     const formatDate = (timestamp: number) => {
         return new Date(Number(timestamp) / 1_000_000).toLocaleString();
