@@ -241,7 +241,7 @@ module {
                 // First check if we need token-specific stats
                 switch(token_id, swap_direction) {
                     case (?tid, ?direction) {
-                        // Need to use token-specific stats
+                        // Need to use token-specific stats with direction
                         let token_stats = switch (context.user_token_stats.get(getUserTokenStatsKey(user, tid))) {
                             case null {
                                 Debug.print("No token stats found for token: " # tid);
@@ -293,6 +293,44 @@ module {
                                   ", actual: " # Nat.toText(trade_count) # 
                                   ", token: " # tid # 
                                   ", direction: " # (switch(swap_direction) { case(?d) d; case null "any"; }) #
+                                  ", type: " # (switch(swap_type) { case(?t) t; case null "any"; }));
+                        return result;
+                    };
+                    case (?tid, null) {
+                        // Need to use token-specific stats without direction
+                        let token_stats = switch (context.user_token_stats.get(getUserTokenStatsKey(user, tid))) {
+                            case null {
+                                Debug.print("No token stats found for token: " # tid);
+                                return false;
+                            };
+                            case (?stats) {
+                                Debug.print("Found token stats");
+                                stats;
+                            };
+                        };
+
+                        // Count all trades for this token based on swap type
+                        let trade_count = switch(swap_type) {
+                            case (?type_) {
+                                switch(type_) {
+                                    case "icpswap" token_stats.swaps_as_input_icpswap + token_stats.swaps_as_output_icpswap;
+                                    case "kong" token_stats.swaps_as_input_kong + token_stats.swaps_as_output_kong;
+                                    case "split" token_stats.swaps_as_input_split + token_stats.swaps_as_output_split;
+                                    case _ token_stats.swaps_as_input_icpswap + token_stats.swaps_as_input_kong + token_stats.swaps_as_input_split +
+                                         token_stats.swaps_as_output_icpswap + token_stats.swaps_as_output_kong + token_stats.swaps_as_output_split;
+                                };
+                            };
+                            case null {
+                                // Any type
+                                token_stats.swaps_as_input_icpswap + token_stats.swaps_as_input_kong + token_stats.swaps_as_input_split +
+                                token_stats.swaps_as_output_icpswap + token_stats.swaps_as_output_kong + token_stats.swaps_as_output_split;
+                            };
+                        };
+                        let result = trade_count >= min;
+                        Debug.print("Token-specific trade count condition result: " # Bool.toText(result) # 
+                                  " (required: " # Nat.toText(min) # 
+                                  ", actual: " # Nat.toText(trade_count) # 
+                                  ", token: " # tid # 
                                   ", type: " # (switch(swap_type) { case(?t) t; case null "any"; }));
                         return result;
                     };
