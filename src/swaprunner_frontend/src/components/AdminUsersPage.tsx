@@ -216,7 +216,7 @@ const AdminUsersPage: React.FC = () => {
                                 <div className="profile-header">
                                     <div className="profile-info">
                                         <h3>{profile.name}</h3>
-                                        <span className="principal">{profile.principal}</span>
+                                        <span className="principal">{profile.principal.toString()}</span>
                                     </div>
                                     <div className="profile-actions">
                                         <button 
@@ -333,8 +333,8 @@ const CreateProfileForm: React.FC<CreateProfileFormProps> = ({ onSubmit, onCance
                 <label>Logo URL:</label>
                 <input
                     type="url"
-                    value={formData.logo_url || ''}
-                    onChange={e => setFormData(prev => ({ ...prev, logo_url: [e.target.value] }))}
+                    value={formData.logo_url[0] || ''}
+                    onChange={e => setFormData(prev => ({ ...prev, logo_url: e.target.value ? [e.target.value] : [] }))}
                 />
             </div>
 
@@ -390,8 +390,8 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSubmit, on
                 <label>Logo URL:</label>
                 <input
                     type="url"
-                    value={formData.logo_url || ''}
-                    onChange={e => setFormData(prev => ({ ...prev, logo_url: [e.target.value] }))}
+                    value={formData.logo_url[0] || ''}
+                    onChange={e => setFormData(prev => ({ ...prev, logo_url: e.target.value ? [e.target.value] : [] }))}
                 />
             </div>
 

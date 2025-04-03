@@ -57,8 +57,8 @@ module {
                 description = args.description;
                 logo_url = args.logo_url;
                 social_links = args.social_links;
-                created_at = Nat64.fromNat(Int.abs(now));
-                updated_at = Nat64.fromNat(Int.abs(now));
+                created_at = Int.abs(now);
+                updated_at = Int.abs(now);
                 created_by = caller;
                 verified = false;  // New profiles start as unverified
             };
@@ -116,7 +116,7 @@ module {
                         };
                         verified = verified_value;
                         created_at = existing.created_at;
-                        updated_at = Nat64.fromNat(Int.abs(Time.now()));
+                        updated_at = Int.abs(Time.now());
                         created_by = existing.created_by;
                     };
                     profiles.put(userPrincipal, updated);
