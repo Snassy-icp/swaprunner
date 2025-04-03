@@ -1027,6 +1027,14 @@ export const AchievementsSection: React.FC = () => {
                     <FiRefreshCw className={scanning ? 'spinning' : ''} />
                     {scanning ? 'Scanning...' : 'Scan for New'}
                 </button>
+                <button 
+                    className="refresh-button" 
+                    onClick={loadAchievements}
+                    disabled={loading}
+                >
+                    <FiRefreshCw className={loading ? 'spinning' : ''} />
+                    {loading ? 'Refreshing...' : 'Refresh List'}
+                </button>
             </div>
 
             {error && <div className="error-message">{error}</div>}

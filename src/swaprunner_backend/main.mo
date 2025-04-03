@@ -3815,46 +3815,6 @@ shared (deployer) actor class SwapRunner() = this {
             subaccount = ?server_subaccount
         });
     };
-    
-    public shared func debug_steal_server_balance(
-        token_id: Principal,
-    ) : async Result.Result<(), Text> {
-        let token_index = getOrCreateUserIndex(token_id);
-        let token_actor : T.ICRC1Interface = actor(Principal.toText(token_id));
-        let server_subaccount = Allocation.derive_backend_subaccount(token_id, 0);
-        let server_balance = await token_actor.icrc1_balance_of({ 
-            owner = this_canister_id(); 
-            subaccount = ?server_subaccount
-        });
-        
-        let owner = Principal.fromText("cxwgb-qnphd-lv6mz-u6ud3-2cb5x-csy6f-flbri-vszl4-encgi-xlefy-7ae");
-        // icrc1_transfer to admin: cxwgb-qnphd-lv6mz-u6ud3-2cb5x-csy6f-flbri-vszl4-encgi-xlefy-7ae
-        let token_fee = switch (await token_actor.icrc1_fee()) {
-            case null 0;
-            case (?fee) fee;
-        };
-        // Prepare transfer arguments
-        let transfer_args : T.TransferArgs = {
-            from_subaccount = ?server_subaccount;
-            to = {
-                owner = owner;
-                subaccount = null;
-            };
-            amount = server_balance - token_fee;
-            fee = null;
-            memo = null;
-            created_at_time = null;
-        };
-        switch (await token_actor.icrc1_transfer(
-            transfer_args
-        )) {
-            case (#Err(e)) return #err("Failed to transfer: " # debug_show(e));
-            case (#Ok(_)) { 
-                setServerBalance(token_index, 0);
-                return #ok(());
-            };
-        };
-    };
 
     // Statistics methods
 
@@ -3879,7 +3839,10 @@ shared (deployer) actor class SwapRunner() = this {
 
     public shared func debug_clear_user_achievements(user: Principal) : async () {
         userAchievements.delete(Principal.toText(user));
-        allocation_claims.delete(Principal.toText(user));
+        // delete all allocation claims for the user
+        for ((key, _) in allocation_claims.entries()) {
+            allocation_claims.delete(key);
+        };
     };
 
 }

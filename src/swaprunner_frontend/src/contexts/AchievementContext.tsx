@@ -107,7 +107,7 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
                     const newAchievementsWithDetails: Achievement[] = [];
                     
                     // Update the achievements list first
-                    setUserAchievements(prev => [...prev, ...result.new_achievements]);
+                    await refreshAchievements();
                     
                     // Then get details for notifications
                     for (const achievement of result.new_achievements) {
