@@ -56,7 +56,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 };
 
 export const Me: React.FC = () => {
-  const { isAuthenticated, principal, login } = useAuth();
+  const { isAuthenticated, principal, login, isVerified } = useAuth();
   const { keepTokensInPool, setKeepTokensInPool } = usePool();
   const [userTokenStats, setUserTokenStats] = useState<[string, UserTokenStats][]>([]);
   const [tokenSavingsStats, setTokenSavingsStats] = useState<Record<string, TokenSavingsStats>>({});
@@ -585,7 +585,7 @@ export const Me: React.FC = () => {
         </CollapsibleSection>
 
         <AchievementsSection />
-        <AllocationsSection />
+        {(/*isAdmin ||*/ isVerified) && <AllocationsSection />}
 
         <CollapsibleSection title="Statistics" icon={<FiBarChart2 />} defaultExpanded={false}>
           <div className="section-header">
