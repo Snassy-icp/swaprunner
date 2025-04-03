@@ -1202,7 +1202,7 @@ export const AllocationsSection: React.FC = () => {
             throw err;
         }
     };
-
+/*
     const handleCancel = async (allocationId: string) => {
         setAllocationToCancel(allocationId);
         setShowCancelConfirmation(true);
@@ -1225,7 +1225,7 @@ export const AllocationsSection: React.FC = () => {
             setAllocationToCancel(null);
         }
     };
-
+*/
     const allocationsContent = (
         <div className="allocations-content">
             <div className="allocations-actions">
@@ -1299,10 +1299,6 @@ export const AllocationsSection: React.FC = () => {
                 <div className="error">{error}</div>
             </div>
         );
-    }
-
-    if (!isAdminUser) {
-        return null;
     }
 
     return (
