@@ -1,0 +1,83 @@
+@keyframes spin-claim {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translate(-50%, 0);
+    }
+    50% {
+        transform: translate(-50%, -3px);
+    }
+}
+
+.header {
+    position: relative;
+}
+
+.nav-tabs {
+    position: relative;
+    display: flex;
+    gap: 4px;
+}
+
+.tab {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab svg {
+    width: 16px;
+    height: 16px;
+    transition: all 0.2s;
+}
+
+.tab:not(.active) .FiGift {
+    animation: spin-claim 2s linear infinite;
+    color: #FFD700;
+    filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.7));
+}
+
+.tab.has-rewards {
+    position: relative;
+}
+
+.rewards-tooltip {
+    position: absolute;
+    top: -65px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #ffffff;
+    color: #000000;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 12px;
+    line-height: 1.4;
+    width: max-content;
+    max-width: 160px;
+    text-align: center;
+    z-index: 1000;
+    animation: float 2s ease-in-out infinite;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: block;
+}
+
+.rewards-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid #ffffff;
+} 

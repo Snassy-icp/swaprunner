@@ -1,10 +1,17 @@
 import Principal "mo:base/Principal";
 import Result "mo:base/Result";
 import Nat "mo:base/Nat";
+import TrieMap "mo:base/TrieMap";
 import Nat8 "mo:base/Nat8";
 import Int "mo:base/Int";
+import HashMap "mo:base/HashMap";
+import Time "mo:base/Time";
 
 module {
+
+    //--------------------------------  
+    // Types for Main module
+    //--------------------------------
 
     // Types
     public type TokenMetadata = {
@@ -126,6 +133,20 @@ module {
         icrc1_fee : shared query () -> async ?Nat;
         icrc1_decimals : shared query () -> async ?Nat8;
         icrc1_supported_standards : shared query () -> async [StandardRecord];
+        icrc1_balance_of : shared ({owner: Principal; subaccount: ?[Nat8]}) -> async Nat;
+        icrc1_transfer : shared ({
+            from_subaccount: ?[Nat8];
+            to: Account;
+            amount: Nat;
+            fee: ?Nat;
+            memo: ?[Nat8];
+            created_at_time: ?Nat64;
+        }) -> async TransferResult;
+    };
+
+    public type TransferResult = {
+        #Ok: Nat;
+        #Err: TransferError;
     };
 
     public type Account = {
@@ -232,6 +253,7 @@ module {
         total_withdrawals: Nat;
     };
 
+
     // Add new type for metadata refresh progress
     public type MetadataRefreshProgress = {
         total_tokens: Nat;
@@ -312,6 +334,181 @@ module {
         token_id: Principal;
         subaccount: [Nat8];
         amount_e8s: ?Nat;  // If null, withdraw entire balance
+    };
+
+    // Context type for statistics tracking
+    public type StatsContext = {
+        globalStats: GlobalStats;
+        tokenStats: HashMap.HashMap<Text, TokenStats>;
+        tokenSavingsStats: HashMap.HashMap<Text, TokenSavingsStats>;
+        userStats: HashMap.HashMap<Text, UserStats>;
+        userTokenStats: HashMap.HashMap<Text, UserTokenStats>;
+        tokenAllocationStats: HashMap.HashMap<Text, TokenAllocationStats>;
+        userTokenAllocationStats: HashMap.HashMap<Text, UserTokenAllocationStats>;
+    };
+
+    //--------------------------------  
+    // Types for Achievement module
+    //--------------------------------
+
+    public type Achievement = {
+        id: Text;
+        name: Text;
+        description: Text;
+        criteria: Text;  // Description of how to earn the achievement
+        logo_url: ?Text;
+        condition_usages: [ConditionUsage];
+        predicate: ?PredicateExpression;
+    };
+
+    public type ConditionUsage = {
+        condition_key: Text;
+        parameters: [{  // Now an array of variants
+            #Principal: Principal;
+            #Nat: Nat;
+            #Text: Text;
+        }];
+    };
+
+    public type PredicateExpression = {
+        #AND: (PredicateExpression, PredicateExpression);
+        #OR: (PredicateExpression, PredicateExpression);
+        #NOT: PredicateExpression;
+        #REF: Nat; // Index into condition_usages array
+    };
+
+    public type UserAchievement = {
+        user: Principal;
+        achievement_id: Text;
+        discovered_at: Int; // Timestamp
+    };
+
+    //--------------------------------  
+    // Types for Allocation module
+    //--------------------------------
+
+    public type Allocation = {
+        id: Text;                   // Unique identifier
+        creator: Principal;         // Creator's principal
+        achievement_id: Text;       // References Achievement.id
+        token: {
+            canister_id: Principal; // Token canister ID
+            total_amount_e8s: Nat;  // Initial allocation size
+            per_user: {            // Per-user claim amount
+                min_e8s: Nat;      // Minimum claim amount
+                max_e8s: Nat;      // Maximum claim amount (equal to min for fixed)
+            };
+        };
+        created_at: Int;           // Timestamp
+    };
+
+    public type AllocationStatus = {
+        #Draft;             // Just created
+        #Active;            // Ready for claims
+        #Depleted;          // All funds claimed
+        #Cancelled;         // Cancelled by creator
+    };
+
+    public type AllocationClaim = {
+        allocation_id: Text;
+        user: Principal;
+        amount_e8s: Nat;    
+        claimed_at: Int;    
+    };
+
+    public type CreateAllocationArgs = {
+        achievement_id: Text;
+        token_canister_id: Principal;
+        total_amount_e8s: Nat;
+        per_user_min_e8s: Nat;
+        per_user_max_e8s: Nat;
+    };
+
+    // Fee configuration for allocations
+    public type AllocationFeeConfig = {
+        icp_fee_e8s: Nat;     // Fixed ICP fee in e8s for creating an allocation
+        cut_basis_points: Nat; // Cut taken from allocation amount in basis points (100 = 1%)
+    };
+
+    // Context type containing all required state from main.mo
+    public type Context = {
+        achievements: HashMap.HashMap<Text, Achievement>;
+        conditions: HashMap.HashMap<Text, Condition>;
+        global_stats: GlobalStats;
+        token_stats: HashMap.HashMap<Text, TokenStats>;
+        user_achievements: HashMap.HashMap<Text, [UserAchievement]>;
+        user_stats: HashMap.HashMap<Text, UserStats>;
+        user_token_stats: HashMap.HashMap<Text, UserTokenStats>;
+        user_logins: HashMap.HashMap<Text, Nat>;  // Added for login count tracking
+    };
+
+    // Types for conditions
+    public type Condition = {
+        key: Text;
+        name: Text;
+        description: Text;
+        parameter_specs: [{
+            name: Text;
+            param_type: {#Principal; #Nat; #Text};
+            default_value: ?Text;
+        }];
+    };
+
+    //--------------------------------  
+    // Types for Allocation Statistics
+    //--------------------------------
+
+    public type TokenAllocationStats = {
+        total_allocated_e8s: Nat;  // Total amount allocated all-time
+        total_claimed_e8s: Nat;    // Total amount claimed all-time
+        total_fees_paid_e8s: Nat;  // Total ICP fees paid for allocations
+        total_cuts_paid_e8s: Nat;  // Total cuts taken from allocations
+        allocation_count: Nat;     // Number of allocations created
+        claim_count: Nat;          // Number of claims made
+    };
+
+    public type UserTokenAllocationStats = {
+        total_allocated_e8s: Nat;  // Total amount user has allocated
+        total_claimed_e8s: Nat;    // Total amount user has claimed
+        total_fees_paid_e8s: Nat;  // Total ICP fees paid by this user
+        total_cuts_paid_e8s: Nat;  // Total cuts taken from this user's allocations
+        allocation_count: Nat;     // Number of allocations user has created
+        claim_count: Nat;          // Number of claims user has made
+    };
+
+    //--------------------------------  
+    // Types for User Profiles
+    //--------------------------------
+
+    public type SocialLink = {
+        platform: Text;  // e.g., "twitter", "discord", "website", etc.
+        url: Text;
+    };
+
+    public type UserProfile = {
+        principal: Principal;
+        name: Text;
+        description: Text;
+        logo_url: ?Text;
+        social_links: [SocialLink];
+        created_at: Nat64;
+        updated_at: Nat64;
+        created_by: Principal;  // Admin who created the profile
+    };
+
+    public type CreateUserProfileArgs = {
+        principal: Principal;
+        name: Text;
+        description: Text;
+        logo_url: ?Text;
+        social_links: [SocialLink];
+    };
+
+    public type UpdateUserProfileArgs = {
+        name: ?Text;
+        description: ?Text;
+        logo_url: ?Text;
+        social_links: ?[SocialLink];
     };
 
 }

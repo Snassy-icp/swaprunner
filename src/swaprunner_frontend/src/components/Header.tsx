@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiPercent, FiRepeat, FiCreditCard, FiDroplet, FiList, FiBarChart2, FiUser } from 'react-icons/fi';
+import { FiPercent, FiRepeat, FiCreditCard, FiDroplet, FiList, FiBarChart2, FiUser, FiGift } from 'react-icons/fi';
 import { isFeatureEnabled } from '../config/featureFlags';
 import { SlippageSettings } from './SlippageSettings';
 import { useSlippage } from '../contexts/SlippageContext';
+import { useClaims } from '../contexts/ClaimContext';
+import '../styles/Header.css';
 
 export const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showSlippageSettings, setShowSlippageSettings] = useState(false);
   const { slippageTolerance, setSlippageTolerance } = useSlippage();
+  const { availableClaims } = useClaims();
 
   const isSwapTab = location.pathname === '/';
 
@@ -49,12 +52,26 @@ export const Header: React.FC = () => {
           {location.pathname === '/transactions' && <span>Transactions</span>}
         </button>
         <button 
-          className={`tab ${location.pathname === '/me' ? 'active' : ''}`}
+          className={`tab ${location.pathname === '/me' ? 'active' : ''} ${availableClaims.length > 0 ? 'has-rewards' : ''}`}
           onClick={() => navigate('/me')}
-          title="View your profile"
         >
-          <FiUser />
-          {location.pathname === '/me' && <span>Me</span>}
+          {availableClaims.length > 0 && (
+            <div className="rewards-tooltip">
+              Congratulations!<br />
+              You have unclaimed rewards
+            </div>
+          )}
+          {availableClaims.length > 0 ? (
+            <>
+              <FiGift className="FiGift" />
+              {location.pathname === '/me' && <span>Me</span>}
+            </>
+          ) : (
+            <>
+              <FiUser />
+              {location.pathname === '/me' && <span>Me</span>}
+            </>
+          )}
         </button>
         <button 
           className={`tab ${location.pathname === '/statistics' ? 'active' : ''}`}
