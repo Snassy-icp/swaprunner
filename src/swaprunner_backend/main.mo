@@ -3550,62 +3550,86 @@ shared (deployer) actor class SwapRunner() = this {
             return #err("Anonymous principal not allowed");
         };
 
-        switch(Allocation.process_claim(
-            caller,
-            allocation_id,
-            allocations,
-            allocation_statuses,
-            allocation_claims,
-            userAchievements,
-            getAllocationBalance,
-            getOrCreateUserIndex
-        )) {
-            case (#ok(claim_amount)) {
-                // Get allocation and token index
-                let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
-                    case null return #err("Allocation not found");
-                    case (?a) a;
+        // Create unique key for this claim attempt
+        let claim_key = Allocation.get_claim_key(caller, Nat.toText(allocation_id));
+        
+        // Check if already claiming
+        switch (currently_claiming.get(claim_key)) {
+            case (?true) return #err("Claim already in progress");
+            case _ {};
+        };
+
+        // Set claiming flag
+        currently_claiming.put(claim_key, true);
+
+        try {
+            switch(Allocation.process_claim(
+                caller,
+                allocation_id,
+                allocations,
+                allocation_statuses,
+                allocation_claims,
+                userAchievements,
+                getAllocationBalance,
+                getOrCreateUserIndex
+            )) {
+                case (#ok(claim_amount)) {
+                    // Get allocation and token index
+                    let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
+                        case null return #err("Allocation not found");
+                        case (?a) a;
+                    };
+
+                    let token_index = getOrCreateUserIndex(allocation.token.canister_id);
+
+                    // Verify allocation has enough balance
+                    if (getAllocationBalance(allocation_id, token_index) < claim_amount) {
+                        return #err("Insufficient allocation balance");
+                    };
+
+                    // Move tokens from allocation balance to user balance
+                    if (not subtractFromAllocationBalance(allocation_id, token_index, claim_amount)) {
+                        return #err("Failed to subtract from allocation balance");
+                    };
+                    addToUserBalance(caller, token_index, claim_amount);
+
+                    // Record the claim
+                    let claim : T.AllocationClaim = {
+                        allocation_id = Nat.toText(allocation_id);
+                        user = caller;
+                        amount_e8s = claim_amount;
+                        claimed_at = Time.now();
+                    };
+                    allocation_claims.put(Allocation.get_claim_key(caller, Nat.toText(allocation_id)), claim);
+
+                    // Record claim stats
+                    await Stats.record_allocation_claim(
+                        caller,
+                        Principal.toText(allocation.token.canister_id),
+                        claim_amount,
+                        getStatsContext()
+                    );
+
+                    // Check if allocation is now depleted
+                    if (getAllocationBalance(allocation_id, token_index) == 0) {
+                        allocation_statuses.put(Nat.toText(allocation_id), #Depleted);
+                    };
+
+                    // Clear claiming flag before returning
+                    currently_claiming.delete(claim_key);
+                    #ok(claim_amount)
                 };
-
-                let token_index = getOrCreateUserIndex(allocation.token.canister_id);
-
-                // Verify allocation has enough balance
-                if (getAllocationBalance(allocation_id, token_index) < claim_amount) {
-                    return #err("Insufficient allocation balance");
+                case (#err(msg)) {
+                    // Clear claiming flag on error
+                    currently_claiming.delete(claim_key);
+                    #err(msg)
                 };
-
-                // Move tokens from allocation balance to user balance
-                if (not subtractFromAllocationBalance(allocation_id, token_index, claim_amount)) {
-                    return #err("Failed to subtract from allocation balance");
-                };
-                addToUserBalance(caller, token_index, claim_amount);
-
-                // Record the claim
-                let claim : T.AllocationClaim = {
-                    allocation_id = Nat.toText(allocation_id);
-                    user = caller;
-                    amount_e8s = claim_amount;
-                    claimed_at = Time.now();
-                };
-                allocation_claims.put(Allocation.get_claim_key(caller, Nat.toText(allocation_id)), claim);
-
-                // Record claim stats
-                await Stats.record_allocation_claim(
-                    caller,
-                    Principal.toText(allocation.token.canister_id),
-                    claim_amount,
-                    getStatsContext()
-                );
-
-                // Check if allocation is now depleted
-                if (getAllocationBalance(allocation_id, token_index) == 0) {
-                    allocation_statuses.put(Nat.toText(allocation_id), #Depleted);
-                };
-
-                #ok(claim_amount)
             };
-            case (#err(msg)) #err(msg);
-        }
+        } catch (e) {
+            // Clear claiming flag on any error
+            currently_claiming.delete(claim_key);
+            #err("Unexpected error during claim: " # Error.message(e))
+        };
     };
 
     // Query allocation details
@@ -3844,5 +3868,8 @@ shared (deployer) actor class SwapRunner() = this {
             allocation_claims.delete(key);
         };
     };
+
+    // Add after other HashMap declarations
+    private var currently_claiming = HashMap.HashMap<Text, Bool>(100, Text.equal, Text.hash);
 
 }
