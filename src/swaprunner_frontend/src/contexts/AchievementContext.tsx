@@ -40,6 +40,7 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const [needsRefresh, setNeedsRefresh] = useState(false);
     const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const isScanning = useRef(false);
 
     // Clean up existing timer
     const cleanupTimer = useCallback(() => {
@@ -81,8 +82,15 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
             console.log('[Achievement Scanner] Scan requested but needsScan is false, skipping');
             return;
         }
+
+        if (isScanning.current) {
+            console.log('[Achievement Scanner] Scan already in progress, skipping');
+            return;
+        }
         
         console.log('[Achievement Scanner] Starting achievement scan');
+        isScanning.current = true;
+        
         try {
             const actor = await backendService.getActor();
             const result = await actor.scan_for_new_achievements();
@@ -98,7 +106,12 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
                     }
                 }
                 console.log('[Achievement Scanner] Setting new achievements for notification:', newAchievementsWithDetails);
-                setNewAchievements(prev => [...prev, ...newAchievementsWithDetails]);
+                setNewAchievements(prev => {
+                    console.log('[Achievement Scanner] Previous achievements:', prev);
+                    const updated = [...prev, ...newAchievementsWithDetails];
+                    console.log('[Achievement Scanner] Updated achievements:', updated);
+                    return updated;
+                });
                 
                 // Set flag to refresh after notifications are dismissed
                 setNeedsRefresh(true);
@@ -110,8 +123,9 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
         } finally {
             console.log('[Achievement Scanner] Scan complete, resetting needsScan flag');
             setNeedsScan(false);
+            isScanning.current = false;
         }
-    }, []); // Remove needsScan from dependencies
+    }, [needsScan]); // Add back needsScan dependency since we're using isScanning ref to prevent loops
 
     useEffect(() => {
         // Clean up any existing timer first
@@ -135,7 +149,7 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
             console.log('[Achievement Scanner] Component cleanup: removing scan timer');
             cleanupTimer();
         };
-    }, [cleanupTimer, performScan]); // Remove needsScan from dependencies
+    }, [cleanupTimer, performScan]);
 
     // Perform immediate scan when needsScan is set to true
     useEffect(() => {
@@ -149,6 +163,7 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
         console.log(`[Achievement Scanner] Dismissing achievement notification: ${id}`);
         setNewAchievements(prev => {
             const updated = prev.filter(a => a.id !== id);
+            console.log('[Achievement Scanner] After dismissal, remaining achievements:', updated);
             // If this was the last notification and we need to refresh, do it
             if (updated.length === 0 && needsRefresh) {
                 console.log('[Achievement Scanner] Last notification dismissed, triggering refresh');
