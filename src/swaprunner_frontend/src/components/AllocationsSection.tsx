@@ -20,6 +20,7 @@ interface Achievement {
     name: string;
     description: string;
     logo_url?: string;
+    criteria?: string;
 }
 
 interface TokenMetadata {
@@ -64,6 +65,7 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
     const [addCutOnTop, setAddCutOnTop] = useState(false);
     const [hasEnoughICP, setHasEnoughICP] = useState(false);
     const [hasEnoughTokens, setHasEnoughTokens] = useState(false);
+    const [selectedAchievementDetails, setSelectedAchievementDetails] = useState<Achievement | null>(null);
 
     useEffect(() => {
         loadAchievements();
@@ -77,6 +79,28 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
             loadTokenBalance(selectedToken);
         }
     }, [selectedToken]);
+
+    // Add effect to load achievement details when one is selected
+    useEffect(() => {
+        const loadAchievementDetails = async () => {
+            if (!selectedAchievement) {
+                setSelectedAchievementDetails(null);
+                return;
+            }
+
+            try {
+                const actor = await backendService.getActor();
+                const result = await actor.get_achievement_details(selectedAchievement);
+                if ('ok' in result) {
+                    setSelectedAchievementDetails(result.ok);
+                }
+            } catch (err) {
+                console.error('Error loading achievement details:', err);
+            }
+        };
+
+        loadAchievementDetails();
+    }, [selectedAchievement]);
 
     const loadICPBalance = async () => {
         try {
@@ -333,13 +357,6 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
 
     return (
         <form onSubmit={handleSubmit} className="allocation-form">
-            <div className="form-header">
-                <h3>Create New Allocation</h3>
-                <button type="button" className="close-button" onClick={onCancel}>
-                    <FiX />
-                </button>
-            </div>
-
             {error && <div className="error-message">{error}</div>}
             {balanceError && <div className="error-message">{balanceError}</div>}
 
@@ -357,6 +374,26 @@ const AllocationForm: React.FC<AllocationFormProps> = ({ onSubmit, onCancel }) =
                         </option>
                     ))}
                 </select>
+                {selectedAchievementDetails && (
+                    <div className="achievement-preview">
+                        <div className="achievement-preview-content">
+                            {selectedAchievementDetails.logo_url && (
+                                <img 
+                                    src={selectedAchievementDetails.logo_url} 
+                                    alt={selectedAchievementDetails.name}
+                                    className="achievement-preview-logo"
+                                />
+                            )}
+                            <div className="achievement-preview-info">
+                                <h4>{selectedAchievementDetails.name}</h4>
+                                <p className="achievement-preview-description">{selectedAchievementDetails.description}</p>
+                                <div className="achievement-preview-criteria">
+                                    <strong>Criteria:</strong> {selectedAchievementDetails.criteria}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="form-group">
@@ -1202,7 +1239,7 @@ export const AllocationsSection: React.FC = () => {
             throw err;
         }
     };
-
+/*
     const handleCancel = async (allocationId: string) => {
         setAllocationToCancel(allocationId);
         setShowCancelConfirmation(true);
@@ -1225,7 +1262,7 @@ export const AllocationsSection: React.FC = () => {
             setAllocationToCancel(null);
         }
     };
-
+*/
     const allocationsContent = (
         <div className="allocations-content">
             <div className="allocations-actions">
@@ -1299,10 +1336,6 @@ export const AllocationsSection: React.FC = () => {
                 <div className="error">{error}</div>
             </div>
         );
-    }
-
-    if (!isAdminUser) {
-        return null;
     }
 
     return (

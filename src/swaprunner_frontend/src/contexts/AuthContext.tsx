@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/auth';
+import { userProfileService } from '../services/userProfile';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -7,6 +8,7 @@ interface AuthContextType {
   login: () => Promise<boolean>;
   logout: () => Promise<void>;
   isAdmin: boolean;
+  isVerified: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,6 +25,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [principal, setPrincipal] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
 
   const checkAdminStatus = async () => {
     if (isAuthenticated) {
@@ -30,6 +33,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAdmin(adminStatus);
     } else {
       setIsAdmin(false);
+    }
+  };
+
+  const checkVerificationStatus = async () => {
+    const currentPrincipal = authService.getPrincipal();
+    const authenticated = authService.isAuthenticated();
+    if (authenticated && currentPrincipal) {
+      const verificationStatus = await userProfileService.isVerified(currentPrincipal);
+      setIsVerified(verificationStatus);
+    } else {
+      setIsVerified(false);
     }
   };
 
@@ -42,6 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const p = authService.getPrincipal();
         setPrincipal(p ? p.toString() : null);
         await checkAdminStatus();
+        await checkVerificationStatus();
       }
     };
     checkAuth();
@@ -54,9 +69,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const p = authService.getPrincipal();
         setPrincipal(p ? p.toString() : null);
         checkAdminStatus();
+        checkVerificationStatus();
       } else {
         setPrincipal(null);
         setIsAdmin(false);
+        setIsVerified(false);
       }
     });
 
@@ -72,6 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const p = authService.getPrincipal();
         setPrincipal(p ? p.toString() : null);
         await checkAdminStatus();
+        await checkVerificationStatus();
       }
       return success;
     } catch (error) {
@@ -85,10 +103,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthenticated(false);
     setPrincipal(null);
     setIsAdmin(false);
+    setIsVerified(false);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, principal, login, logout, isAdmin }}>
+    <AuthContext.Provider value={{ isAuthenticated, principal, login, logout, isAdmin, isVerified }}>
       {children}
     </AuthContext.Provider>
   );

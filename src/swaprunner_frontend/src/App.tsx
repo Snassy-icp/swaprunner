@@ -49,7 +49,7 @@ const FixedHeader: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLDivElement>(null);
-  const { isAuthenticated, principal, login, logout } = useAuth();
+  const { isAuthenticated, principal, login, logout, isAdmin } = useAuth();
 
   useEffect(() => {
     // Close menus when clicking outside
@@ -181,6 +181,20 @@ const FixedHeader: React.FC = () => {
               <FiBarChart2 />
               Statistics
             </a>
+            {isAdmin && (
+              <a 
+                href="/admin/users"
+                className={`hamburger-item ${location.pathname === '/admin/users' ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate('/admin/users');
+                  setShowHamburgerMenu(false);
+                }}
+              >
+                <FiUser />
+                Manage Users
+              </a>
+            )}
             <a 
               href="/help"
               className={`hamburger-item ${location.pathname === '/help' ? 'active' : ''}`}
