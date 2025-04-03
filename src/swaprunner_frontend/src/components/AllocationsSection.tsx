@@ -13,6 +13,7 @@ import { tokenService } from '../services/token';
 import { backendService } from '../services/backend';
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmationModal } from './ConfirmationModal';
+import { adminService } from '../services/admin';
 
 interface Achievement {
     id: string;
@@ -1145,13 +1146,34 @@ Warning: Once activated, the payment fee will be drawn and funds will be transfe
 };
 
 export const AllocationsSection: React.FC = () => {
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [allocations, setAllocations] = useState<AllocationWithStatus[]>([]);
     const [showForm, setShowForm] = useState(false);
-    const navigate = useNavigate();
     const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
     const [allocationToCancel, setAllocationToCancel] = useState<string | null>(null);
+    const [isAdminUser, setIsAdminUser] = useState(false);
+
+    useEffect(() => {
+        const init = async () => {
+            try {
+                setLoading(true);
+                const adminStatus = await adminService.isAdmin();
+                setIsAdminUser(adminStatus);
+                if (adminStatus) {
+                    await loadAllocations();
+                }
+            } catch (error) {
+                console.error('Error checking admin status:', error);
+                setError('Failed to check admin status');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        init();
+    }, []);
 
     const loadAllocations = async () => {
         setLoading(true);
@@ -1167,12 +1189,8 @@ export const AllocationsSection: React.FC = () => {
         }
     };
 
-    useEffect(() => {
-        loadAllocations();
-    }, []);
-
     const formatDate = (timestamp: number) => {
-        return new Date(Number(timestamp) / 1_000_000).toLocaleString();
+        return new Date(Number(timestamp) / 1000000).toLocaleString();
     };
 
     const handleCreateAllocation = async (data: CreateAllocationArgs) => {
@@ -1266,6 +1284,26 @@ export const AllocationsSection: React.FC = () => {
             )}
         </div>
     );
+
+    if (loading) {
+        return (
+            <div className="allocations-section">
+                <div className="loading">Loading...</div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="allocations-section">
+                <div className="error">{error}</div>
+            </div>
+        );
+    }
+
+    if (!isAdminUser) {
+        return null;
+    }
 
     return (
         <CollapsibleSection 
