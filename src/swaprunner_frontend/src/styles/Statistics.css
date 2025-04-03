@@ -178,7 +178,7 @@
 
 .refresh-button {
   display: block;
-  margin: 24px auto;
+  margin: 0px auto;
   padding: 8px 16px;
   background: var(--accent-blue);
   border: none;
