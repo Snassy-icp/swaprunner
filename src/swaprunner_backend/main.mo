@@ -3576,7 +3576,10 @@ shared (deployer) actor class SwapRunner() = this {
                 case (#ok(claim_amount)) {
                     // Get allocation and token index
                     let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
-                        case null return #err("Allocation not found");
+                        case null { 
+                            currently_claiming.delete(claim_key);
+                            return #err("Allocation not found"); 
+                        };
                         case (?a) a;
                     };
 
@@ -3584,11 +3587,13 @@ shared (deployer) actor class SwapRunner() = this {
 
                     // Verify allocation has enough balance
                     if (getAllocationBalance(allocation_id, token_index) < claim_amount) {
+                        currently_claiming.delete(claim_key);
                         return #err("Insufficient allocation balance");
                     };
 
                     // Move tokens from allocation balance to user balance
                     if (not subtractFromAllocationBalance(allocation_id, token_index, claim_amount)) {
+                        currently_claiming.delete(claim_key);
                         return #err("Failed to subtract from allocation balance");
                     };
                     addToUserBalance(caller, token_index, claim_amount);
