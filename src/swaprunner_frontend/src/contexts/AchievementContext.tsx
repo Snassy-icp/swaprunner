@@ -37,7 +37,6 @@ export const useAchievements = () => {
 export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [needsScan, setNeedsScan] = useState(false);
     const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
-    const [needsRefresh, setNeedsRefresh] = useState(false);
     const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const isScanning = useRef(false);
@@ -64,7 +63,6 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
             const result = await actor.get_user_achievements();
             console.log('[Achievement Scanner] Got updated achievements:', result);
             setUserAchievements(result);
-            setNeedsRefresh(false);
             console.log('[Achievement Scanner] Achievements list refreshed and stored');
         } catch (error) {
             console.error('[Achievement Scanner] Error refreshing achievements:', error);
@@ -99,12 +97,18 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
                 console.log(`[Achievement Scanner] Found ${result.new_achievements.length} new achievements, fetching details`);
                 // Fetch details for each new achievement
                 const newAchievementsWithDetails: Achievement[] = [];
+                
+                // Update the achievements list first
+                setUserAchievements(prev => [...prev, ...result.new_achievements]);
+                
+                // Then get details for notifications
                 for (const achievement of result.new_achievements) {
                     const details = await actor.get_achievement_details(achievement.achievement_id);
                     if ('ok' in details) {
                         newAchievementsWithDetails.push(details.ok);
                     }
                 }
+                
                 console.log('[Achievement Scanner] Setting new achievements for notification:', newAchievementsWithDetails);
                 setNewAchievements(prev => {
                     console.log('[Achievement Scanner] Previous achievements:', prev);
@@ -112,9 +116,6 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
                     console.log('[Achievement Scanner] Updated achievements:', updated);
                     return updated;
                 });
-                
-                // Set flag to refresh after notifications are dismissed
-                setNeedsRefresh(true);
             } else {
                 console.log('[Achievement Scanner] No new achievements found');
             }
@@ -125,7 +126,7 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
             setNeedsScan(false);
             isScanning.current = false;
         }
-    }, [needsScan]); // Add back needsScan dependency since we're using isScanning ref to prevent loops
+    }, [needsScan]); // Keep needsScan dependency since we're using isScanning ref to prevent loops
 
     useEffect(() => {
         // Clean up any existing timer first
@@ -164,11 +165,6 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setNewAchievements(prev => {
             const updated = prev.filter(a => a.id !== id);
             console.log('[Achievement Scanner] After dismissal, remaining achievements:', updated);
-            // If this was the last notification and we need to refresh, do it
-            if (updated.length === 0 && needsRefresh) {
-                console.log('[Achievement Scanner] Last notification dismissed, triggering refresh');
-                refreshAchievements();
-            }
             return updated;
         });
     };
