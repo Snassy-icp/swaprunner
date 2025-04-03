@@ -7,6 +7,8 @@ import Time "mo:base/Time";
 import Debug "mo:base/Debug";
 import Error "mo:base/Error";
 import Array "mo:base/Array";
+import Int "mo:base/Int";
+import Nat64 "mo:base/Nat64";
 
 import T "./Types";
 
@@ -24,28 +26,12 @@ module {
         #InvalidInput: Text;
     };
 
-    public class UserProfileManager(adminPrincipals: [Principal]) {
+    public class UserProfileManager() {
         private let profiles = TrieMap.TrieMap<Principal, UserProfile>(Principal.equal, Principal.hash);
-        private let admins = TrieMap.TrieMap<Principal, Bool>(Principal.equal, Principal.hash);
-
-        // Initialize admin principals
-        do {
-            for (admin in adminPrincipals.vals()) {
-                admins.put(admin, true);
-            };
-        };
-
-        // Helper function to check if a principal is an admin
-        private func isAdmin(caller: Principal): Bool {
-            switch (admins.get(caller)) {
-                case (?isAdmin) { isAdmin };
-                case null { false };
-            };
-        };
 
         // Create a new user profile (admin only)
-        public func createProfile(caller: Principal, args: CreateUserProfileArgs): async Result.Result<UserProfile, ProfileError> {
-            if (not isAdmin(caller)) {
+        public func createProfile(is_admin: Bool, caller: Principal, args: CreateUserProfileArgs): async Result.Result<UserProfile, ProfileError> {
+            if (not is_admin) {
                 return #err(#NotAuthorized);
             };
 
@@ -71,8 +57,8 @@ module {
                 description = args.description;
                 logo_url = args.logo_url;
                 social_links = args.social_links;
-                created_at = Int.abs(now);
-                updated_at = Int.abs(now);
+                created_at = Nat64.fromNat(Int.abs(now));
+                updated_at = Nat64.fromNat(Int.abs(now));
                 created_by = caller;
             };
 
@@ -80,9 +66,9 @@ module {
             #ok(profile)
         };
 
-        // Update an existing profile (admin only)
-        public func updateProfile(caller: Principal, userPrincipal: Principal, args: UpdateUserProfileArgs): async Result.Result<UserProfile, ProfileError> {
-            if (not isAdmin(caller)) {
+        // Update an existing profile (admin and profile owner only)
+        public func updateProfile(is_admin: Bool, caller: Principal, userPrincipal: Principal, args: UpdateUserProfileArgs): async Result.Result<UserProfile, ProfileError> {
+            if (not (is_admin or Principal.equal(caller, userPrincipal))) {
                 return #err(#NotAuthorized);
             };
 
@@ -118,7 +104,7 @@ module {
                             case null { existing.social_links };
                         };
                         created_at = existing.created_at;
-                        updated_at = Int.abs(Time.now());
+                        updated_at = Nat64.fromNat(Int.abs(Time.now()));
                         created_by = existing.created_by;
                     };
                     profiles.put(userPrincipal, updated);
@@ -128,7 +114,7 @@ module {
         };
 
         // Get a single profile
-        public func getProfile(userPrincipal: Principal): async Result.Result<UserProfile, ProfileError> {
+        public func getProfile(userPrincipal: Principal): Result.Result<UserProfile, ProfileError> {
             switch (profiles.get(userPrincipal)) {
                 case (?profile) { #ok(profile) };
                 case null { #err(#NotFound) };
@@ -136,29 +122,26 @@ module {
         };
 
         // List all profiles with optional pagination
-        public func listProfiles(offset: Nat, limit: Nat): async [UserProfile] {
+        public func listProfiles(offset: Nat, limit: Nat): [UserProfile] {
             let buffer = Buffer.Buffer<UserProfile>(0);
             var count = 0;
             var skipped = 0;
 
             for ((_, profile) in profiles.entries()) {
-                if (skipped < offset) {
+                if (skipped >= offset and count < limit) {
+                    buffer.add(profile);
+                    count += 1;
+                } else if (skipped < offset) {
                     skipped += 1;
-                    continue;
                 };
-                if (count >= limit) {
-                    break;
-                };
-                buffer.add(profile);
-                count += 1;
             };
 
             Buffer.toArray(buffer)
         };
 
         // Delete a profile (admin only)
-        public func deleteProfile(caller: Principal, userPrincipal: Principal): async Result.Result<(), ProfileError> {
-            if (not isAdmin(caller)) {
+        public func deleteProfile(is_admin: Bool, caller: Principal, userPrincipal: Principal): async Result.Result<(), ProfileError> {
+            if (not is_admin) {
                 return #err(#NotAuthorized);
             };
 
@@ -172,17 +155,17 @@ module {
         };
 
         // Get total number of profiles
-        public func getProfileCount(): async Nat {
+        public func getProfileCount(): Nat {
             profiles.size()
         };
 
         // Search profiles by name (case-insensitive partial match)
-        public func searchProfiles(query: Text): async [UserProfile] {
+        public func searchProfiles(profile_query: Text): [UserProfile] {
             let buffer = Buffer.Buffer<UserProfile>(0);
-            let queryLower = Text.toLower(query);
+            let queryLower = Text.toLowercase(profile_query);
 
             for ((_, profile) in profiles.entries()) {
-                let nameLower = Text.toLower(profile.name);
+                let nameLower = Text.toLowercase(profile.name);
                 if (Text.contains(nameLower, #text queryLower)) {
                     buffer.add(profile);
                 };
