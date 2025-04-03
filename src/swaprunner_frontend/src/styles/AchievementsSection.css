@@ -86,6 +86,8 @@
     border-radius: 8px;
     overflow: hidden;
     transition: all 0.2s ease;
+    position: relative;
+    z-index: 1;
 }
 
 .achievement-header {
@@ -108,12 +110,22 @@
     align-items: center;
     justify-content: center;
     margin-right: 16px;
+    position: relative;
 }
 
 .achievement-logo {
     width: 40px;
     height: 40px;
     object-fit: contain;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.achievement-logo:hover {
+    transform: scale(3.2) translateY(20px);
+    z-index: 100;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
 }
 
 .achievement-icon {
@@ -436,4 +448,8 @@
 @keyframes spin-claim {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+}
+
+.achievement-card:hover {
+    z-index: 2;
 } 

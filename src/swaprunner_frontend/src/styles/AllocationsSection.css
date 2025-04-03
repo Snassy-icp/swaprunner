@@ -1789,16 +1789,18 @@
 
 .achievement-preview {
     margin-top: 12px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #363B47;
     border-radius: 8px;
     padding: 12px;
-    background-color: #f8f9fa;
+    background-color: #1A1D26;
+    position: relative;
 }
 
 .achievement-preview-content {
     display: flex;
     gap: 16px;
     align-items: flex-start;
+    position: relative;
 }
 
 .achievement-preview-logo {
@@ -1806,28 +1808,38 @@
     height: 64px;
     border-radius: 8px;
     object-fit: cover;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.achievement-preview-logo:hover {
+    transform: scale(2) translateY(32px);
+    z-index: 100;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
 }
 
 .achievement-preview-info {
     flex: 1;
+    color: #fff;
 }
 
 .achievement-preview-info h4 {
     margin: 0 0 8px 0;
-    color: #333;
+    color: #fff;
 }
 
 .achievement-preview-description {
     margin: 0 0 8px 0;
-    color: #666;
+    color: #8F96A1;
     font-size: 14px;
 }
 
 .achievement-preview-criteria {
     font-size: 14px;
-    color: #444;
+    color: #8F96A1;
 }
 
 .achievement-preview-criteria strong {
-    color: #333;
+    color: #fff;
 } 
