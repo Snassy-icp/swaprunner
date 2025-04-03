@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { backendService } from '../services/backend';
+import { useClaims } from './ClaimContext';
 
 interface Achievement {
     id: string;
@@ -41,6 +42,7 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const isScanning = useRef(false);
     const needsScanRef = useRef(needsScan);
+    const { loadClaims } = useClaims();
 
     // Update ref when needsScan changes
     useEffect(() => {
@@ -124,6 +126,10 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
                         console.log('[Achievement Scanner] Updated achievements:', updated);
                         return updated;
                     });
+
+                    // Refresh claims to update the UI
+                    console.log('[Achievement Scanner] Refreshing claims after finding new achievements');
+                    await loadClaims();
                 } else {
                     console.log('[Achievement Scanner] No new achievements found');
                 }
@@ -197,6 +203,10 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
                     if (newAchievementsWithDetails.length > 0) {
                         setNewAchievements(prev => [...prev, ...newAchievementsWithDetails]);
                     }
+
+                    // Refresh claims to update the UI
+                    console.log('[Achievement Scanner] Refreshing claims after finding new achievements');
+                    await loadClaims();
                 } else {
                     console.log('[Achievement Scanner] No new achievements found');
                 }
@@ -213,7 +223,7 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
         if (needsScan) {
             performImmediateScan();
         }
-    }, [needsScan]);
+    }, [needsScan, loadClaims]);
 
     const dismissAchievement = (id: string) => {
         console.log(`[Achievement Scanner] Dismissing achievement notification: ${id}`);
