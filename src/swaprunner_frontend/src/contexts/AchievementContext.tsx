@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { backendService } from '../services/backend';
 
 interface Achievement {
@@ -21,6 +21,7 @@ interface AchievementContextType {
     newAchievements: Achievement[];
     dismissAchievement: (id: string) => void;
     refreshAchievements: () => Promise<void>;
+    userAchievements: UserAchievement[];
 }
 
 const AchievementContext = createContext<AchievementContextType | null>(null);
@@ -36,17 +37,18 @@ export const useAchievements = () => {
 export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [needsScan, setNeedsScan] = useState(false);
     const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
-    const [scanTimer, setScanTimer] = useState<NodeJS.Timeout | null>(null);
     const [needsRefresh, setNeedsRefresh] = useState(false);
+    const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Clean up existing timer before setting up a new one
+    // Clean up existing timer
     const cleanupTimer = useCallback(() => {
-        if (scanTimer) {
+        if (timerRef.current) {
             console.log('[Achievement Scanner] Cleaning up existing scan timer');
-            clearInterval(scanTimer);
-            setScanTimer(null);
+            clearInterval(timerRef.current);
+            timerRef.current = null;
         }
-    }, [scanTimer]);
+    }, []);
 
     // Wrap setNeedsScan to add logging
     const setNeedsScanWithLogging = (needs: boolean) => {
@@ -59,12 +61,20 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
             console.log('[Achievement Scanner] Refreshing achievements list');
             const actor = await backendService.getActor();
             const result = await actor.get_user_achievements();
+            console.log('[Achievement Scanner] Got updated achievements:', result);
+            setUserAchievements(result);
             setNeedsRefresh(false);
-            console.log('[Achievement Scanner] Achievements list refreshed');
+            console.log('[Achievement Scanner] Achievements list refreshed and stored');
         } catch (error) {
             console.error('[Achievement Scanner] Error refreshing achievements:', error);
         }
     }, []);
+
+    // Load achievements on mount
+    useEffect(() => {
+        console.log('[Achievement Scanner] Initial achievements load');
+        refreshAchievements();
+    }, [refreshAchievements]);
 
     const performScan = useCallback(async () => {
         if (!needsScan) {
@@ -101,7 +111,7 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
             console.log('[Achievement Scanner] Scan complete, resetting needsScan flag');
             setNeedsScan(false);
         }
-    }, [needsScan]);
+    }, []); // Remove needsScan from dependencies
 
     useEffect(() => {
         // Clean up any existing timer first
@@ -118,14 +128,14 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
             }
         }, 60000); // Check every minute
         
-        setScanTimer(timer);
+        timerRef.current = timer;
         
         // Clean up on unmount or when dependencies change
         return () => {
             console.log('[Achievement Scanner] Component cleanup: removing scan timer');
             cleanupTimer();
         };
-    }, [needsScan, performScan, cleanupTimer]);
+    }, [cleanupTimer, performScan]); // Remove needsScan from dependencies
 
     // Perform immediate scan when needsScan is set to true
     useEffect(() => {
@@ -154,7 +164,8 @@ export const AchievementProvider: React.FC<{ children: React.ReactNode }> = ({ c
             setNeedsScan: setNeedsScanWithLogging,
             newAchievements,
             dismissAchievement,
-            refreshAchievements
+            refreshAchievements,
+            userAchievements
         }}>
             {children}
         </AchievementContext.Provider>
