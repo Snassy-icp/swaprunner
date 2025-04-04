@@ -241,7 +241,13 @@ shared (deployer) actor class SwapRunner() = this {
     private func isWhitelisted(tokenId: Principal) : Bool {
         switch(tokenMetadata.get(tokenId)) {
             case (?_) true;
-            case null false;
+            case null {
+                // If not found in main tokenMetadata, check ICPSwap metadata
+                switch(tokenMetadataICPSwap.get(tokenId)) {
+                    case (?_) true;
+                    case null false;
+                }
+            };
         }
     };
 
