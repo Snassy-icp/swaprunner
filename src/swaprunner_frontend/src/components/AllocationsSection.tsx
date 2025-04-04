@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiPlus, FiX, FiAlertCircle, FiCheck } from 'react-icons/fi';
+import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiPlus, FiX, FiAlertCircle, FiCheck, FiArrowUp } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { allocationService, Allocation, AllocationStatus, AllocationWithStatus, AllocationFeeConfig, CreateAllocationArgs, PaymentStatus } from '../services/allocation';
 import { CollapsibleSection } from '../pages/Me';
@@ -15,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ConfirmationModal } from './ConfirmationModal';
 import { adminService } from '../services/admin';
 import { StatsService } from '../services/stats';
+import { TopUpAllocationModal } from './TopUpAllocationModal';
 
 interface Achievement {
     id: string;
@@ -666,7 +667,52 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
         };
     }[]>([]);
     const [showClaims, setShowClaims] = useState(false);
+    const [showTopUpModal, setShowTopUpModal] = useState(false);
     const statsService = new StatsService();
+
+    useEffect(() => {
+        if (expanded) {
+            loadAllocationData();
+        }
+    }, [expanded]);
+
+    const loadAllocationData = async () => {
+        try {
+            setLoading(true);
+            const [achievementDetails, paymentStatusData, fundingBalanceData, allocationBalanceData, feeConfigData, claims] = await Promise.all([
+                backendService.getActor().then(actor => actor.get_achievement_details(allocationWithStatus.allocation.achievement_id)),
+                allocationService.getPaymentStatus(allocationWithStatus.allocation.id),
+                allocationService.getFundingBalance(allocationWithStatus.allocation.id),
+                allocationService.getAllocationBalance(allocationWithStatus.allocation.id),
+                allocationService.getFeeConfig(),
+                allocationService.getAllocationClaims(allocationWithStatus.allocation.id)
+            ]);
+
+            if ('ok' in achievementDetails) {
+                setAchievement(achievementDetails.ok);
+            }
+            setPaymentStatus(paymentStatusData);
+            setFundingBalance(fundingBalanceData);
+            setAllocationBalance(allocationBalanceData);
+            setFeeConfig(feeConfigData);
+            setClaimCount(claims.length);
+        } catch (err) {
+            console.error('Error loading allocation data:', err);
+            setError('Failed to load allocation data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadAllocationBalance = async () => {
+        try {
+            const balance = await allocationService.getAllocationBalance(allocationWithStatus.allocation.id);
+            setAllocationBalance(balance);
+        } catch (err) {
+            console.error('Error loading allocation balance:', err);
+            setError('Failed to load allocation balance');
+        }
+    };
 
     // Get token metadata
     const tokenMetadata = tokens.find(t => t.canisterId === allocationWithStatus.allocation.token.canister_id.toString())?.metadata;
@@ -774,6 +820,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                     setAllocationBalance(balance);
                 } catch (err) {
                     console.error('Error loading allocation balance:', err);
+                    setError('Failed to load allocation balance');
                 }
             }
         };
@@ -1218,6 +1265,17 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                             {formatTokenAmount(allocationBalance, allocationWithStatus.allocation.token.canister_id.toString())} {tokenMetadata?.symbol || 'tokens'}
                                         </span>
                                     </div>
+                                    {(allocationWithStatus.status === 'Active' || allocationWithStatus.status === 'Depleted') && (
+                                        <div className="detail-actions">
+                                            <button
+                                                className="action-button primary"
+                                                onClick={() => setShowTopUpModal(true)}
+                                                disabled={loading}
+                                            >
+                                                <FiArrowUp /> Top Up Allocation
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -1284,6 +1342,18 @@ ${calculatePotentialUsers() ? `User Capacity: ${calculatePotentialUsers()?.min =
 Warning: Once activated, the payment fee will be drawn and funds will be transferred.`}
                 confirmText="Activate"
                 isDanger={false}
+            />
+            <TopUpAllocationModal
+                show={showTopUpModal}
+                onClose={() => setShowTopUpModal(false)}
+                allocationId={allocationWithStatus.allocation.id}
+                tokenId={allocationWithStatus.allocation.token.canister_id.toString()}
+                onSuccess={() => {
+                    loadAllocationBalance();
+                    if (onStatusChange) {
+                        onStatusChange();
+                    }
+                }}
             />
         </div>
     );

@@ -170,7 +170,7 @@ class AllocationService {
      * Derive the subaccount for an allocation's payment
      * Uses the principal's bytes as the base subaccount, then modifies the last 3 bytes with the allocation ID
      */
-    private deriveBackendSubaccount(principal: Principal, allocationId: string): Uint8Array {
+    public deriveBackendSubaccount(principal: Principal, allocationId: string): Uint8Array {
         // Convert principal to bytes for the subaccount
 
         let principalBytes = principalToSubAccount(principal);
@@ -441,6 +441,18 @@ class AllocationService {
     }[]> {
         const actor = await backendService.getActor();
         return actor.get_allocation_claims(allocationId);
+    }
+
+    /**
+     * Top up an allocation with additional funds
+     */
+    async topUpAllocation(allocationId: string, amount_e8s: bigint): Promise<void> {
+        const actor = await backendService.getActor();
+        const result = await actor.top_up_allocation(BigInt(allocationId), amount_e8s);
+        
+        if ('err' in result) {
+            throw new Error(result.err);
+        }
     }
 }
 
