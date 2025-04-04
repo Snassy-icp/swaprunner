@@ -656,6 +656,16 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     const [showActivateConfirmation, setShowActivateConfirmation] = useState(false);
     const [feeConfig, setFeeConfig] = useState<AllocationFeeConfig | null>(null);
     const [claimCount, setClaimCount] = useState<number>(0);
+    const [claims, setClaims] = useState<{
+        allocation: Allocation;
+        claim: {
+            allocation_id: string;
+            user: string;
+            amount_e8s: bigint;
+            claimed_at: bigint;
+        };
+    }[]>([]);
+    const [showClaims, setShowClaims] = useState(false);
     const statsService = new StatsService();
 
     // Get token metadata
@@ -794,6 +804,24 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
         };
         loadClaimCount();
     }, [expanded, allocationWithStatus.allocation.token.canister_id]);
+
+    useEffect(() => {
+        const loadClaims = async () => {
+            if (expanded && showClaims) {
+                try {
+                    const allClaims = await allocationService.getUserClaims();
+                    // Filter claims for this allocation
+                    const allocationClaims = allClaims.filter(
+                        claim => claim.allocation.id === allocationWithStatus.allocation.id
+                    );
+                    setClaims(allocationClaims);
+                } catch (error) {
+                    console.error('Error loading claims:', error);
+                }
+            }
+        };
+        loadClaims();
+    }, [expanded, showClaims, allocationWithStatus.allocation.id]);
 
     const handlePay = async () => {
         if (!paymentStatus || paymentStatus.is_paid) return;
@@ -1190,6 +1218,35 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                             </div>
                         )}
 
+                        <div className="claims-section">
+                            <div className="claims-header" onClick={() => setShowClaims(!showClaims)}>
+                                <h4>Claims History</h4>
+                                <button className="expand-button">
+                                    {showClaims ? <FiChevronUp /> : <FiChevronDown />}
+                                </button>
+                            </div>
+                            {showClaims && (
+                                <div className="claims-list">
+                                    {claims.length > 0 ? (
+                                        claims.map((claim, index) => (
+                                            <div key={index} className="claim-item">
+                                                <div className="claim-info">
+                                                    <span className="claim-user">{claim.claim.user}</span>
+                                                    <span className="claim-amount">
+                                                        {formatTokenAmount(claim.claim.amount_e8s, allocationWithStatus.allocation.token.canister_id.toString())}
+                                                        {tokenMetadata?.symbol || 'tokens'}
+                                                    </span>
+                                                    <span className="claim-date">{formatDate(Number(claim.claim.claimed_at))}</span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="no-claims">No claims yet</div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
                         {error && <div className="error-message">{error}</div>}
                     </div>
                 </div>
@@ -1285,30 +1342,7 @@ export const AllocationsSection: React.FC = () => {
             throw err;
         }
     };
-/*
-    const handleCancel = async (allocationId: string) => {
-        setAllocationToCancel(allocationId);
-        setShowCancelConfirmation(true);
-    };
 
-    const confirmCancel = async () => {
-        if (!allocationToCancel) return;
-
-        setLoading(true);
-        try {
-            await allocationService.cancelAllocation(allocationToCancel);
-            // Refresh allocations after cancellation
-            await loadAllocations();
-        } catch (error) {
-            console.error('Error cancelling allocation:', error);
-            setError('Failed to cancel allocation');
-        } finally {
-            setLoading(false);
-            setShowCancelConfirmation(false);
-            setAllocationToCancel(null);
-        }
-    };
-*/
     const allocationsContent = (
         <div className="allocations-content">
             <div className="allocations-actions">
