@@ -1235,7 +1235,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                         claims.map((claim, index) => (
                                             <div key={index} className="claim-item">
                                                 <div className="claim-info">
-                                                    <span className="claim-user">{claim.claim.user}</span>
+                                                    <span className="claim-user">{claim.claim.user.toString()}</span>
                                                     <span className="claim-amount">
                                                         {formatTokenAmount(claim.claim.amount_e8s, allocationWithStatus.allocation.token.canister_id.toString())}
                                                         {tokenMetadata?.symbol || 'tokens'}
