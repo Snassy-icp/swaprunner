@@ -440,11 +440,13 @@ export class StatsService {
   }
 
   async getMyTokenSavingsStats(): Promise<[string, TokenSavingsStats][]> {
-    console.log('Getting user token savings stats...');
-    const actor = await backendService.getActor();
-    const stats = await actor.get_my_token_savings_stats();
-    console.log('User token savings stats:', stats);
-    return stats;
+    try {
+      const actor = await backendService.getActor();
+      return actor.get_my_token_savings_stats();
+    } catch (error) {
+      console.error('Failed to get token savings stats:', error);
+      return [];
+    }
   }
 
   async getAllTokenAllocationStats(): Promise<[string, TokenAllocationStats][]> {
@@ -455,6 +457,47 @@ export class StatsService {
   async getUserTokenAllocationStats(principal: string): Promise<[string, UserTokenAllocationStats][]> {
     const actor = await this.getQueryActor();
     return actor.get_user_token_allocation_stats(principal);
+  }
+
+  async getMyStats(): Promise<{
+    total_swaps: number;
+    icpswap_swaps: number;
+    kong_swaps: number;
+    split_swaps: number;
+    total_sends: number;
+    total_deposits: number;
+    total_withdrawals: number;
+  }> {
+    try {
+      const actor = await backendService.getActor();
+      const principal = await authService.getPrincipal();
+      if (!principal) {
+        throw new Error('Principal not found');
+      }
+
+      const stats = await actor.get_user_stats(principal);
+      // Convert bigints to numbers
+      return {
+        total_swaps: Number(stats[0].total_swaps),
+        icpswap_swaps: Number(stats[0].icpswap_swaps),
+        kong_swaps: Number(stats[0].kong_swaps),
+        split_swaps: Number(stats[0].split_swaps),
+        total_sends: Number(stats[0].total_sends),
+        total_deposits: Number(stats[0].total_deposits),
+        total_withdrawals: Number(stats[0].total_withdrawals)
+      };
+    } catch (error) {
+      console.error('Failed to get user stats:', error);
+      return {
+        total_swaps: 0,
+        icpswap_swaps: 0,
+        kong_swaps: 0,
+        split_swaps: 0,
+        total_sends: 0,
+        total_deposits: 0,
+        total_withdrawals: 0
+      };
+    }
   }
 }
 

@@ -208,6 +208,11 @@ shared (deployer) actor class SwapRunner() = this {
     private stable var payment_account : ?T.Account = null;
     private stable var cut_account : ?T.Account = null;
 
+    // Map to track ongoing achievement scans per user
+    private let currently_scanning = HashMap.HashMap<Text, Bool>(100, Text.equal, Text.hash);
+    private var currently_claiming = HashMap.HashMap<Text, Bool>(100, Text.equal, Text.hash);
+
+
     // Public query to get allocation fee config
     public query func get_allocation_fee_config() : async T.AllocationFeeConfig {
         allocation_fee_config
@@ -3254,31 +3259,49 @@ shared (deployer) actor class SwapRunner() = this {
             };
         }];
     } {
-        let context : T.Context = {
-            achievements = achievementRegistry;
-            conditions = conditionRegistry;
-            global_stats = globalStats;
-            token_stats = tokenStats;
-            user_achievements = userAchievements;
-            user_stats = userStats;
-            user_token_stats = userTokenStats;
-            user_logins = userLogins;
-        };
-        
-        let result = await Achievement.scan_for_new_achievements(context, caller);
-        
-        // Store any new achievements
-        if (Array.size(result.new_achievements) > 0) {
-            Debug.print("Storing " # Nat.toText(Array.size(result.new_achievements)) # " new achievements");
-            let existing = switch (userAchievements.get(Principal.toText(caller))) {
-                case null { [] };
-                case (?ua) { ua };
+        let scan_key = Principal.toText(caller);
+
+        // Check if already scanning
+        switch (currently_scanning.get(scan_key)) {
+            case (?true) return {
+                new_achievements = [];
+                available_claims = [];
             };
-            userAchievements.put(Principal.toText(caller), Array.append(existing, result.new_achievements));
-            Debug.print("Successfully stored new achievements");
+            case _ {};
         };
-        
-        return result;
+
+        // Set scanning flag
+        currently_scanning.put(scan_key, true);
+
+        try {
+            let context = create_context();
+            let result = await Achievement.scan_for_new_achievements(context, caller);
+
+            // Store any new achievements
+            switch (userAchievements.get(Principal.toText(caller))) {
+                case null {
+                    if (result.new_achievements.size() > 0) {
+                        userAchievements.put(Principal.toText(caller), result.new_achievements);
+                    };
+                };
+                case (?existing) {
+                    if (result.new_achievements.size() > 0) {
+                        userAchievements.put(Principal.toText(caller), Array.append(existing, result.new_achievements));
+                    };
+                };
+            };
+
+            return result;
+        } catch (e) {
+            Debug.print("Error in scan_for_new_achievements: " # Error.message(e));
+            return {
+                new_achievements = [];
+                available_claims = [];
+            };
+        } finally {
+            // Always clear scanning flag
+            currently_scanning.delete(scan_key);
+        };
     };
 
     // Achievement management (admin only)
@@ -3867,9 +3890,6 @@ shared (deployer) actor class SwapRunner() = this {
         Buffer.toArray(userStats)
     };
 
-    // Add after other HashMap declarations
-    private var currently_claiming = HashMap.HashMap<Text, Bool>(100, Text.equal, Text.hash);
-
     // Initialize UserProfileManager with admin principals
     private let userProfileManager = UserProfile.UserProfileManager();
 
@@ -3902,4 +3922,17 @@ shared (deployer) actor class SwapRunner() = this {
         userProfileManager.searchProfiles(profile_query)
     };
 
+    // Helper function to create context
+    private func create_context() : T.Context {
+        {
+            achievements = achievementRegistry;
+            conditions = conditionRegistry;
+            global_stats = globalStats;
+            token_stats = tokenStats;
+            user_achievements = userAchievements;
+            user_stats = userStats;
+            user_token_stats = userTokenStats;
+            user_logins = userLogins;
+        }
+    };
 }

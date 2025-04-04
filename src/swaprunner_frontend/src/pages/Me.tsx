@@ -67,6 +67,15 @@ export const Me: React.FC = () => {
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'volume', direction: 'desc' });
   const [userTokenAllocationStats, setUserTokenAllocationStats] = useState<[string, UserTokenAllocationStats][]>([]);
   const [loadingAllocationStats, setLoadingAllocationStats] = useState(true);
+  const [userStats, setUserStats] = useState<{
+    total_swaps: number;
+    icpswap_swaps: number;
+    kong_swaps: number;
+    split_swaps: number;
+    total_sends: number;
+    total_deposits: number;
+    total_withdrawals: number;
+  } | null>(null);
 
   const fetchStats = async () => {
     if (!isAuthenticated || !principal) return;
@@ -74,18 +83,20 @@ export const Me: React.FC = () => {
     try {
       setLoading(true);
       setLoadingAllocationStats(true);
-      const [stats, savingsStats, allocationStats] = await Promise.all([
+      const [stats, savingsStats, allocationStats, globalStats] = await Promise.all([
         statsService.getMyTokenStats(),
         statsService.getMyTokenSavingsStats(),
-        statsService.getUserTokenAllocationStats(principal)
+        statsService.getUserTokenAllocationStats(principal),
+        statsService.getMyStats()
       ]);
       
       setUserTokenStats(stats);
       setUserTokenAllocationStats(allocationStats);
+      setUserStats(globalStats);
       
       // Convert savings stats array to record for easier lookup
       const savingsRecord: Record<string, TokenSavingsStats> = {};
-      savingsStats.forEach(([tokenId, stats]) => {
+      savingsStats.forEach(([tokenId, stats]: [string, TokenSavingsStats]) => {
         console.log("Token ID: ", tokenId);
         console.log("Savings stats: ", stats);
         savingsRecord[tokenId] = stats;
@@ -94,13 +105,13 @@ export const Me: React.FC = () => {
 
       // Initialize loading state for USD prices
       const initialLoadingState: Record<string, boolean> = {};
-      stats.forEach(([tokenId]) => {
+      stats.forEach(([tokenId]: [string, UserTokenStats]) => {
         initialLoadingState[tokenId] = true;
       });
       setLoadingUSDPrices(initialLoadingState);
 
       // Load metadata for each token
-      const metadataPromises = stats.map(async ([tokenId]) => {
+      const metadataPromises = stats.map(async ([tokenId]: [string, UserTokenStats]) => {
         try {
           const metadata = await tokenService.getMetadataWithLogo(tokenId);
           setTokenMetadata(prev => ({
@@ -262,38 +273,20 @@ export const Me: React.FC = () => {
   };
 
   const calculateTradingActivity = () => {
-    if (!userTokenStats.length) return null;
-
-    let totalSwaps = 0;
-    let splitSwaps = 0;
-    let icpswapSwaps = 0;
-    let kongSwaps = 0;
-
-    userTokenStats.forEach(([_, stats]) => {
-      // Count total swaps
-      const inputSwaps = Number(stats.swaps_as_input_icpswap) + 
-                        Number(stats.swaps_as_input_kong) + 
-                        Number(stats.swaps_as_input_split);
-      const outputSwaps = Number(stats.swaps_as_output_icpswap) + 
-                         Number(stats.swaps_as_output_kong) + 
-                         Number(stats.swaps_as_output_split);
-      
-      // Divide by 2 because each swap is counted twice (once as input, once as output)
-      totalSwaps += (inputSwaps + outputSwaps) / 2;
-      
-      // Count split swaps (divide by 2 for the same reason)
-      splitSwaps += (Number(stats.swaps_as_input_split) + Number(stats.swaps_as_output_split)) / 2;
-      
-      // Count direct swaps (divide by 2 for the same reason)
-      icpswapSwaps += (Number(stats.swaps_as_input_icpswap) + Number(stats.swaps_as_output_icpswap)) / 2;
-      kongSwaps += (Number(stats.swaps_as_input_kong) + Number(stats.swaps_as_output_kong)) / 2;
-    });
+    if (!userStats) {
+      return {
+        totalSwaps: '-',
+        splitSwaps: '-',
+        icpswapSwaps: '-',
+        kongSwaps: '-'
+      };
+    }
 
     return {
-      totalSwaps: Math.floor(totalSwaps),
-      splitSwaps: Math.floor(splitSwaps),
-      icpswapSwaps: Math.floor(icpswapSwaps),
-      kongSwaps: Math.floor(kongSwaps)
+      totalSwaps: userStats.total_swaps.toLocaleString(),
+      splitSwaps: userStats.split_swaps.toLocaleString(),
+      icpswapSwaps: userStats.icpswap_swaps.toLocaleString(),
+      kongSwaps: userStats.kong_swaps.toLocaleString()
     };
   };
 
