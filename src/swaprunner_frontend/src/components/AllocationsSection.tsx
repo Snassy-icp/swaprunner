@@ -14,6 +14,7 @@ import { backendService } from '../services/backend';
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmationModal } from './ConfirmationModal';
 import { adminService } from '../services/admin';
+import { StatsService } from '../services/stats';
 
 interface Achievement {
     id: string;
@@ -654,6 +655,8 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     const [allocationToCancel, setAllocationToCancel] = useState<string | null>(null);
     const [showActivateConfirmation, setShowActivateConfirmation] = useState(false);
     const [feeConfig, setFeeConfig] = useState<AllocationFeeConfig | null>(null);
+    const [claimCount, setClaimCount] = useState<number>(0);
+    const statsService = new StatsService();
 
     // Get token metadata
     const tokenMetadata = tokens.find(t => t.canisterId === allocationWithStatus.allocation.token.canister_id.toString())?.metadata;
@@ -774,6 +777,23 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
             loadAllocationBalance();
         }
     }, [allocationWithStatus.allocation.achievement_id, expanded, tokenMetadata, allocationWithStatus.allocation.token.canister_id, fundingBalance, allocationWithStatus.allocation.id, allocationWithStatus.status, paymentStatus?.is_paid]);
+
+    useEffect(() => {
+        const loadClaimCount = async () => {
+            if (expanded) {
+                try {
+                    const stats = await statsService.getAllTokenAllocationStats();
+                    const tokenStats = stats.find(([tokenId]) => tokenId === allocationWithStatus.allocation.token.canister_id.toString());
+                    if (tokenStats) {
+                        setClaimCount(Number(tokenStats[1].claim_count));
+                    }
+                } catch (error) {
+                    console.error('Error loading claim count:', error);
+                }
+            }
+        };
+        loadClaimCount();
+    }, [expanded, allocationWithStatus.allocation.token.canister_id]);
 
     const handlePay = async () => {
         if (!paymentStatus || paymentStatus.is_paid) return;
@@ -1129,6 +1149,13 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                 </div>
                             );
                         })()}
+
+                        <div className="detail-row">
+                            <span className="detail-label">Claims:</span>
+                            <span className="detail-value">
+                                {claimCount} users
+                            </span>
+                        </div>
 
                         {showCancelButton && allocationWithStatus.status !== 'Cancelled' && (
                             <div className="detail-actions">
