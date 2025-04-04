@@ -4,6 +4,7 @@ import { allocationService } from '../services/allocation';
 import { icrc1Service } from '../services/icrc1_service';
 import { formatTokenAmount } from '../utils/format';
 import { Principal } from '@dfinity/principal';
+import { tokenService } from '../services/token';
 import '../styles/TopUpAllocationModal.css';
 
 interface TopUpAllocationModalProps {
@@ -26,12 +27,23 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [depositAmount, setDepositAmount] = useState('');
     const [withdrawAmount, setWithdrawAmount] = useState('');
+    const [tokenSymbol, setTokenSymbol] = useState('');
 
     useEffect(() => {
         if (show) {
             loadFundingBalance();
+            loadTokenMetadata();
         }
     }, [show, allocationId]);
+
+    const loadTokenMetadata = async () => {
+        try {
+            const metadata = await tokenService.getTokenMetadata(tokenId);
+            setTokenSymbol(metadata?.symbol || '');
+        } catch (err) {
+            console.error('Error loading token metadata:', err);
+        }
+    };
 
     const loadFundingBalance = async () => {
         try {
@@ -48,7 +60,6 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
             setLoading(true);
             setError(null);
             const amount = BigInt(depositAmount);
-            //const account = allocationService.getFundingAccount(allocationId, tokenId);
             await icrc1Service.transfer({
                 tokenId,
                 to: process.env.CANISTER_ID_SWAPRUNNER_BACKEND!,
@@ -132,7 +143,7 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                                         setDepositAmount(e.target.value);
                                     }
                                 }}
-                                placeholder={`Amount to deposit (${formatTokenAmount(BigInt(0), tokenId).split(' ')[1]})`}
+                                placeholder={`Amount to deposit (${tokenSymbol})`}
                                 disabled={loading}
                             />
                             <button
@@ -154,7 +165,7 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                                         setWithdrawAmount(e.target.value);
                                     }
                                 }}
-                                placeholder={`Amount to withdraw (${formatTokenAmount(BigInt(0), tokenId).split(' ')[1]})`}
+                                placeholder={`Amount to withdraw (${tokenSymbol})`}
                                 disabled={loading}
                             />
                             <button
