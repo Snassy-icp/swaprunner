@@ -430,6 +430,18 @@ class AllocationService {
             });
         }
     }
+
+    /**
+     * Get all claims for a specific allocation
+     */
+    async getAllocationClaims(allocationId: string): Promise<{
+        user: string;
+        amount_e8s: bigint;
+        claimed_at: bigint;
+    }[]> {
+        const actor = await backendService.getActor();
+        return actor.get_allocation_claims(allocationId);
+    }
 }
 
 export const allocationService = new AllocationService(); 

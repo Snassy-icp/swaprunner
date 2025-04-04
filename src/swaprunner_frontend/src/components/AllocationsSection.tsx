@@ -809,12 +809,16 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
         const loadClaims = async () => {
             if (expanded && showClaims) {
                 try {
-                    const allClaims = await allocationService.getUserClaims();
-                    // Filter claims for this allocation
-                    const allocationClaims = allClaims.filter(
-                        claim => claim.allocation.id === allocationWithStatus.allocation.id
-                    );
-                    setClaims(allocationClaims);
+                    const allocationClaims = await allocationService.getAllocationClaims(allocationWithStatus.allocation.id);
+                    setClaims(allocationClaims.map(claim => ({
+                        allocation: allocationWithStatus.allocation,
+                        claim: {
+                            allocation_id: allocationWithStatus.allocation.id,
+                            user: claim.user,
+                            amount_e8s: claim.amount_e8s,
+                            claimed_at: claim.claimed_at
+                        }
+                    })));
                 } catch (error) {
                     console.error('Error loading claims:', error);
                 }

@@ -3941,4 +3941,32 @@ shared (deployer) actor class SwapRunner() = this {
             user_logins = userLogins;
         }
     };
+
+    public query func get_all_allocation_claims() : async [T.AllocationClaim] {    
+        Iter.toArray(allocation_claims.vals());
+    };
+    // Query all claims for an allocation
+    public query func get_allocation_claims(allocation_id: Text) : async [{
+        user: Principal;
+        amount_e8s: Nat;
+        claimed_at: Int;
+    }] {
+        let results = Buffer.Buffer<{
+            user: Principal;
+            amount_e8s: Nat;
+            claimed_at: Int;
+        }>(0);
+
+        for ((claim_key, claim) in allocation_claims.entries()) {
+            if (claim.allocation_id == allocation_id) {
+                results.add({
+                    user = claim.user;
+                    amount_e8s = claim.amount_e8s;
+                    claimed_at = claim.claimed_at;
+                });
+            };
+        };
+
+        Buffer.toArray(results)
+    };
 }
