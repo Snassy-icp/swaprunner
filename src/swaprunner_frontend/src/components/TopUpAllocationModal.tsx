@@ -24,6 +24,7 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
     onSuccess
 }) => {
     const [fundingBalance, setFundingBalance] = useState<bigint>(BigInt(0));
+    const [walletBalance, setWalletBalance] = useState<bigint>(BigInt(0));
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [depositAmount, setDepositAmount] = useState('');
@@ -34,6 +35,7 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
         if (show) {
             loadFundingBalance();
             loadTokenMetadata();
+            loadWalletBalance();
         }
     }, [show, allocationId, tokenId]);
 
@@ -59,11 +61,20 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
         }
     };
 
+    const loadWalletBalance = async () => {
+        try {
+            const balance = await icrc1Service.getBalance(tokenId);
+            setWalletBalance(BigInt(balance.balance_e8s));
+        } catch (err) {
+            console.error('Error loading wallet balance:', err);
+            setError('Failed to load wallet balance');
+        }
+    };
+
     const handleDeposit = async () => {
         try {
             setLoading(true);
             setError(null);
-            // Convert decimal amount to e8s using token metadata
             const amount = parseTokenAmount(depositAmount, tokenId);
             await icrc1Service.transfer({
                 tokenId,
@@ -71,7 +82,7 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                 amount_e8s: amount.toString(),
                 subaccount: allocationService.deriveBackendSubaccount(Principal.fromText(tokenId), allocationId)
             });
-            await loadFundingBalance();
+            await Promise.all([loadFundingBalance(), loadWalletBalance()]);
             setDepositAmount('');
         } catch (err) {
             console.error('Error depositing:', err);
@@ -85,7 +96,6 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
         try {
             setLoading(true);
             setError(null);
-            // Convert decimal amount to e8s using token metadata
             const amount = parseTokenAmount(withdrawAmount, tokenId);
             await icrc1Service.transfer({
                 tokenId,
@@ -93,7 +103,7 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                 amount_e8s: amount.toString(),
                 subaccount: await allocationService.deriveBackendSubaccount(Principal.fromText(tokenId), allocationId)
             });
-            await loadFundingBalance();
+            await Promise.all([loadFundingBalance(), loadWalletBalance()]);
             setWithdrawAmount('');
         } catch (err) {
             console.error('Error withdrawing:', err);
@@ -133,9 +143,15 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                 </div>
 
                 <div className="modal-body">
-                    <div className="funding-balance">
-                        <h4>Current Funding Balance</h4>
-                        <p>{formatTokenAmount(fundingBalance, tokenId)}</p>
+                    <div className="balances-container">
+                        <div className="funding-balance">
+                            <h4>Current Funding Balance</h4>
+                            <p>{formatTokenAmount(fundingBalance, tokenId)}</p>
+                        </div>
+                        <div className="wallet-balance">
+                            <h4>Wallet Balance</h4>
+                            <p>{formatTokenAmount(walletBalance, tokenId)}</p>
+                        </div>
                     </div>
 
                     <div className="funding-actions">
@@ -146,7 +162,6 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                                     type="text"
                                     value={depositAmount}
                                     onChange={(e) => {
-                                        // Only allow numbers and decimal points
                                         if (/^\d*\.?\d*$/.test(e.target.value) || e.target.value === '') {
                                             setDepositAmount(e.target.value);
                                         }
@@ -158,7 +173,7 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                             <button
                                 className="action-button"
                                 onClick={handleDeposit}
-                                disabled={loading || !depositAmount || !/^\d*\.?\d*$/.test(depositAmount) || isNaN(Number(depositAmount)) || Number(depositAmount) <= 0}
+                                disabled={loading || !depositAmount || !/^\d*\.?\d*$/.test(depositAmount) || isNaN(Number(depositAmount)) || Number(depositAmount) <= 0 || parseTokenAmount(depositAmount, tokenId) > walletBalance}
                             >
                                 <FiPlus /> Deposit
                             </button>
@@ -171,7 +186,6 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                                     type="text"
                                     value={withdrawAmount}
                                     onChange={(e) => {
-                                        // Only allow numbers and decimal points
                                         if (/^\d*\.?\d*$/.test(e.target.value) || e.target.value === '') {
                                             setWithdrawAmount(e.target.value);
                                         }

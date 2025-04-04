@@ -4,7 +4,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.7);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -12,34 +12,34 @@
 }
 
 .modal-content {
-    background-color: #1a1b1e;
+    background-color: #141517;
     border-radius: 8px;
-    padding: 24px;
+    padding: 16px;
     width: 90%;
-    max-width: 500px;
+    max-width: 360px;
     position: relative;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #2d2e32;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .modal-header h3 {
     margin: 0;
     color: #ffffff;
-    font-size: 1.5rem;
+    font-size: 1.125rem;
+    font-weight: 500;
 }
 
 .close-button {
     background: none;
     border: none;
-    color: #6c757d;
+    color: rgba(255, 255, 255, 0.5);
     cursor: pointer;
     padding: 4px;
     display: flex;
@@ -56,43 +56,52 @@
     color: #ffffff;
 }
 
-.funding-balance {
-    background-color: #2d2e32;
-    padding: 16px;
-    border-radius: 8px;
-    margin-bottom: 24px;
+.balances-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
 }
 
-.funding-balance h4 {
-    margin: 0 0 8px 0;
-    color: #a0a0a0;
-    font-size: 1rem;
+.funding-balance,
+.wallet-balance {
+    flex: 1;
+    background-color: #1a1b1e;
+    padding: 12px;
+    border-radius: 6px;
 }
 
-.funding-balance p {
+.funding-balance h4,
+.wallet-balance h4 {
+    margin: 0 0 4px 0;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.875rem;
+    font-weight: normal;
+}
+
+.funding-balance p,
+.wallet-balance p {
     margin: 0;
-    font-size: 1.5rem;
-    font-weight: 600;
+    font-size: 1.125rem;
+    font-weight: 500;
 }
 
 .funding-actions {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    margin-bottom: 24px;
+    gap: 12px;
+    margin-bottom: 16px;
 }
 
 .input-wrapper {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
 }
 
 .input-label {
-    color: #a0a0a0;
+    color: rgba(255, 255, 255, 0.5);
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: normal;
+    margin-bottom: 6px;
+    display: block;
 }
 
 .action-group {
@@ -102,38 +111,44 @@
 
 .action-group input {
     width: 100%;
-    background-color: #2d2e32;
-    border: 1px solid #3d3e42;
+    background-color: #1a1b1e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 4px;
     padding: 8px 12px;
     color: #ffffff;
-    font-size: 1rem;
+    font-size: 0.875rem;
+    height: 34px;
 }
 
 .action-group input:focus {
     outline: none;
-    border-color: #5c5d63;
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 .action-group input::placeholder {
-    color: #6c757d;
+    color: rgba(255, 255, 255, 0.3);
 }
 
 .action-button {
-    background-color: #2d2e32;
-    border: 1px solid #3d3e42;
+    background-color: #1a1b1e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 4px;
-    padding: 8px 16px;
-    color: #ffffff;
+    padding: 0 12px;
+    color: rgba(255, 255, 255, 0.8);
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
+    gap: 6px;
+    height: 34px;
+    white-space: nowrap;
+    min-width: 80px;
+    justify-content: center;
+    font-size: 0.875rem;
 }
 
 .action-button:hover:not(:disabled) {
-    background-color: #3d3e42;
+    background-color: #202124;
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 .action-button:disabled {
@@ -146,14 +161,14 @@
     background-color: #0d6efd;
     border: none;
     border-radius: 4px;
-    padding: 12px;
+    padding: 10px;
     color: #ffffff;
-    font-size: 1rem;
+    font-size: 0.875rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     transition: background-color 0.2s;
 }
 
@@ -167,10 +182,10 @@
 }
 
 .error-message {
-    margin-top: 16px;
-    padding: 12px;
+    margin-top: 12px;
+    padding: 10px;
     background-color: rgba(220, 53, 69, 0.1);
-    border: 1px solid #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.2);
     border-radius: 4px;
     color: #dc3545;
     font-size: 0.875rem;
