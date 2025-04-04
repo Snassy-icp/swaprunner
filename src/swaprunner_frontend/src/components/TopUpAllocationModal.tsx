@@ -117,23 +117,28 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
 
                 <div className="modal-body">
                     <div className="funding-balance">
-                        <h4>Funding Balance</h4>
+                        <h4>Current Funding Balance</h4>
                         <p>{formatTokenAmount(fundingBalance, tokenId)}</p>
                     </div>
 
                     <div className="funding-actions">
                         <div className="action-group">
                             <input
-                                type="number"
+                                type="text"
                                 value={depositAmount}
-                                onChange={(e) => setDepositAmount(e.target.value)}
-                                placeholder="Amount to deposit"
+                                onChange={(e) => {
+                                    // Only allow numbers and decimal points
+                                    if (/^\d*\.?\d*$/.test(e.target.value) || e.target.value === '') {
+                                        setDepositAmount(e.target.value);
+                                    }
+                                }}
+                                placeholder={`Amount to deposit (${formatTokenAmount(BigInt(0), tokenId).split(' ')[1]})`}
                                 disabled={loading}
                             />
                             <button
                                 className="action-button"
                                 onClick={handleDeposit}
-                                disabled={loading || !depositAmount}
+                                disabled={loading || !depositAmount || !/^\d+$/.test(depositAmount)}
                             >
                                 <FiPlus /> Deposit
                             </button>
@@ -141,16 +146,21 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
 
                         <div className="action-group">
                             <input
-                                type="number"
+                                type="text"
                                 value={withdrawAmount}
-                                onChange={(e) => setWithdrawAmount(e.target.value)}
-                                placeholder="Amount to withdraw"
+                                onChange={(e) => {
+                                    // Only allow numbers and decimal points
+                                    if (/^\d*\.?\d*$/.test(e.target.value) || e.target.value === '') {
+                                        setWithdrawAmount(e.target.value);
+                                    }
+                                }}
+                                placeholder={`Amount to withdraw (${formatTokenAmount(BigInt(0), tokenId).split(' ')[1]})`}
                                 disabled={loading}
                             />
                             <button
                                 className="action-button"
                                 onClick={handleWithdraw}
-                                disabled={loading || !withdrawAmount || BigInt(withdrawAmount) > fundingBalance}
+                                disabled={loading || !withdrawAmount || !/^\d+$/.test(withdrawAmount) || BigInt(withdrawAmount) > fundingBalance}
                             >
                                 <FiMinus /> Withdraw
                             </button>
@@ -162,7 +172,7 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                         onClick={handleTopUp}
                         disabled={loading || fundingBalance <= BigInt(0)}
                     >
-                        <FiArrowUp /> Top Up Allocation
+                        <FiArrowUp /> Top Up Allocation with {formatTokenAmount(fundingBalance, tokenId)}
                     </button>
 
                     {error && <div className="error-message">{error}</div>}
