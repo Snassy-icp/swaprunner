@@ -1111,6 +1111,25 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                             <span className="detail-value">{formatDate(allocationWithStatus.allocation.created_at)}</span>
                         </div>
 
+                        {/* Add potential users info */}
+                        {(() => {
+                            const potentialUsers = calculatePotentialUsers();
+                            if (!potentialUsers) return null;
+
+                            return (
+                                <div className="detail-row">
+                                    <span className="detail-label">User Capacity:</span>
+                                    <span className="detail-value">
+                                        {potentialUsers.min === potentialUsers.max ? (
+                                            `${potentialUsers.min} users`
+                                        ) : (
+                                            `${potentialUsers.min} to ${potentialUsers.max} users (avg: ${potentialUsers.avg})`
+                                        )}
+                                    </span>
+                                </div>
+                            );
+                        })()}
+
                         {showCancelButton && allocationWithStatus.status !== 'Cancelled' && (
                             <div className="detail-actions">
                                 <button
