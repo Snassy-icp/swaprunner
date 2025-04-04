@@ -99,27 +99,31 @@ shared (deployer) actor class SwapRunner() = this {
     private stable var poolMetadataEntries : [(Principal, T.PoolMetadata)] = [];
     private stable var userPoolEntries : [(Principal, [Nat16])] = [];
 
+    private stable var profilesEntries : [(Principal, T.UserProfile)] = [];
+
     // Runtime maps
     private var tokenMetadata = HashMap.fromIter<Principal, T.TokenMetadata>(tokenMetadataEntries.vals(), 10, Principal.equal, Principal.hash);
     private var tokenLogos = HashMap.fromIter<Principal, Text>(tokenLogoEntries.vals(), 10, Principal.equal, Principal.hash);
     private var userCustomTokens = HashMap.fromIter<Principal, [Principal]>(userCustomTokenEntries.vals(), 10, Principal.equal, Principal.hash);
-    private var userTokenSubaccounts = HashMap.fromIter<Principal, [T.UserTokenSubaccounts]>(userTokenSubaccountsEntries.vals(), 0, Principal.equal, Principal.hash);
+    private var userTokenSubaccounts = HashMap.fromIter<Principal, [T.UserTokenSubaccounts]>(userTokenSubaccountsEntries.vals(), 10, Principal.equal, Principal.hash);
 
-    private var userTokenStats = HashMap.fromIter<Text, T.UserTokenStats>(userTokenStatsEntries.vals(), 0, Text.equal, Text.hash);
-    private var tokenSavingsStats = HashMap.fromIter<Text, T.TokenSavingsStats>(tokenSavingsStatsEntries.vals(), 0, Text.equal, Text.hash);
-    private var tokenStats = HashMap.fromIter<Text, T.TokenStats>(tokenStatsEntries.vals(), 0, Text.equal, Text.hash);
-    private var userStats = HashMap.fromIter<Text, T.UserStats>(userStatsEntries.vals(), 0, Text.equal, Text.hash);
-    private var userLogins = HashMap.fromIter<Text, Nat>(userLoginEntries.vals(), 0, Text.equal, Text.hash);
+    private var userTokenStats = HashMap.fromIter<Text, T.UserTokenStats>(userTokenStatsEntries.vals(), 10, Text.equal, Text.hash);
+    private var tokenSavingsStats = HashMap.fromIter<Text, T.TokenSavingsStats>(tokenSavingsStatsEntries.vals(), 10, Text.equal, Text.hash);
+    private var tokenStats = HashMap.fromIter<Text, T.TokenStats>(tokenStatsEntries.vals(), 10, Text.equal, Text.hash);
+    private var userStats = HashMap.fromIter<Text, T.UserStats>(userStatsEntries.vals(), 10, Text.equal, Text.hash);
+    private var userLogins = HashMap.fromIter<Text, Nat>(userLoginEntries.vals(), 10, Text.equal, Text.hash);
+
+    private var profiles = HashMap.fromIter<Principal, T.UserProfile>(profilesEntries.vals(), 10, Principal.equal, Principal.hash);
 
     // Runtime maps for ICPSwap tokens
     private var tokenMetadataICPSwap = HashMap.fromIter<Principal, T.TokenMetadata>(tokenMetadataEntriesICPSwap.vals(), 10, Principal.equal, Principal.hash);
 
     // Runtime maps for custom tokens
-    private var customTokenMetadata = HashMap.fromIter<Principal, T.TokenMetadata>(customTokenMetadataEntries.vals(), 0, Principal.equal, Principal.hash);
+    private var customTokenMetadata = HashMap.fromIter<Principal, T.TokenMetadata>(customTokenMetadataEntries.vals(), 10, Principal.equal, Principal.hash);
 
     // Runtime maps for pools
-    private var poolMetadata = HashMap.fromIter<Principal, T.PoolMetadata>(poolMetadataEntries.vals(), 0, Principal.equal, Principal.hash);
-    private var userPools = HashMap.fromIter<Principal, [Nat16]>(userPoolEntries.vals(), 0, Principal.equal, Principal.hash);
+    private var poolMetadata = HashMap.fromIter<Principal, T.PoolMetadata>(poolMetadataEntries.vals(), 10, Principal.equal, Principal.hash);
+    private var userPools = HashMap.fromIter<Principal, [Nat16]>(userPoolEntries.vals(), 10, Principal.equal, Principal.hash);
 
     // Wallet feature: Runtime map for user wallet tokens
     private var userWalletTokens = HashMap.fromIter<Principal, [Nat16]>(userWalletTokenEntries.vals(), 10, Principal.equal, Principal.hash);
@@ -344,6 +348,7 @@ shared (deployer) actor class SwapRunner() = this {
         allocationClaimEntries := Iter.toArray(allocation_claims.entries());
         tokenAllocationStatsEntries := Iter.toArray(tokenAllocationStats.entries());
         userTokenAllocationStatsEntries := Iter.toArray(userTokenAllocationStats.entries());
+        profilesEntries := Iter.toArray(profiles.entries());
     };
 
     system func postupgrade() {
@@ -379,6 +384,7 @@ shared (deployer) actor class SwapRunner() = this {
         allocationClaimEntries := [];
         tokenAllocationStatsEntries := [];
         userTokenAllocationStatsEntries := [];     
+        profilesEntries := [];
     };
 
     public query func get_cycle_balance() : async Nat {
@@ -3895,31 +3901,31 @@ shared (deployer) actor class SwapRunner() = this {
 
     // User Profile Methods
     public shared(msg) func createUserProfile(args: T.CreateUserProfileArgs) : async Result.Result<T.UserProfile, UserProfile.ProfileError> {
-        await userProfileManager.createProfile(isAdmin(msg.caller), msg.caller, args)
+        await userProfileManager.createProfile(profiles, isAdmin(msg.caller), msg.caller, args)
     };
 
     public shared(msg) func updateUserProfile(userPrincipal: Principal, args: T.UpdateUserProfileArgs) : async Result.Result<T.UserProfile, UserProfile.ProfileError> {
-        await userProfileManager.updateProfile(isAdmin(msg.caller), msg.caller, userPrincipal, args)
+        await userProfileManager.updateProfile(profiles, isAdmin(msg.caller), msg.caller, userPrincipal, args)
     };
 
     public shared(msg) func deleteUserProfile(userPrincipal: Principal) : async Result.Result<(), UserProfile.ProfileError> {
-        await userProfileManager.deleteProfile(isAdmin(msg.caller), msg.caller, userPrincipal)
+        await userProfileManager.deleteProfile(profiles, isAdmin(msg.caller), msg.caller, userPrincipal)
     };
 
     public query func getUserProfile(userPrincipal: Principal) : async Result.Result<T.UserProfile, UserProfile.ProfileError> {
-        userProfileManager.getProfile(userPrincipal)
+        userProfileManager.getProfile(profiles, userPrincipal)
     };
 
     public query func listUserProfiles(offset: Nat, limit: Nat) : async [T.UserProfile] {
-        userProfileManager.listProfiles(offset, limit)
+        userProfileManager.listProfiles(profiles, offset, limit)
     };
 
     public query func getUserProfileCount() : async Nat {
-        userProfileManager.getProfileCount()
+        userProfileManager.getProfileCount(profiles)
     };
 
     public query func searchUserProfiles(profile_query: Text) : async [T.UserProfile] {
-        userProfileManager.searchProfiles(profile_query)
+        userProfileManager.searchProfiles(profiles, profile_query)
     };
 
     // Helper function to create context

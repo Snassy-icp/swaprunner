@@ -1,7 +1,7 @@
 import Principal "mo:base/Principal";
 import Result "mo:base/Result";
 import Text "mo:base/Text";
-import TrieMap "mo:base/TrieMap";
+import HashMap "mo:base/HashMap";
 import Buffer "mo:base/Buffer";
 import Time "mo:base/Time";
 import Debug "mo:base/Debug";
@@ -27,10 +27,9 @@ module {
     };
 
     public class UserProfileManager() {
-        private let profiles = TrieMap.TrieMap<Principal, UserProfile>(Principal.equal, Principal.hash);
 
         // Create a new user profile (admin only)
-        public func createProfile(is_admin: Bool, caller: Principal, args: CreateUserProfileArgs): async Result.Result<UserProfile, ProfileError> {
+        public func createProfile(profiles: HashMap.HashMap<Principal, UserProfile>, is_admin: Bool, caller: Principal, args: CreateUserProfileArgs): async Result.Result<UserProfile, ProfileError> {
             if (not is_admin) {
                 return #err(#NotAuthorized);
             };
@@ -68,7 +67,7 @@ module {
         };
 
         // Update an existing profile (admin and profile owner only)
-        public func updateProfile(is_admin: Bool, caller: Principal, userPrincipal: Principal, args: UpdateUserProfileArgs): async Result.Result<UserProfile, ProfileError> {
+        public func updateProfile(profiles: HashMap.HashMap<Principal, UserProfile>,is_admin: Bool, caller: Principal, userPrincipal: Principal, args: UpdateUserProfileArgs): async Result.Result<UserProfile, ProfileError> {
             if (not (is_admin or Principal.equal(caller, userPrincipal))) {
                 return #err(#NotAuthorized);
             };
@@ -126,7 +125,7 @@ module {
         };
 
         // Get a single profile
-        public func getProfile(userPrincipal: Principal): Result.Result<UserProfile, ProfileError> {
+        public func getProfile(profiles: HashMap.HashMap<Principal, UserProfile>,userPrincipal: Principal): Result.Result<UserProfile, ProfileError> {
             switch (profiles.get(userPrincipal)) {
                 case (?profile) { #ok(profile) };
                 case null { #err(#NotFound) };
@@ -134,7 +133,7 @@ module {
         };
 
         // List all profiles with optional pagination
-        public func listProfiles(offset: Nat, limit: Nat): [UserProfile] {
+        public func listProfiles(profiles: HashMap.HashMap<Principal, UserProfile>,offset: Nat, limit: Nat): [UserProfile] {
             let buffer = Buffer.Buffer<UserProfile>(0);
             var count = 0;
             var skipped = 0;
@@ -152,7 +151,7 @@ module {
         };
 
         // Delete a profile (admin only)
-        public func deleteProfile(is_admin: Bool, caller: Principal, userPrincipal: Principal): async Result.Result<(), ProfileError> {
+        public func deleteProfile(profiles: HashMap.HashMap<Principal, UserProfile>,is_admin: Bool, caller: Principal, userPrincipal: Principal): async Result.Result<(), ProfileError> {
             if (not is_admin) {
                 return #err(#NotAuthorized);
             };
@@ -167,12 +166,12 @@ module {
         };
 
         // Get total number of profiles
-        public func getProfileCount(): Nat {
+        public func getProfileCount(profiles: HashMap.HashMap<Principal, UserProfile>,): Nat {
             profiles.size()
         };
 
         // Search profiles by name (case-insensitive partial match)
-        public func searchProfiles(profile_query: Text): [UserProfile] {
+        public func searchProfiles(profiles: HashMap.HashMap<Principal, UserProfile>,profile_query: Text): [UserProfile] {
             let buffer = Buffer.Buffer<UserProfile>(0);
             let queryLower = Text.toLowercase(profile_query);
 

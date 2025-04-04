@@ -83,7 +83,7 @@ export const Me: React.FC = () => {
     try {
       setLoading(true);
       setLoadingAllocationStats(true);
-      const [stats, savingsStats, allocationStats, globalStats] = await Promise.all([
+      const [stats, savingsStats, allocationStats, userGlobalStats] = await Promise.all([
         statsService.getMyTokenStats(),
         statsService.getMyTokenSavingsStats(),
         statsService.getUserTokenAllocationStats(principal),
@@ -92,7 +92,7 @@ export const Me: React.FC = () => {
       
       setUserTokenStats(stats);
       setUserTokenAllocationStats(allocationStats);
-      setUserStats(globalStats);
+      setUserStats(userGlobalStats);
       
       // Convert savings stats array to record for easier lookup
       const savingsRecord: Record<string, TokenSavingsStats> = {};
