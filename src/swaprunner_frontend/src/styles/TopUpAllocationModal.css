@@ -82,13 +82,26 @@
     margin-bottom: 24px;
 }
 
+.input-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.input-label {
+    color: #a0a0a0;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
 .action-group {
     display: flex;
     gap: 8px;
 }
 
 .action-group input {
-    flex: 1;
+    width: 100%;
     background-color: #2d2e32;
     border: 1px solid #3d3e42;
     border-radius: 4px;

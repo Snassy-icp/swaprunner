@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { FiX, FiPlus, FiMinus, FiArrowUp } from 'react-icons/fi';
 import { allocationService } from '../services/allocation';
 import { icrc1Service } from '../services/icrc1_service';
-import { formatTokenAmount } from '../utils/format';
+import { formatTokenAmount, parseTokenAmount } from '../utils/format';
 import { Principal } from '@dfinity/principal';
 import { tokenService } from '../services/token';
+import { TokenMetadata } from '../types/token';
 import '../styles/TopUpAllocationModal.css';
 
 interface TopUpAllocationModalProps {
@@ -27,21 +28,24 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [depositAmount, setDepositAmount] = useState('');
     const [withdrawAmount, setWithdrawAmount] = useState('');
-    const [tokenSymbol, setTokenSymbol] = useState('');
+    const [tokenMetadata, setTokenMetadata] = useState<TokenMetadata | null>(null);
 
     useEffect(() => {
         if (show) {
             loadFundingBalance();
             loadTokenMetadata();
         }
-    }, [show, allocationId]);
+    }, [show, allocationId, tokenId]);
 
     const loadTokenMetadata = async () => {
         try {
-            const metadata = await tokenService.getTokenMetadata(tokenId);
-            setTokenSymbol(metadata?.symbol || '');
+            const metadata = await tokenService.getMetadataWithLogo(tokenId);
+            if (metadata) {
+                setTokenMetadata(metadata);
+            }
         } catch (err) {
             console.error('Error loading token metadata:', err);
+            setError('Failed to load token metadata');
         }
     };
 
@@ -59,7 +63,8 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
         try {
             setLoading(true);
             setError(null);
-            const amount = BigInt(depositAmount);
+            // Convert decimal amount to e8s using token metadata
+            const amount = parseTokenAmount(depositAmount, tokenId);
             await icrc1Service.transfer({
                 tokenId,
                 to: process.env.CANISTER_ID_SWAPRUNNER_BACKEND!,
@@ -80,7 +85,8 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
         try {
             setLoading(true);
             setError(null);
-            const amount = BigInt(withdrawAmount);
+            // Convert decimal amount to e8s using token metadata
+            const amount = parseTokenAmount(withdrawAmount, tokenId);
             await icrc1Service.transfer({
                 tokenId,
                 to: process.env.CANISTER_ID_SWAPRUNNER_BACKEND!,
@@ -134,44 +140,50 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
 
                     <div className="funding-actions">
                         <div className="action-group">
-                            <input
-                                type="text"
-                                value={depositAmount}
-                                onChange={(e) => {
-                                    // Only allow numbers and decimal points
-                                    if (/^\d*\.?\d*$/.test(e.target.value) || e.target.value === '') {
-                                        setDepositAmount(e.target.value);
-                                    }
-                                }}
-                                placeholder={`Amount to deposit (${tokenSymbol})`}
-                                disabled={loading}
-                            />
+                            <div className="input-wrapper">
+                                <label className="input-label">Deposit Amount {tokenMetadata?.symbol ? `(${tokenMetadata.symbol})` : ''}</label>
+                                <input
+                                    type="text"
+                                    value={depositAmount}
+                                    onChange={(e) => {
+                                        // Only allow numbers and decimal points
+                                        if (/^\d*\.?\d*$/.test(e.target.value) || e.target.value === '') {
+                                            setDepositAmount(e.target.value);
+                                        }
+                                    }}
+                                    placeholder="Enter amount"
+                                    disabled={loading}
+                                />
+                            </div>
                             <button
                                 className="action-button"
                                 onClick={handleDeposit}
-                                disabled={loading || !depositAmount || !/^\d+$/.test(depositAmount)}
+                                disabled={loading || !depositAmount || !/^\d*\.?\d*$/.test(depositAmount) || isNaN(Number(depositAmount)) || Number(depositAmount) <= 0}
                             >
                                 <FiPlus /> Deposit
                             </button>
                         </div>
 
                         <div className="action-group">
-                            <input
-                                type="text"
-                                value={withdrawAmount}
-                                onChange={(e) => {
-                                    // Only allow numbers and decimal points
-                                    if (/^\d*\.?\d*$/.test(e.target.value) || e.target.value === '') {
-                                        setWithdrawAmount(e.target.value);
-                                    }
-                                }}
-                                placeholder={`Amount to withdraw (${tokenSymbol})`}
-                                disabled={loading}
-                            />
+                            <div className="input-wrapper">
+                                <label className="input-label">Withdraw Amount {tokenMetadata?.symbol ? `(${tokenMetadata.symbol})` : ''}</label>
+                                <input
+                                    type="text"
+                                    value={withdrawAmount}
+                                    onChange={(e) => {
+                                        // Only allow numbers and decimal points
+                                        if (/^\d*\.?\d*$/.test(e.target.value) || e.target.value === '') {
+                                            setWithdrawAmount(e.target.value);
+                                        }
+                                    }}
+                                    placeholder="Enter amount"
+                                    disabled={loading}
+                                />
+                            </div>
                             <button
                                 className="action-button"
                                 onClick={handleWithdraw}
-                                disabled={loading || !withdrawAmount || !/^\d+$/.test(withdrawAmount) || BigInt(withdrawAmount) > fundingBalance}
+                                disabled={loading || !withdrawAmount || !/^\d*\.?\d*$/.test(withdrawAmount) || isNaN(Number(withdrawAmount)) || Number(withdrawAmount) <= 0 || parseTokenAmount(withdrawAmount, tokenId) > fundingBalance}
                             >
                                 <FiMinus /> Withdraw
                             </button>
