@@ -3969,4 +3969,37 @@ shared (deployer) actor class SwapRunner() = this {
 
         Buffer.toArray(results)
     };
+
+    // Top up an allocation with additional funds
+    public shared({caller}) func top_up_allocation(allocation_id: Nat, amount_e8s: Nat) : async Result.Result<(), Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        // Get allocation
+        let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
+            case null return #err("Allocation not found");
+            case (?a) a;
+        };
+
+        // Verify token is whitelisted
+        if (not isWhitelisted(allocation.token.canister_id)) {
+            return #err("Token is not whitelisted");
+        };
+
+        // Call the module function
+        await Allocation.top_up_allocation(
+            caller,
+            allocation_id,
+            amount_e8s,
+            allocations,
+            allocation_statuses,
+            allocation_fee_config,
+            Principal.fromActor(this),
+            cut_account,
+            getOrCreateUserIndex,
+            addToAllocationBalance,
+            addToServerBalance,
+        )
+    };
 }

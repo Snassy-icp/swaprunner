@@ -603,4 +603,119 @@ module {
 
         Buffer.toArray(results)
     };
+
+    // Top up an allocation with additional funds
+    public func top_up_allocation(
+        caller: Principal,
+        allocation_id: Nat,
+        amount_e8s: Nat,
+        allocations: HashMap.HashMap<Text, T.Allocation>,
+        allocation_statuses: HashMap.HashMap<Text, T.AllocationStatus>,
+        fee_config: T.AllocationFeeConfig,
+        this_canister_id: Principal,
+        cut_account: ?T.Account,
+        getOrCreateUserIndex: (Principal) -> Nat16,
+        addToAllocationBalance: (Nat, Nat16, Nat) -> (),
+        addToServerBalance: (Nat16, Nat) -> (),
+    ) : async Result.Result<(), Text> {
+        // Get allocation
+        let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
+            case null return #err("Allocation not found");
+            case (?a) a;
+        };
+
+        // Verify caller is creator
+        if (caller != allocation.creator) {
+            return #err("Only the creator can top up this allocation");
+        };
+
+        // Verify current status is Active
+        switch (allocation_statuses.get(Nat.toText(allocation_id))) {
+            case (?#Active) {};
+            case (?#Depleted) {};  
+            case (?status) return #err("Allocation must be in Active or Depleted status to top up");
+            case null return #err("Allocation status not found");
+        };
+
+        // Get funding subaccount (derived from token principal)
+        let funding_subaccount = derive_backend_subaccount(
+            allocation.token.canister_id,
+            allocation_id
+        );
+
+        // Create ICRC1 actor for token
+        let icrc1_funding_actor = actor(Principal.toText(allocation.token.canister_id)) : T.ICRC1Interface;
+
+        // Check funding balance
+        let funding_balance = await icrc1_funding_actor.icrc1_balance_of({ 
+            owner = this_canister_id; 
+            subaccount = ?funding_subaccount
+        });
+
+        // Get tx fee for token
+        let token_tx_fee = switch (await icrc1_funding_actor.icrc1_fee()) {
+            case null 0;
+            case (?fee) fee;
+        };
+
+        // Verify funding amount is sufficient
+        if (funding_balance < amount_e8s + token_tx_fee) {
+            return #err("Insufficient funds in funding subaccount");
+        };
+
+        var cut_amount = 0;
+        // Calculate and transfer cut if configured
+        switch (cut_account) {
+            case (?ca) {
+                cut_amount := (amount_e8s * fee_config.cut_basis_points) / 10000;
+                if (cut_amount <= token_tx_fee) {
+                    cut_amount := 0;
+                };
+                if (cut_amount > token_tx_fee) {
+                    let cut_result = await icrc1_funding_actor.icrc1_transfer({
+                        from_subaccount = ?funding_subaccount;
+                        to = ca;
+                        amount = cut_amount - token_tx_fee;
+                        fee = null;
+                        memo = null;
+                        created_at_time = null;
+                    });
+                    switch (cut_result) {
+                        case (#Err(e)) return #err("Failed to transfer cut: " # debug_show(e));
+                        case (#Ok(_)) {};
+                    };
+                };
+            };
+            case null {}; // No cut account configured, skip cut transfer
+        };
+
+        // Calculate remaining amount after cut
+        let remaining_amount = if (amount_e8s > cut_amount) { amount_e8s - cut_amount; } else { 0 };
+
+        // Send remaining amount to server subaccount if amount > tx fee
+        if (remaining_amount > token_tx_fee) {
+            let server_subaccount = derive_backend_subaccount(allocation.token.canister_id, 0);
+            let server_result = await icrc1_funding_actor.icrc1_transfer({
+                from_subaccount = ?funding_subaccount;
+                to = { owner = this_canister_id; subaccount = ?server_subaccount };
+                amount = remaining_amount;
+                fee = null;
+                memo = null;
+                created_at_time = null;
+            });
+            switch (server_result) {
+                case (#Err(e)) return #err("Failed to transfer to server: " # debug_show(e));
+                case (#Ok(_)) {
+                    let token_index = getOrCreateUserIndex(allocation.token.canister_id);
+                    // Increase allocation balance
+                    addToAllocationBalance(allocation_id, token_index, remaining_amount);
+                    // Increase server balance
+                    addToServerBalance(token_index, remaining_amount);
+                };
+            };
+        };
+
+        // Return success
+        #ok(())
+    };
 }
