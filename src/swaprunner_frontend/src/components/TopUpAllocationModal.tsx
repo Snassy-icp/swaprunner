@@ -53,7 +53,7 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
 
     const loadFundingBalance = async () => {
         try {
-            const balance = await allocationService.getFundingBalance(allocationId);
+            const balance = await allocationService.getFundingBalance(allocationId, true);
             setFundingBalance(balance);
         } catch (err) {
             console.error('Error loading funding balance:', err);

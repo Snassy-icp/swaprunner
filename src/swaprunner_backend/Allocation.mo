@@ -715,6 +715,14 @@ module {
             };
         };
 
+        // If allocation was depleted, and we have enough funds (more than the allocation min_amount), set its status to active again
+        if (allocation_statuses.get(Nat.toText(allocation_id)) == ?#Depleted) {
+            let min_amount = allocation.token.per_user.min_e8s;
+            if (remaining_amount > min_amount) {
+                allocation_statuses.put(Nat.toText(allocation_id), #Active);
+            };
+        };
+
         // Return success
         #ok(())
     };
