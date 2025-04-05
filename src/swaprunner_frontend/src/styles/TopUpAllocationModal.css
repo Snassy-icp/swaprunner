@@ -129,6 +129,7 @@
 .action-group {
     display: flex;
     flex-direction: column;
+    max-width: 240px;
 }
 
 .action-group input {
