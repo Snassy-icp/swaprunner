@@ -242,7 +242,16 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                     <div className="funding-actions">
                         <div className="action-group">
                             <div className="input-wrapper">
-                                <label className="input-label">Deposit Amount {tokenMetadata?.symbol ? `(${tokenMetadata.symbol})` : ''}</label>
+                                <label className="input-label">
+                                    <span>Deposit Amount {tokenMetadata?.symbol ? `(${tokenMetadata.symbol})` : ''}</span>
+                                    <button
+                                        className="action-button"
+                                        onClick={handleDeposit}
+                                        disabled={loading || !depositAmount || !/^\d*\.?\d*$/.test(depositAmount) || isNaN(Number(depositAmount)) || Number(depositAmount) <= 0 || parseTokenAmount(depositAmount, tokenId) > walletBalance}
+                                    >
+                                        <FiPlus /> Deposit
+                                    </button>
+                                </label>
                                 <input
                                     type="text"
                                     value={depositAmount}
@@ -255,13 +264,6 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                                     disabled={loading}
                                 />
                             </div>
-                            <button
-                                className="action-button"
-                                onClick={handleDeposit}
-                                disabled={loading || !depositAmount || !/^\d*\.?\d*$/.test(depositAmount) || isNaN(Number(depositAmount)) || Number(depositAmount) <= 0 || parseTokenAmount(depositAmount, tokenId) > walletBalance}
-                            >
-                                <FiPlus /> Deposit
-                            </button>
                         </div>
                     </div>
 

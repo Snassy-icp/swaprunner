@@ -120,13 +120,15 @@
     color: rgba(255, 255, 255, 0.5);
     font-size: 0.875rem;
     font-weight: normal;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 6px;
-    display: block;
 }
 
 .action-group {
     display: flex;
-    gap: 8px;
+    flex-direction: column;
 }
 
 .action-group input {
@@ -138,6 +140,7 @@
     color: #ffffff;
     font-size: 0.875rem;
     height: 34px;
+    margin: 0;
 }
 
 .action-group input:focus {
