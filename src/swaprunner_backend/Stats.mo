@@ -787,7 +787,6 @@ module {
         cut_e8s: Nat,
         statsContext: T.StatsContext
     ) : async () {
-        Debug.print("STEP 1:record_allocation_creation: " # token # " " # Nat.toText(amount_e8s) # " " # Nat.toText(fee_e8s) # " " # Nat.toText(cut_e8s));
 
         // Update token allocation stats
         let token_stats = getOrCreateTokenAllocationStats(token, statsContext);
@@ -800,7 +799,6 @@ module {
             claim_count = token_stats.claim_count;
         });
 
-        Debug.print("STEP 2:record_allocation_creation: " # token # " " # Nat.toText(amount_e8s) # " " # Nat.toText(fee_e8s) # " " # Nat.toText(cut_e8s));
         // Update user-token allocation stats
         let user_token_stats = getOrCreateUserTokenAllocationStats(creator, token, statsContext);
         statsContext.userTokenAllocationStats.put(getUserTokenStatsKey(creator, token), {
@@ -811,7 +809,37 @@ module {
             allocation_count = user_token_stats.allocation_count + 1;
             claim_count = user_token_stats.claim_count;
         });
-        Debug.print("STEP 3:record_allocation_creation: " # token # " " # Nat.toText(amount_e8s) # " " # Nat.toText(fee_e8s) # " " # Nat.toText(cut_e8s));
+    };
+
+    // Record allocation top up
+    public func record_allocation_top_up(
+        creator: Principal,
+        token: Text,  // Canister ID
+        amount_e8s: Nat,
+        cut_e8s: Nat,
+        statsContext: T.StatsContext
+    ) : async () {  
+        // Update token allocation stats    
+        let token_stats = getOrCreateTokenAllocationStats(token, statsContext);
+        statsContext.tokenAllocationStats.put(token, {
+            allocation_count = token_stats.allocation_count;
+            claim_count = token_stats.claim_count;
+            total_allocated_e8s = token_stats.total_allocated_e8s + amount_e8s;
+            total_claimed_e8s = token_stats.total_claimed_e8s;
+            total_fees_paid_e8s = token_stats.total_fees_paid_e8s;
+            total_cuts_paid_e8s = token_stats.total_cuts_paid_e8s + cut_e8s;
+            });
+
+        // Update user-token allocation stats
+        let user_token_stats = getOrCreateUserTokenAllocationStats(creator, token, statsContext);
+        statsContext.userTokenAllocationStats.put(getUserTokenStatsKey(creator, token), {
+            allocation_count = user_token_stats.allocation_count;
+            claim_count = user_token_stats.claim_count;
+            total_allocated_e8s = user_token_stats.total_allocated_e8s + amount_e8s;
+            total_claimed_e8s = user_token_stats.total_claimed_e8s;
+            total_fees_paid_e8s = user_token_stats.total_fees_paid_e8s;
+            total_cuts_paid_e8s = user_token_stats.total_cuts_paid_e8s + cut_e8s;
+        });
     };
 
     // Record allocation claim

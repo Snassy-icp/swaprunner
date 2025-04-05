@@ -3996,8 +3996,11 @@ shared (deployer) actor class SwapRunner() = this {
             return #err("Token is not whitelisted");
         };
 
+        // Calculate cut amount
+        let cut_e8s = amount_e8s * allocation_fee_config.cut_basis_points / 10000;
+
         // Call the module function
-        await Allocation.top_up_allocation(
+        let top_up_result = await Allocation.top_up_allocation(
             caller,
             allocation_id,
             amount_e8s,
@@ -4009,6 +4012,23 @@ shared (deployer) actor class SwapRunner() = this {
             getOrCreateUserIndex,
             addToAllocationBalance,
             addToServerBalance,
-        )
+        );
+
+        // If top-up was successful, record stats
+        switch (top_up_result) {
+            case (#err(e)) { return #err(e) };
+            case (#ok(_)) {
+                // Record allocation stats
+                await Stats.record_allocation_top_up(
+                    caller,
+                    Principal.toText(allocation.token.canister_id),
+                    amount_e8s,
+                    cut_e8s,
+                    getStatsContext()
+                );
+
+                #ok(())
+            };
+        }
     };
 }
