@@ -25,19 +25,84 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
 }) => {
     const [fundingBalance, setFundingBalance] = useState<bigint>(BigInt(0));
     const [walletBalance, setWalletBalance] = useState<bigint>(BigInt(0));
+    const [allocationBalance, setAllocationBalance] = useState<bigint>(BigInt(0));
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [depositAmount, setDepositAmount] = useState('');
     const [withdrawAmount, setWithdrawAmount] = useState('');
     const [tokenMetadata, setTokenMetadata] = useState<TokenMetadata | null>(null);
+    const [allocation, setAllocation] = useState<any>(null);
+    const [potentialUsers, setPotentialUsers] = useState<{ min: number; max: number; avg: number } | null>(null);
 
     useEffect(() => {
         if (show) {
-            loadFundingBalance();
-            loadTokenMetadata();
-            loadWalletBalance();
+            loadAllData();
         }
     }, [show, allocationId, tokenId]);
+
+    const loadAllData = async () => {
+        try {
+            setLoading(true);
+            await Promise.all([
+                loadFundingBalance(),
+                loadTokenMetadata(),
+                loadWalletBalance(),
+                loadAllocationBalance(),
+                loadAllocation()
+            ]);
+        } catch (err) {
+            console.error('Error loading data:', err);
+            setError('Failed to load data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadAllocation = async () => {
+        try {
+            const allocations = await allocationService.getMyCreatedAllocations();
+            const currentAllocation = allocations.find(a => a.allocation.id === allocationId)?.allocation;
+            if (currentAllocation) {
+                setAllocation(currentAllocation);
+                calculatePotentialUsers(currentAllocation, fundingBalance);
+            }
+        } catch (err) {
+            console.error('Error loading allocation:', err);
+            setError('Failed to load allocation details');
+        }
+    };
+
+    const calculatePotentialUsers = (alloc: any, balance: bigint) => {
+        if (!alloc) return;
+        
+        const min_e8s = alloc.token.per_user.min_e8s;
+        const max_e8s = alloc.token.per_user.max_e8s;
+        
+        if (balance <= BigInt(0) || min_e8s <= BigInt(0)) {
+            setPotentialUsers({ min: 0, max: 0, avg: 0 });
+            return;
+        }
+
+        const maxUsers = Number(balance / min_e8s);
+        const minUsers = Number(balance / max_e8s);
+        const avgUsers = Math.floor((maxUsers + minUsers) / 2);
+
+        setPotentialUsers({
+            min: Math.floor(minUsers),
+            max: Math.floor(maxUsers),
+            avg: avgUsers
+        });
+    };
+
+    const loadAllocationBalance = async () => {
+        try {
+            const balance = await allocationService.getAllocationBalance(allocationId);
+            setAllocationBalance(balance);
+        } catch (err) {
+            console.error('Error loading allocation balance:', err);
+            setError('Failed to load allocation balance');
+        }
+    };
 
     const loadTokenMetadata = async () => {
         try {
@@ -82,7 +147,7 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                 amount_e8s: amount.toString(),
                 subaccount: allocationService.deriveBackendSubaccount(Principal.fromText(tokenId), allocationId)
             });
-            await Promise.all([loadFundingBalance(), loadWalletBalance()]);
+            await loadAllData();
             setDepositAmount('');
         } catch (err) {
             console.error('Error depositing:', err);
@@ -103,7 +168,7 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                 amount_e8s: amount.toString(),
                 subaccount: await allocationService.deriveBackendSubaccount(Principal.fromText(tokenId), allocationId)
             });
-            await Promise.all([loadFundingBalance(), loadWalletBalance()]);
+            await loadAllData();
             setWithdrawAmount('');
         } catch (err) {
             console.error('Error withdrawing:', err);
@@ -118,7 +183,7 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
             setLoading(true);
             setError(null);
             await allocationService.topUpAllocation(allocationId, fundingBalance);
-            await loadFundingBalance();
+            await loadAllData();
             if (onSuccess) {
                 onSuccess();
             }
@@ -147,11 +212,23 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                         <div className="funding-balance">
                             <h4>Current Funding Balance</h4>
                             <p>{formatTokenAmount(fundingBalance, tokenId)}</p>
+                            {potentialUsers && (
+                                <div className="potential-users">
+                                    <span>Could fund {potentialUsers.min === potentialUsers.max ? 
+                                        potentialUsers.max : 
+                                        `${potentialUsers.min}-${potentialUsers.max}`} users</span>
+                                </div>
+                            )}
                         </div>
                         <div className="wallet-balance">
                             <h4>Wallet Balance</h4>
                             <p>{formatTokenAmount(walletBalance, tokenId)}</p>
                         </div>
+                    </div>
+
+                    <div className="allocation-balance">
+                        <h4>Allocation Balance</h4>
+                        <p>{formatTokenAmount(allocationBalance, tokenId)}</p>
                     </div>
 
                     <div className="funding-actions">

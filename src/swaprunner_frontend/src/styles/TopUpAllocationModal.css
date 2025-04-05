@@ -59,7 +59,7 @@
 .balances-container {
     display: flex;
     gap: 8px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
 .funding-balance,
@@ -71,7 +71,8 @@
 }
 
 .funding-balance h4,
-.wallet-balance h4 {
+.wallet-balance h4,
+.allocation-balance h4 {
     margin: 0 0 4px 0;
     color: rgba(255, 255, 255, 0.5);
     font-size: 0.875rem;
@@ -79,10 +80,29 @@
 }
 
 .funding-balance p,
-.wallet-balance p {
+.wallet-balance p,
+.allocation-balance p {
     margin: 0;
     font-size: 1.125rem;
     font-weight: 500;
+}
+
+.potential-users {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.potential-users span {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.75rem;
+}
+
+.allocation-balance {
+    background-color: #1a1b1e;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
 }
 
 .funding-actions {
