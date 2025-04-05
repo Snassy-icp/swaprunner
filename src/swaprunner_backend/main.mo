@@ -3976,7 +3976,6 @@ shared (deployer) actor class SwapRunner() = this {
         Buffer.toArray(results)
     };
 
-    // TODO: Statistics
     // TODO: Increaset allocation amount
 
     // Top up an allocation with additional funds
@@ -4018,6 +4017,16 @@ shared (deployer) actor class SwapRunner() = this {
         switch (top_up_result) {
             case (#err(e)) { return #err(e) };
             case (#ok(_)) {
+                // Update allocation total amount
+                let updated_allocation = {
+                    allocation with
+                    token = {
+                        allocation.token with
+                        total_amount_e8s = allocation.token.total_amount_e8s + amount_e8s;
+                    }
+                };
+                allocations.put(Nat.toText(allocation_id), updated_allocation);
+
                 // Record allocation stats
                 await Stats.record_allocation_top_up(
                     caller,
