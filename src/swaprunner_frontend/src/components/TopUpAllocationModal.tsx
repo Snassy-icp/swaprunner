@@ -189,7 +189,9 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
         try {
             setLoading(true);
             setError(null);
-            await allocationService.cancelTopUp(allocationId);
+            if (fundingBalance > BigInt(0)) {
+                await allocationService.cancelTopUp(allocationId);
+            }
             await loadAllData();
             if (onSuccess) {
                 onSuccess();
@@ -210,9 +212,6 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
             <div className="modal-content">
                 <div className="modal-header">
                     <h3>Top Up Allocation</h3>
-                    <button className="close-button" onClick={onClose}>
-                        <FiX />
-                    </button>
                 </div>
 
                 <div className="modal-body">
@@ -279,7 +278,7 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                         <button
                             className="cancel-button"
                             onClick={() => setShowCancelConfirmation(true)}
-                            disabled={loading || fundingBalance <= BigInt(0)}
+                            disabled={loading}
                         >
                             Cancel Top-up
                         </button>
