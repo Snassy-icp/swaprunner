@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiPlus, FiMinus, FiArrowUp } from 'react-icons/fi';
+import { FiX, FiPlus, FiArrowUp } from 'react-icons/fi';
 import { allocationService } from '../services/allocation';
 import { icrc1Service } from '../services/icrc1_service';
 import { formatTokenAmount, parseTokenAmount } from '../utils/format';
 import { Principal } from '@dfinity/principal';
 import { tokenService } from '../services/token';
 import { TokenMetadata } from '../types/token';
+import { ConfirmationModal } from './ConfirmationModal';
 import '../styles/TopUpAllocationModal.css';
 
 interface TopUpAllocationModalProps {
@@ -29,10 +30,10 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [depositAmount, setDepositAmount] = useState('');
-    const [withdrawAmount, setWithdrawAmount] = useState('');
     const [tokenMetadata, setTokenMetadata] = useState<TokenMetadata | null>(null);
     const [allocation, setAllocation] = useState<any>(null);
     const [potentialUsers, setPotentialUsers] = useState<{ min: number; max: number; avg: number } | null>(null);
+    const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
 
     useEffect(() => {
         if (show) {
@@ -78,13 +79,17 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
         const min_e8s = alloc.token.per_user.min_e8s;
         const max_e8s = alloc.token.per_user.max_e8s;
         
-        if (balance <= BigInt(0) || min_e8s <= BigInt(0)) {
+        // Calculate total available balance including pending deposit
+        const depositE8s = depositAmount ? parseTokenAmount(depositAmount, tokenId) : BigInt(0);
+        const totalBalance = balance + depositE8s;
+        
+        if (totalBalance <= BigInt(0) || min_e8s <= BigInt(0)) {
             setPotentialUsers({ min: 0, max: 0, avg: 0 });
             return;
         }
 
-        const maxUsers = Number(balance / min_e8s);
-        const minUsers = Number(balance / max_e8s);
+        const maxUsers = Number(totalBalance / min_e8s);
+        const minUsers = Number(totalBalance / max_e8s);
         const avgUsers = Math.floor((maxUsers + minUsers) / 2);
 
         setPotentialUsers({
@@ -93,6 +98,12 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
             avg: avgUsers
         });
     };
+
+    useEffect(() => {
+        if (allocation) {
+            calculatePotentialUsers(allocation, fundingBalance);
+        }
+    }, [allocation, fundingBalance, depositAmount]);
 
     const loadAllocationBalance = async () => {
         try {
@@ -157,27 +168,6 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
         }
     };
 
-    const handleWithdraw = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            const amount = parseTokenAmount(withdrawAmount, tokenId);
-            await icrc1Service.transfer({
-                tokenId,
-                to: process.env.CANISTER_ID_SWAPRUNNER_BACKEND!,
-                amount_e8s: amount.toString(),
-                subaccount: await allocationService.deriveBackendSubaccount(Principal.fromText(tokenId), allocationId)
-            });
-            await loadAllData();
-            setWithdrawAmount('');
-        } catch (err) {
-            console.error('Error withdrawing:', err);
-            setError('Failed to withdraw funds');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handleTopUp = async () => {
         try {
             setLoading(true);
@@ -195,6 +185,26 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
         }
     };
 
+    const handleCancel = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            if (fundingBalance > BigInt(0)) {
+                await allocationService.cancelTopUp(allocationId);
+            }
+            await loadAllData();
+            if (onSuccess) {
+                onSuccess();
+            }
+            setShowCancelConfirmation(false);
+        } catch (err) {
+            console.error('Error cancelling top-up:', err);
+            setError('Failed to cancel top-up');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (!show) return null;
 
     return (
@@ -202,9 +212,6 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
             <div className="modal-content">
                 <div className="modal-header">
                     <h3>Top Up Allocation</h3>
-                    <button className="close-button" onClick={onClose}>
-                        <FiX />
-                    </button>
                 </div>
 
                 <div className="modal-body">
@@ -234,7 +241,16 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                     <div className="funding-actions">
                         <div className="action-group">
                             <div className="input-wrapper">
-                                <label className="input-label">Deposit Amount {tokenMetadata?.symbol ? `(${tokenMetadata.symbol})` : ''}</label>
+                                <label className="input-label">
+                                    <span>Deposit Amount {tokenMetadata?.symbol ? `(${tokenMetadata.symbol})` : ''}</span>
+                                    <button
+                                        className="action-button"
+                                        onClick={handleDeposit}
+                                        disabled={loading || !depositAmount || !/^\d*\.?\d*$/.test(depositAmount) || isNaN(Number(depositAmount)) || Number(depositAmount) <= 0 || parseTokenAmount(depositAmount, tokenId) > walletBalance}
+                                    >
+                                        <FiPlus /> Deposit
+                                    </button>
+                                </label>
                                 <input
                                     type="text"
                                     value={depositAmount}
@@ -247,51 +263,40 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
                                     disabled={loading}
                                 />
                             </div>
-                            <button
-                                className="action-button"
-                                onClick={handleDeposit}
-                                disabled={loading || !depositAmount || !/^\d*\.?\d*$/.test(depositAmount) || isNaN(Number(depositAmount)) || Number(depositAmount) <= 0 || parseTokenAmount(depositAmount, tokenId) > walletBalance}
-                            >
-                                <FiPlus /> Deposit
-                            </button>
-                        </div>
-
-                        <div className="action-group">
-                            <div className="input-wrapper">
-                                <label className="input-label">Withdraw Amount {tokenMetadata?.symbol ? `(${tokenMetadata.symbol})` : ''}</label>
-                                <input
-                                    type="text"
-                                    value={withdrawAmount}
-                                    onChange={(e) => {
-                                        if (/^\d*\.?\d*$/.test(e.target.value) || e.target.value === '') {
-                                            setWithdrawAmount(e.target.value);
-                                        }
-                                    }}
-                                    placeholder="Enter amount"
-                                    disabled={loading}
-                                />
-                            </div>
-                            <button
-                                className="action-button"
-                                onClick={handleWithdraw}
-                                disabled={loading || !withdrawAmount || !/^\d*\.?\d*$/.test(withdrawAmount) || isNaN(Number(withdrawAmount)) || Number(withdrawAmount) <= 0 || parseTokenAmount(withdrawAmount, tokenId) > fundingBalance}
-                            >
-                                <FiMinus /> Withdraw
-                            </button>
                         </div>
                     </div>
 
-                    <button
-                        className="top-up-button"
-                        onClick={handleTopUp}
-                        disabled={loading || fundingBalance <= BigInt(0)}
-                    >
-                        <FiArrowUp /> Top Up Allocation with {formatTokenAmount(fundingBalance, tokenId)}
-                    </button>
+                    <div className="button-group">
+                        <button
+                            className="top-up-button"
+                            onClick={handleTopUp}
+                            disabled={loading || fundingBalance <= BigInt(0)}
+                        >
+                            <FiArrowUp /> Top Up Allocation with {formatTokenAmount(fundingBalance, tokenId)}
+                        </button>
+
+                        <button
+                            className="cancel-button"
+                            onClick={() => setShowCancelConfirmation(true)}
+                            disabled={loading}
+                        >
+                            Cancel Top-up
+                        </button>
+                    </div>
 
                     {error && <div className="error-message">{error}</div>}
                 </div>
             </div>
+
+            <ConfirmationModal
+                isOpen={showCancelConfirmation}
+                onClose={() => setShowCancelConfirmation(false)}
+                onConfirm={handleCancel}
+                title="Cancel Top-up"
+                message={`Are you sure you want to cancel this top-up? Any deposited funds will be returned to your wallet. This action cannot be undone.`}
+                confirmText="Cancel Top-up"
+                isDanger={true}
+            />
         </div>
     );
 }; 

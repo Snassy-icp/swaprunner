@@ -735,7 +735,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
         }
 
         // Calculate platform cut
-        const cutBasisPoints = feeConfig ? BigInt(feeConfig.cut_basis_points) : BigInt(0);
+        const cutBasisPoints = feeConfig && allocationWithStatus.status === 'Draft' ? BigInt(feeConfig.cut_basis_points) : BigInt(0);
         const totalAfterCut = total - ((total * cutBasisPoints) / BigInt(10000));
 
         const maxUsers = Number(totalAfterCut / min);

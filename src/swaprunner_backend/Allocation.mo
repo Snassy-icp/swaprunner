@@ -18,6 +18,7 @@ import T "./Types";
 import Util "./Util";
 import IC "mo:base/ExperimentalInternetComputer";
 import Hash "mo:base/Hash";
+import Stats "./Stats";
 
 module {
     // Helper function to derive subaccount for allocation
@@ -98,6 +99,7 @@ module {
         getOrCreateUserIndex: (Principal) -> Nat16,
         addToAllocationBalance: (Nat, Nat16, Nat) -> (),
         addToServerBalance: (Nat16, Nat) -> (),
+        getStatsContext: () -> T.StatsContext
     ) : async Result.Result<(), Text> {
         // Get allocation
         let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
@@ -248,6 +250,28 @@ module {
                     addToAllocationBalance(allocation_id, token_index, remaining_amount);
                     // Increase server balance
                     addToServerBalance(token_index, remaining_amount);
+
+                    // Update allocation total amount
+                    let updated_allocation = {
+                        allocation with
+                        token = {
+                            allocation.token with
+                            total_amount_e8s = remaining_amount;
+                        }
+                    };
+
+                    allocations.put(Nat.toText(allocation_id), updated_allocation);
+                    allocation_statuses.put(Nat.toText(allocation_id), #Active);
+
+                    // Record allocation stats
+                    await Stats.record_allocation_creation(
+                        caller,
+                        Principal.toText(allocation.token.canister_id),
+                        remaining_amount,
+                        fee_config.icp_fee_e8s,
+                        cut_amount,
+                        getStatsContext()
+                    );
                 };
             };
         };
@@ -617,6 +641,7 @@ module {
         getOrCreateUserIndex: (Principal) -> Nat16,
         addToAllocationBalance: (Nat, Nat16, Nat) -> (),
         addToServerBalance: (Nat16, Nat) -> (),
+        getStatsContext: () -> T.StatsContext,
     ) : async Result.Result<(), Text> {
         // Get allocation
         let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
@@ -711,15 +736,94 @@ module {
                     addToAllocationBalance(allocation_id, token_index, remaining_amount);
                     // Increase server balance
                     addToServerBalance(token_index, remaining_amount);
+
+                    // Update allocation total amount
+                    let updated_allocation = {
+                        allocation with
+                        token = {
+                            allocation.token with
+                            total_amount_e8s = allocation.token.total_amount_e8s + remaining_amount;
+                        }
+                    };
+                    
+                    allocations.put(Nat.toText(allocation_id), updated_allocation);
+
+                    // Record allocation stats
+                    await Stats.record_allocation_top_up(
+                        caller,
+                        Principal.toText(allocation.token.canister_id),
+                        remaining_amount,
+                        cut_amount,
+                        getStatsContext()
+                    );
+
+                    // If allocation was depleted, and we have enough funds (more than the allocation min_amount), set its status to active again
+                    if (allocation_statuses.get(Nat.toText(allocation_id)) == ?#Depleted) {
+                        let min_amount = allocation.token.per_user.min_e8s;
+                        if (remaining_amount > min_amount) {
+                            allocation_statuses.put(Nat.toText(allocation_id), #Active);
+                        };
+                    };
                 };
             };
         };
 
-        // If allocation was depleted, and we have enough funds (more than the allocation min_amount), set its status to active again
-        if (allocation_statuses.get(Nat.toText(allocation_id)) == ?#Depleted) {
-            let min_amount = allocation.token.per_user.min_e8s;
-            if (remaining_amount > min_amount) {
-                allocation_statuses.put(Nat.toText(allocation_id), #Active);
+        // Return success
+        #ok(())
+    };
+
+    // Cancel a pending top-up and return funds to caller
+    public func cancel_top_up(
+        caller: Principal,
+        allocation_id: Nat,
+        allocations: HashMap.HashMap<Text, T.Allocation>,
+        this_canister_id: Principal,
+    ) : async Result.Result<(), Text> {
+        // Get allocation
+        let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
+            case null return #err("Allocation not found");
+            case (?a) a;
+        };
+
+        // Verify caller is creator
+        if (caller != allocation.creator) {
+            return #err("Only the creator can cancel a top-up");
+        };
+
+        // Get funding subaccount (derived from token principal)
+        let funding_subaccount = derive_backend_subaccount(
+            allocation.token.canister_id,
+            allocation_id
+        );
+
+        // Create ICRC1 actor for token
+        let icrc1_funding_actor = actor(Principal.toText(allocation.token.canister_id)) : T.ICRC1Interface;
+
+        // Check funding balance
+        let funding_balance = await icrc1_funding_actor.icrc1_balance_of({ 
+            owner = this_canister_id; 
+            subaccount = ?funding_subaccount
+        });
+
+        // Get tx fee for token
+        let token_tx_fee = switch (await icrc1_funding_actor.icrc1_fee()) {
+            case null 0;
+            case (?fee) fee;
+        };
+
+        // Return funding balance if bigger than tx fee
+        if (funding_balance > token_tx_fee) {
+            let funding_result = await icrc1_funding_actor.icrc1_transfer({
+                from_subaccount = ?funding_subaccount;
+                to = { owner = caller; subaccount = null };
+                amount = funding_balance - token_tx_fee; // here we must subtract the token transaction fee
+                fee = null;
+                memo = null;
+                created_at_time = null;
+            });
+            switch (funding_result) {
+                case (#Err(e)) return #err("Failed to return funds: " # debug_show(e));
+                case (#Ok(_)) {};
             };
         };
 

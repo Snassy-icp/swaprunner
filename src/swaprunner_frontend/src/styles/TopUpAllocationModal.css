@@ -120,13 +120,16 @@
     color: rgba(255, 255, 255, 0.5);
     font-size: 0.875rem;
     font-weight: normal;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 6px;
-    display: block;
 }
 
 .action-group {
     display: flex;
-    gap: 8px;
+    flex-direction: column;
+    max-width: 240px;
 }
 
 .action-group input {
@@ -138,6 +141,7 @@
     color: #ffffff;
     font-size: 0.875rem;
     height: 34px;
+    margin: 0;
 }
 
 .action-group input:focus {
@@ -209,4 +213,36 @@
     border-radius: 4px;
     color: #dc3545;
     font-size: 0.875rem;
+}
+
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.cancel-button {
+    width: 100%;
+    background-color: #dc3545;
+    border: none;
+    border-radius: 4px;
+    padding: 10px;
+    color: #ffffff;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background-color 0.2s;
+}
+
+.cancel-button:hover:not(:disabled) {
+    background-color: #c82333;
+}
+
+.cancel-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 } 

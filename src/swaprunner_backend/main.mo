@@ -3502,7 +3502,7 @@ shared (deployer) actor class SwapRunner() = this {
         };
 
         // Call allocation module to handle activation
-        let activate_result = await Allocation.activate_allocation(
+        await Allocation.activate_allocation(
             caller,
             allocation_id,
             allocations,
@@ -3514,30 +3514,9 @@ shared (deployer) actor class SwapRunner() = this {
             getOrCreateUserIndex,
             addToAllocationBalance,
             addToServerBalance,
+            getStatsContext
         );
 
-        Debug.print("activate_allocation: " # Nat.toText(allocation_id) # " " # debug_show(activate_result));
-
-        // If activation was successful, update the status and record stats
-        switch (activate_result) {
-            case (#err(e)) { return #err(e) };
-            case (#ok(_)) {
-                allocation_statuses.put(Nat.toText(allocation_id), #Active);
-                Debug.print("record_allocation_creation: " # Nat.toText(allocation_id));
-                // Record allocation stats
-                await Stats.record_allocation_creation(
-                    caller,
-                    Principal.toText(allocation.token.canister_id),
-                    allocation.token.total_amount_e8s,
-                    allocation_fee_config.icp_fee_e8s,
-                    allocation.token.total_amount_e8s * allocation_fee_config.cut_basis_points / 10000,
-                    getStatsContext()
-                );
-                Debug.print("recorded allocation creation: " # Nat.toText(allocation_id));
-
-                #ok(())
-            };
-        }
     };
 
     public shared({caller}) func claim_and_withdraw_allocation(allocation_id: Nat) : async Result.Result<Nat, Text> {
@@ -3990,16 +3969,24 @@ shared (deployer) actor class SwapRunner() = this {
             case (?a) a;
         };
 
-        // Verify token is whitelisted
-        if (not isWhitelisted(allocation.token.canister_id)) {
-            return #err("Token is not whitelisted");
+        // Verify caller is creator
+        if (caller != allocation.creator) {
+            return #err("Only the creator can top up this allocation");
+        };
+
+        // Verify current status is Active
+        switch (allocation_statuses.get(Nat.toText(allocation_id))) {
+            case (?#Active) {};
+            case (?#Depleted) {};  
+            case (?status) return #err("Allocation must be in Active or Depleted status to top up");
+            case null return #err("Allocation status not found");
         };
 
         // Calculate cut amount
         let cut_e8s = amount_e8s * allocation_fee_config.cut_basis_points / 10000;
 
         // Call the module function
-        let top_up_result = await Allocation.top_up_allocation(
+        await Allocation.top_up_allocation(
             caller,
             allocation_id,
             amount_e8s,
@@ -4011,33 +3998,22 @@ shared (deployer) actor class SwapRunner() = this {
             getOrCreateUserIndex,
             addToAllocationBalance,
             addToServerBalance,
+            getStatsContext
         );
+    };
 
-        // If top-up was successful, record stats
-        switch (top_up_result) {
-            case (#err(e)) { return #err(e) };
-            case (#ok(_)) {
-                // Update allocation total amount
-                let updated_allocation = {
-                    allocation with
-                    token = {
-                        allocation.token with
-                        total_amount_e8s = allocation.token.total_amount_e8s + amount_e8s;
-                    }
-                };
-                allocations.put(Nat.toText(allocation_id), updated_allocation);
+    // Cancel a top-up and return funds to caller
+    public shared({caller}) func cancel_top_up(allocation_id: Nat) : async Result.Result<(), Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
 
-                // Record allocation stats
-                await Stats.record_allocation_top_up(
-                    caller,
-                    Principal.toText(allocation.token.canister_id),
-                    amount_e8s,
-                    cut_e8s,
-                    getStatsContext()
-                );
-
-                #ok(())
-            };
-        }
+        // Call allocation module to handle cancellation
+        await Allocation.cancel_top_up(
+            caller,
+            allocation_id,
+            allocations,
+            Principal.fromActor(this)
+        );
     };
 }
