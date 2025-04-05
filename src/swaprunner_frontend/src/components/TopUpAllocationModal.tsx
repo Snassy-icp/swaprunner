@@ -78,13 +78,17 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
         const min_e8s = alloc.token.per_user.min_e8s;
         const max_e8s = alloc.token.per_user.max_e8s;
         
-        if (balance <= BigInt(0) || min_e8s <= BigInt(0)) {
+        // Calculate total available balance including pending deposit
+        const depositE8s = depositAmount ? parseTokenAmount(depositAmount, tokenId) : BigInt(0);
+        const totalBalance = balance + depositE8s;
+        
+        if (totalBalance <= BigInt(0) || min_e8s <= BigInt(0)) {
             setPotentialUsers({ min: 0, max: 0, avg: 0 });
             return;
         }
 
-        const maxUsers = Number(balance / min_e8s);
-        const minUsers = Number(balance / max_e8s);
+        const maxUsers = Number(totalBalance / min_e8s);
+        const minUsers = Number(totalBalance / max_e8s);
         const avgUsers = Math.floor((maxUsers + minUsers) / 2);
 
         setPotentialUsers({
@@ -93,6 +97,12 @@ export const TopUpAllocationModal: React.FC<TopUpAllocationModalProps> = ({
             avg: avgUsers
         });
     };
+
+    useEffect(() => {
+        if (allocation) {
+            calculatePotentialUsers(allocation, fundingBalance);
+        }
+    }, [allocation, fundingBalance, depositAmount]);
 
     const loadAllocationBalance = async () => {
         try {

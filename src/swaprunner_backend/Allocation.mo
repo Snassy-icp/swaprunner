@@ -18,6 +18,7 @@ import T "./Types";
 import Util "./Util";
 import IC "mo:base/ExperimentalInternetComputer";
 import Hash "mo:base/Hash";
+import Stats "./Stats";
 
 module {
     // Helper function to derive subaccount for allocation
@@ -98,6 +99,7 @@ module {
         getOrCreateUserIndex: (Principal) -> Nat16,
         addToAllocationBalance: (Nat, Nat16, Nat) -> (),
         addToServerBalance: (Nat16, Nat) -> (),
+        getStatsContext: () -> T.StatsContext
     ) : async Result.Result<(), Text> {
         // Get allocation
         let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
@@ -248,6 +250,28 @@ module {
                     addToAllocationBalance(allocation_id, token_index, remaining_amount);
                     // Increase server balance
                     addToServerBalance(token_index, remaining_amount);
+
+                    // Update allocation total amount
+                    let updated_allocation = {
+                        allocation with
+                        token = {
+                            allocation.token with
+                            total_amount_e8s = remaining_amount;
+                        }
+                    };
+
+                    allocations.put(Nat.toText(allocation_id), updated_allocation);
+                    allocation_statuses.put(Nat.toText(allocation_id), #Active);
+
+                    // Record allocation stats
+                    await Stats.record_allocation_creation(
+                        caller,
+                        Principal.toText(allocation.token.canister_id),
+                        remaining_amount,
+                        fee_config.icp_fee_e8s,
+                        cut_amount,
+                        getStatsContext()
+                    );
                 };
             };
         };
@@ -617,6 +641,7 @@ module {
         getOrCreateUserIndex: (Principal) -> Nat16,
         addToAllocationBalance: (Nat, Nat16, Nat) -> (),
         addToServerBalance: (Nat16, Nat) -> (),
+        getStatsContext: () -> T.StatsContext,
     ) : async Result.Result<(), Text> {
         // Get allocation
         let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
@@ -711,15 +736,35 @@ module {
                     addToAllocationBalance(allocation_id, token_index, remaining_amount);
                     // Increase server balance
                     addToServerBalance(token_index, remaining_amount);
-                };
-            };
-        };
 
-        // If allocation was depleted, and we have enough funds (more than the allocation min_amount), set its status to active again
-        if (allocation_statuses.get(Nat.toText(allocation_id)) == ?#Depleted) {
-            let min_amount = allocation.token.per_user.min_e8s;
-            if (remaining_amount > min_amount) {
-                allocation_statuses.put(Nat.toText(allocation_id), #Active);
+                    // Update allocation total amount
+                    let updated_allocation = {
+                        allocation with
+                        token = {
+                            allocation.token with
+                            total_amount_e8s = allocation.token.total_amount_e8s + remaining_amount;
+                        }
+                    };
+                    
+                    allocations.put(Nat.toText(allocation_id), updated_allocation);
+
+                    // Record allocation stats
+                    await Stats.record_allocation_top_up(
+                        caller,
+                        Principal.toText(allocation.token.canister_id),
+                        remaining_amount,
+                        cut_amount,
+                        getStatsContext()
+                    );
+
+                    // If allocation was depleted, and we have enough funds (more than the allocation min_amount), set its status to active again
+                    if (allocation_statuses.get(Nat.toText(allocation_id)) == ?#Depleted) {
+                        let min_amount = allocation.token.per_user.min_e8s;
+                        if (remaining_amount > min_amount) {
+                            allocation_statuses.put(Nat.toText(allocation_id), #Active);
+                        };
+                    };
+                };
             };
         };
 
