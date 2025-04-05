@@ -1,0 +1,212 @@
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: #141517;
+    border-radius: 8px;
+    padding: 16px;
+    width: 90%;
+    max-width: 360px;
+    position: relative;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 1.125rem;
+    font-weight: 500;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.close-button:hover {
+    color: #ffffff;
+}
+
+.modal-body {
+    color: #ffffff;
+}
+
+.balances-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.funding-balance,
+.wallet-balance {
+    flex: 1;
+    background-color: #1a1b1e;
+    padding: 12px;
+    border-radius: 6px;
+}
+
+.funding-balance h4,
+.wallet-balance h4,
+.allocation-balance h4 {
+    margin: 0 0 4px 0;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.875rem;
+    font-weight: normal;
+}
+
+.funding-balance p,
+.wallet-balance p,
+.allocation-balance p {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 500;
+}
+
+.potential-users {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.potential-users span {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.75rem;
+}
+
+.allocation-balance {
+    background-color: #1a1b1e;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+}
+
+.funding-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.input-wrapper {
+    flex: 1;
+}
+
+.input-label {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.875rem;
+    font-weight: normal;
+    margin-bottom: 6px;
+    display: block;
+}
+
+.action-group {
+    display: flex;
+    gap: 8px;
+}
+
+.action-group input {
+    width: 100%;
+    background-color: #1a1b1e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: #ffffff;
+    font-size: 0.875rem;
+    height: 34px;
+}
+
+.action-group input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.action-group input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.action-button {
+    background-color: #1a1b1e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 0 12px;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    white-space: nowrap;
+    min-width: 80px;
+    justify-content: center;
+    font-size: 0.875rem;
+}
+
+.action-button:hover:not(:disabled) {
+    background-color: #202124;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.action-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.top-up-button {
+    width: 100%;
+    background-color: #0d6efd;
+    border: none;
+    border-radius: 4px;
+    padding: 10px;
+    color: #ffffff;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background-color 0.2s;
+}
+
+.top-up-button:hover:not(:disabled) {
+    background-color: #0b5ed7;
+}
+
+.top-up-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.error-message {
+    margin-top: 12px;
+    padding: 10px;
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.2);
+    border-radius: 4px;
+    color: #dc3545;
+    font-size: 0.875rem;
+} 

@@ -824,7 +824,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                                                 {formatTokenAmount(reward.claim.amount_e8s, token?.canisterId || '')} {token?.metadata?.symbol || 'tokens'}
                                             </div>
                                             <div className="reward-date">
-                                                Claimed on {formatDate(Number(reward.claim.claimed_at / BigInt(1000000)))}
+                                                Claimed on {formatDate(Number(reward.claim.claimed_at))}
                                             </div>
                                         </div>
                                     );

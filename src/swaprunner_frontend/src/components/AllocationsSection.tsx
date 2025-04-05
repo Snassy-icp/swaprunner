@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiPlus, FiX, FiAlertCircle, FiCheck } from 'react-icons/fi';
+import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiPlus, FiX, FiAlertCircle, FiCheck, FiArrowUp } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { allocationService, Allocation, AllocationStatus, AllocationWithStatus, AllocationFeeConfig, CreateAllocationArgs, PaymentStatus } from '../services/allocation';
 import { CollapsibleSection } from '../pages/Me';
@@ -14,6 +14,8 @@ import { backendService } from '../services/backend';
 import { useAuth } from '../contexts/AuthContext';
 import { ConfirmationModal } from './ConfirmationModal';
 import { adminService } from '../services/admin';
+import { StatsService } from '../services/stats';
+import { TopUpAllocationModal } from './TopUpAllocationModal';
 
 interface Achievement {
     id: string;
@@ -654,6 +656,63 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     const [allocationToCancel, setAllocationToCancel] = useState<string | null>(null);
     const [showActivateConfirmation, setShowActivateConfirmation] = useState(false);
     const [feeConfig, setFeeConfig] = useState<AllocationFeeConfig | null>(null);
+    const [claimCount, setClaimCount] = useState<number>(0);
+    const [claims, setClaims] = useState<{
+        allocation: Allocation;
+        claim: {
+            allocation_id: string;
+            user: string;
+            amount_e8s: bigint;
+            claimed_at: bigint;
+        };
+    }[]>([]);
+    const [showClaims, setShowClaims] = useState(false);
+    const [showTopUpModal, setShowTopUpModal] = useState(false);
+    const statsService = new StatsService();
+
+    useEffect(() => {
+        if (expanded) {
+            loadAllocationData();
+        }
+    }, [expanded]);
+
+    const loadAllocationData = async () => {
+        try {
+            setLoading(true);
+            const [achievementDetails, paymentStatusData, fundingBalanceData, allocationBalanceData, feeConfigData, claims] = await Promise.all([
+                backendService.getActor().then(actor => actor.get_achievement_details(allocationWithStatus.allocation.achievement_id)),
+                allocationService.getPaymentStatus(allocationWithStatus.allocation.id),
+                allocationService.getFundingBalance(allocationWithStatus.allocation.id),
+                allocationService.getAllocationBalance(allocationWithStatus.allocation.id),
+                allocationService.getFeeConfig(),
+                allocationService.getAllocationClaims(allocationWithStatus.allocation.id)
+            ]);
+
+            if ('ok' in achievementDetails) {
+                setAchievement(achievementDetails.ok);
+            }
+            setPaymentStatus(paymentStatusData);
+            setFundingBalance(fundingBalanceData);
+            setAllocationBalance(allocationBalanceData);
+            setFeeConfig(feeConfigData);
+            setClaimCount(claims.length);
+        } catch (err) {
+            console.error('Error loading allocation data:', err);
+            setError('Failed to load allocation data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadAllocationBalance = async () => {
+        try {
+            const balance = await allocationService.getAllocationBalance(allocationWithStatus.allocation.id);
+            setAllocationBalance(balance);
+        } catch (err) {
+            console.error('Error loading allocation balance:', err);
+            setError('Failed to load allocation balance');
+        }
+    };
 
     // Get token metadata
     const tokenMetadata = tokens.find(t => t.canisterId === allocationWithStatus.allocation.token.canister_id.toString())?.metadata;
@@ -761,6 +820,7 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                     setAllocationBalance(balance);
                 } catch (err) {
                     console.error('Error loading allocation balance:', err);
+                    setError('Failed to load allocation balance');
                 }
             }
         };
@@ -774,6 +834,45 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
             loadAllocationBalance();
         }
     }, [allocationWithStatus.allocation.achievement_id, expanded, tokenMetadata, allocationWithStatus.allocation.token.canister_id, fundingBalance, allocationWithStatus.allocation.id, allocationWithStatus.status, paymentStatus?.is_paid]);
+
+    useEffect(() => {
+        const loadClaimCount = async () => {
+            if (expanded) {
+                try {
+                    const stats = await statsService.getAllTokenAllocationStats();
+                    const tokenStats = stats.find(([tokenId]) => tokenId === allocationWithStatus.allocation.token.canister_id.toString());
+                    if (tokenStats) {
+                        setClaimCount(Number(tokenStats[1].claim_count));
+                    }
+                } catch (error) {
+                    console.error('Error loading claim count:', error);
+                }
+            }
+        };
+        loadClaimCount();
+    }, [expanded, allocationWithStatus.allocation.token.canister_id]);
+
+    useEffect(() => {
+        const loadClaims = async () => {
+            if (expanded && showClaims) {
+                try {
+                    const allocationClaims = await allocationService.getAllocationClaims(allocationWithStatus.allocation.id);
+                    setClaims(allocationClaims.map(claim => ({
+                        allocation: allocationWithStatus.allocation,
+                        claim: {
+                            allocation_id: allocationWithStatus.allocation.id,
+                            user: claim.user,
+                            amount_e8s: claim.amount_e8s,
+                            claimed_at: claim.claimed_at
+                        }
+                    })));
+                } catch (error) {
+                    console.error('Error loading claims:', error);
+                }
+            }
+        };
+        loadClaims();
+    }, [expanded, showClaims, allocationWithStatus.allocation.id]);
 
     const handlePay = async () => {
         if (!paymentStatus || paymentStatus.is_paid) return;
@@ -1130,6 +1229,13 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                             );
                         })()}
 
+                        <div className="detail-row">
+                            <span className="detail-label">Claims:</span>
+                            <span className="detail-value">
+                                {claimCount} users
+                            </span>
+                        </div>
+
                         {showCancelButton && allocationWithStatus.status !== 'Cancelled' && (
                             <div className="detail-actions">
                                 <button
@@ -1159,9 +1265,49 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                             {formatTokenAmount(allocationBalance, allocationWithStatus.allocation.token.canister_id.toString())} {tokenMetadata?.symbol || 'tokens'}
                                         </span>
                                     </div>
+                                    {(allocationWithStatus.status === 'Active' || allocationWithStatus.status === 'Depleted') && (
+                                        <div className="detail-actions">
+                                            <button
+                                                className="action-button primary"
+                                                onClick={() => setShowTopUpModal(true)}
+                                                disabled={loading}
+                                            >
+                                                <FiArrowUp /> Top Up Allocation
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
+
+                        <div className="claims-section">
+                            <div className="claims-header" onClick={() => setShowClaims(!showClaims)}>
+                                <h4>Claims History</h4>
+                                <button className="expand-button">
+                                    {showClaims ? <FiChevronUp /> : <FiChevronDown />}
+                                </button>
+                            </div>
+                            {showClaims && (
+                                <div className="claims-list">
+                                    {claims.length > 0 ? (
+                                        claims.map((claim, index) => (
+                                            <div key={index} className="claim-item">
+                                                <div className="claim-info">
+                                                    <span className="claim-user">{claim.claim.user.toString()}</span>
+                                                    <span className="claim-amount">
+                                                        {formatTokenAmount(claim.claim.amount_e8s, allocationWithStatus.allocation.token.canister_id.toString())}
+                                                        {tokenMetadata?.symbol || 'tokens'}
+                                                    </span>
+                                                    <span className="claim-date">{formatDate(Number(claim.claim.claimed_at))}</span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="no-claims">No claims yet</div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
 
                         {error && <div className="error-message">{error}</div>}
                     </div>
@@ -1196,6 +1342,18 @@ ${calculatePotentialUsers() ? `User Capacity: ${calculatePotentialUsers()?.min =
 Warning: Once activated, the payment fee will be drawn and funds will be transferred.`}
                 confirmText="Activate"
                 isDanger={false}
+            />
+            <TopUpAllocationModal
+                show={showTopUpModal}
+                onClose={() => setShowTopUpModal(false)}
+                allocationId={allocationWithStatus.allocation.id}
+                tokenId={allocationWithStatus.allocation.token.canister_id.toString()}
+                onSuccess={() => {
+                    loadAllocationBalance();
+                    if (onStatusChange) {
+                        onStatusChange();
+                    }
+                }}
             />
         </div>
     );
@@ -1258,30 +1416,7 @@ export const AllocationsSection: React.FC = () => {
             throw err;
         }
     };
-/*
-    const handleCancel = async (allocationId: string) => {
-        setAllocationToCancel(allocationId);
-        setShowCancelConfirmation(true);
-    };
 
-    const confirmCancel = async () => {
-        if (!allocationToCancel) return;
-
-        setLoading(true);
-        try {
-            await allocationService.cancelAllocation(allocationToCancel);
-            // Refresh allocations after cancellation
-            await loadAllocations();
-        } catch (error) {
-            console.error('Error cancelling allocation:', error);
-            setError('Failed to cancel allocation');
-        } finally {
-            setLoading(false);
-            setShowCancelConfirmation(false);
-            setAllocationToCancel(null);
-        }
-    };
-*/
     const allocationsContent = (
         <div className="allocations-content">
             <div className="allocations-actions">

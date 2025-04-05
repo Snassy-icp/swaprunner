@@ -3947,4 +3947,65 @@ shared (deployer) actor class SwapRunner() = this {
             user_logins = userLogins;
         }
     };
+
+    public query func get_all_allocation_claims() : async [T.AllocationClaim] {    
+        Iter.toArray(allocation_claims.vals());
+    };
+    // Query all claims for an allocation
+    public query func get_allocation_claims(allocation_id: Text) : async [{
+        user: Principal;
+        amount_e8s: Nat;
+        claimed_at: Int;
+    }] {
+        let results = Buffer.Buffer<{
+            user: Principal;
+            amount_e8s: Nat;
+            claimed_at: Int;
+        }>(0);
+
+        for ((claim_key, claim) in allocation_claims.entries()) {
+            if (claim.allocation_id == allocation_id) {
+                results.add({
+                    user = claim.user;
+                    amount_e8s = claim.amount_e8s;
+                    claimed_at = claim.claimed_at;
+                });
+            };
+        };
+
+        Buffer.toArray(results)
+    };
+
+    // Top up an allocation with additional funds
+    public shared({caller}) func top_up_allocation(allocation_id: Nat, amount_e8s: Nat) : async Result.Result<(), Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        // Get allocation
+        let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
+            case null return #err("Allocation not found");
+            case (?a) a;
+        };
+
+        // Verify token is whitelisted
+        if (not isWhitelisted(allocation.token.canister_id)) {
+            return #err("Token is not whitelisted");
+        };
+
+        // Call the module function
+        await Allocation.top_up_allocation(
+            caller,
+            allocation_id,
+            amount_e8s,
+            allocations,
+            allocation_statuses,
+            allocation_fee_config,
+            Principal.fromActor(this),
+            cut_account,
+            getOrCreateUserIndex,
+            addToAllocationBalance,
+            addToServerBalance,
+        )
+    };
 }
