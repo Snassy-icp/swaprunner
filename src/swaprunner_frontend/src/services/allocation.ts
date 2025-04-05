@@ -170,7 +170,7 @@ class AllocationService {
      * Derive the subaccount for an allocation's payment
      * Uses the principal's bytes as the base subaccount, then modifies the last 3 bytes with the allocation ID
      */
-    private deriveBackendSubaccount(principal: Principal, allocationId: string): Uint8Array {
+    public deriveBackendSubaccount(principal: Principal, allocationId: string): Uint8Array {
         // Convert principal to bytes for the subaccount
 
         let principalBytes = principalToSubAccount(principal);
@@ -254,7 +254,7 @@ class AllocationService {
     /**
      * Get the current funding balance for an allocation
      */
-    async getFundingBalance(allocationId: string): Promise<bigint> {
+    async getFundingBalance(allocationId: string, topup?: boolean): Promise<bigint> {
         const allocation = await this.getAllocation(allocationId);
         if (!allocation) {
             throw new Error('Allocation not found');
@@ -274,11 +274,14 @@ class AllocationService {
         const token_tx_fee = token_metadata?.fee || BigInt(0); // Default to 10000 e8s if fee not found
         
         // If this is an ICP allocation, subtract the platform fee from the available balance
-        if (allocation.token.canister_id.toString() === 'ryjl3-tyaaa-aaaaa-aaaba-cai') {
+        if (allocation.token.canister_id.toString() === 'ryjl3-tyaaa-aaaaa-aaaba-cai' && !topup) {
             const feeConfig = await this.getFeeConfig();
-            return balance_e8s > feeConfig.icp_fee_e8s ? (balance_e8s > feeConfig.icp_fee_e8s + token_tx_fee ? balance_e8s - feeConfig.icp_fee_e8s - token_tx_fee : balance_e8s - feeConfig.icp_fee_e8s) : BigInt(0);
+            console.log('XXXXXXXX balance_e8s', balance_e8s);
+            const out = balance_e8s > feeConfig.icp_fee_e8s ? (balance_e8s > feeConfig.icp_fee_e8s + token_tx_fee ? balance_e8s - feeConfig.icp_fee_e8s - token_tx_fee : balance_e8s - feeConfig.icp_fee_e8s) : BigInt(0);
+            console.log('YYYYYY balance_e8s', out);
+            return out;
         }
-
+        console.log('AAAAAAAA balance_e8s', balance_e8s);
         return balance_e8s > token_tx_fee ? balance_e8s - token_tx_fee : balance_e8s;
     }
 
@@ -428,6 +431,30 @@ class AllocationService {
                 amount_e8s: totalRequired.toString(),
                 subaccount: subaccount
             });
+        }
+    }
+
+    /**
+     * Get all claims for a specific allocation
+     */
+    async getAllocationClaims(allocationId: string): Promise<{
+        user: string;
+        amount_e8s: bigint;
+        claimed_at: bigint;
+    }[]> {
+        const actor = await backendService.getActor();
+        return actor.get_allocation_claims(allocationId);
+    }
+
+    /**
+     * Top up an allocation with additional funds
+     */
+    async topUpAllocation(allocationId: string, amount_e8s: bigint): Promise<void> {
+        const actor = await backendService.getActor();
+        const result = await actor.top_up_allocation(BigInt(allocationId), amount_e8s);
+        
+        if ('err' in result) {
+            throw new Error(result.err);
         }
     }
 }
