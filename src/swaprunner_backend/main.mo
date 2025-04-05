@@ -2590,8 +2590,8 @@ shared (deployer) actor class SwapRunner() = this {
             throw Error.reject("Caller must be authenticated");
         };
 
-        if (token_canister_id != Principal.toText(ICP_PRINCIPAL)) {
-            return false; // Not neede, it is always in wallet.
+        if (token_canister_id == Principal.toText(ICP_PRINCIPAL)) {
+            return false; // Not needed, it is always in wallet.
         };
 
         let tokenPrincipal = Principal.fromText(token_canister_id);
@@ -3975,6 +3975,9 @@ shared (deployer) actor class SwapRunner() = this {
 
         Buffer.toArray(results)
     };
+
+    // TODO: Statistics
+    // TODO: Increaset allocation amount
 
     // Top up an allocation with additional funds
     public shared({caller}) func top_up_allocation(allocation_id: Nat, amount_e8s: Nat) : async Result.Result<(), Text> {
