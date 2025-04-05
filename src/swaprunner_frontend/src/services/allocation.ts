@@ -457,6 +457,18 @@ class AllocationService {
             throw new Error(result.err);
         }
     }
+
+    /**
+     * Cancel a top-up and return funds to wallet
+     */
+    async cancelTopUp(allocationId: string): Promise<void> {
+        const actor = await backendService.getActor();
+        const result = await actor.cancel_top_up(BigInt(allocationId));
+        
+        if ('err' in result) {
+            throw new Error(result.err);
+        }
+    }
 }
 
 export const allocationService = new AllocationService(); 

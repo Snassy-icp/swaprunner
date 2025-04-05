@@ -4001,4 +4001,19 @@ shared (deployer) actor class SwapRunner() = this {
             getStatsContext
         );
     };
+
+    // Cancel a top-up and return funds to caller
+    public shared({caller}) func cancel_top_up(allocation_id: Nat) : async Result.Result<(), Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous principal not allowed");
+        };
+
+        // Call allocation module to handle cancellation
+        await Allocation.cancel_top_up(
+            caller,
+            allocation_id,
+            allocations,
+            Principal.fromActor(this)
+        );
+    };
 }
