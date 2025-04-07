@@ -1,18 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { backendService } from '../services/backend';
+import React, { useEffect, useState } from 'react';
+import { FiChevronDown, FiChevronUp, FiCheck, FiExternalLink } from 'react-icons/fi';
+import { userProfileService } from '../services/userProfile';
 import { allocationService } from '../services/allocation';
-import { FiChevronDown, FiChevronUp, FiCheck } from 'react-icons/fi';
+import { tokenService } from '../services/token';
+import { formatTokenAmount } from '../utils/format';
+import { TokenMetadata } from '../types/token';
 import '../styles/Sponsors.css';
-
 interface UserProfile {
     principal: string;
     name: string;
     description: string;
-    logo_url?: string;
-    social_links: {
+    logo_url: [string] | [];
+    social_links: Array<{
         platform: string;
         url: string;
-    }[];
+    }>;
     created_at: bigint;
     updated_at: bigint;
     created_by: string;
@@ -30,66 +32,71 @@ interface SponsorWithClaims {
     profile: UserProfile;
     totalClaims: number;
     totalAmountE8s: bigint;
+    tokenMetadata?: TokenMetadata;
 }
 
 export const Sponsors: React.FC = () => {
     const [sponsors, setSponsors] = useState<SponsorWithClaims[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [expandedSponsor, setExpandedSponsor] = useState<string | null>(null);
+    const [expandedSponsors, setExpandedSponsors] = useState<Set<string>>(new Set());
 
     useEffect(() => {
-        const loadSponsors = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-
-                // Get all user profiles
-                const actor = await backendService.getActor();
-                const profiles = await actor.listUserProfiles(0, 1000);
-                const claims = await actor.get_all_allocation_claims();
-
-                // Calculate claims per sponsor
-                const sponsorClaims = new Map<string, { count: number, amount: bigint }>();
-                claims.forEach((claim: AllocationClaim) => {
-                    const sponsorId = claim.user.toString();
-                    const current = sponsorClaims.get(sponsorId) || { count: 0, amount: BigInt(0) };
-                    sponsorClaims.set(sponsorId, {
-                        count: current.count + 1,
-                        amount: current.amount + claim.amount_e8s
-                    });
-                });
-
-                // Combine profiles with their claims
-                const sponsorsWithClaims: SponsorWithClaims[] = profiles
-                    .map((profile: UserProfile) => ({
-                        profile,
-                        totalClaims: sponsorClaims.get(profile.principal.toString())?.count || 0,
-                        totalAmountE8s: sponsorClaims.get(profile.principal.toString())?.amount || BigInt(0)
-                    }))
-                    .filter((sponsor: SponsorWithClaims) => sponsor.totalClaims > 0) // Only show sponsors with claims
-                    .sort((a: SponsorWithClaims, b: SponsorWithClaims) => b.totalClaims - a.totalClaims); // Sort by number of claims
-
-                setSponsors(sponsorsWithClaims);
-            } catch (err) {
-                console.error('Error loading sponsors:', err);
-                setError('Failed to load sponsors');
-            } finally {
-                setLoading(false);
-            }
-        };
-
         loadSponsors();
     }, []);
 
-    const formatDate = (timestamp: bigint) => {
-        // Convert from nanoseconds to milliseconds
-        const milliseconds = Number(timestamp) / 1_000_000;
-        return new Date(milliseconds).toLocaleString();
+    const loadSponsors = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const profiles = await userProfileService.getVerifiedProfiles();
+            
+            const sponsorsWithClaims = await Promise.all(profiles.map(async (profile: UserProfile) => {
+                const claims = await allocationService.getSponsorClaims(profile.principal);
+                const totalClaims = claims.length;
+                const totalAmountE8s = claims.reduce((sum: bigint, claim: AllocationClaim) => sum + claim.amount_e8s, BigInt(0));
+
+                // Find token link if it exists
+                const tokenLink = profile.social_links.find((link: { platform: string; url: string }) => link.platform === 'token');
+                let tokenMetadata: TokenMetadata | undefined;
+
+                if (tokenLink) {
+                    try {
+                        tokenMetadata = await tokenService.getMetadataWithLogo(tokenLink.url);
+                    } catch (err) {
+                        console.warn(`Failed to fetch token metadata for ${tokenLink.url}:`, err);
+                    }
+                }
+
+                return {
+                    profile,
+                    totalClaims,
+                    totalAmountE8s,
+                    tokenMetadata
+                };
+            }));
+
+            setSponsors(sponsorsWithClaims);
+        } catch (err) {
+            console.error('Error loading sponsors:', err);
+            setError('Failed to load sponsors');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const formatDate = (timestamp: bigint): string => {
+        return new Date(Number(timestamp)).toLocaleString();
     };
 
     const toggleSponsor = (principalId: string) => {
-        setExpandedSponsor(expandedSponsor === principalId ? null : principalId);
+        const newExpandedSponsors = new Set(expandedSponsors);
+        if (newExpandedSponsors.has(principalId)) {
+            newExpandedSponsors.delete(principalId);
+        } else {
+            newExpandedSponsors.add(principalId);
+        }
+        setExpandedSponsors(newExpandedSponsors);
     };
 
     if (loading) {
@@ -115,28 +122,30 @@ export const Sponsors: React.FC = () => {
     return (
         <div className="sponsors-page">
             <div className="swap-box">
-                <h1>Our Sponsors</h1>
+                <h1>Sponsors</h1>
                 <div className="sponsors-list">
-                    {sponsors.map(({ profile, totalClaims, totalAmountE8s }) => (
-                        <div key={profile.principal} className="sponsor-card">
+                    {sponsors.map((sponsor) => (
+                        <div key={sponsor.profile.principal} className="sponsor-card">
                             <div 
-                                className="sponsor-header" 
-                                onClick={() => toggleSponsor(profile.principal)}
+                                className="sponsor-header"
+                                onClick={() => toggleSponsor(sponsor.profile.principal)}
                             >
-                                {profile.logo_url && (
-                                    <div className="sponsor-logo-cell">
-                                        <img 
-                                            src={profile.logo_url} 
-                                            alt={`${profile.name} logo`}
-                                            className="sponsor-logo"
-                                        />
-                                    </div>
-                                )}
+                                <div className="sponsor-logo-cell">
+                                    <img 
+                                        className="sponsor-logo"
+                                        src={sponsor.tokenMetadata?.logo_url || sponsor.profile.logo_url[0] || '/default-logo.png'}
+                                        alt={`${sponsor.profile.name} logo`}
+                                        onError={(e) => {
+                                            const img = e.target as HTMLImageElement;
+                                            img.src = '/default-logo.png';
+                                        }}
+                                    />
+                                </div>
                                 <div className="sponsor-info">
                                     <div className="sponsor-name">
                                         <div className="name-with-badge">
-                                            {profile.name}
-                                            {profile.verified && (
+                                            <h3>{sponsor.profile.name}</h3>
+                                            {sponsor.profile.verified && (
                                                 <span className="verified-badge" title="Verified Sponsor">
                                                     <FiCheck />
                                                 </span>
@@ -144,20 +153,21 @@ export const Sponsors: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="sponsor-stats">
-                                        <span>{totalClaims} claims</span>
-                                        <span>{totalAmountE8s.toString()} tokens distributed</span>
+                                        <span>{sponsor.totalClaims} claims</span>
+                                        <span>•</span>
+                                        <span>{formatTokenAmount(sponsor.totalAmountE8s, sponsor.tokenId || '')} {sponsor.tokenMetadata?.symbol || 'tokens'} distributed</span>
                                     </div>
                                 </div>
                                 <button className="expand-button">
-                                    {expandedSponsor === profile.principal ? <FiChevronUp /> : <FiChevronDown />}
+                                    {expandedSponsors.has(sponsor.profile.principal) ? <FiChevronUp /> : <FiChevronDown />}
                                 </button>
                             </div>
-                            {expandedSponsor === profile.principal && (
+                            {expandedSponsors.has(sponsor.profile.principal) && (
                                 <div className="sponsor-details">
-                                    <p className="sponsor-description">{profile.description}</p>
-                                    {profile.social_links.length > 0 && (
+                                    <p className="sponsor-description">{sponsor.profile.description}</p>
+                                    {sponsor.profile.social_links.length > 0 && (
                                         <div className="social-links">
-                                            {profile.social_links.map((link, index) => (
+                                            {sponsor.profile.social_links.map((link, index) => (
                                                 <a 
                                                     key={index}
                                                     href={link.url}
@@ -171,8 +181,8 @@ export const Sponsors: React.FC = () => {
                                         </div>
                                     )}
                                     <div className="sponsor-footer">
-                                        <span>Joined: {formatDate(profile.created_at)}</span>
-                                        <span>Last active: {formatDate(profile.updated_at)}</span>
+                                        <span>Joined: {formatDate(sponsor.profile.created_at)}</span>
+                                        <span>Last active: {formatDate(sponsor.profile.updated_at)}</span>
                                     </div>
                                 </div>
                             )}

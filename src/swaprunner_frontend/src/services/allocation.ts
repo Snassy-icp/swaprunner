@@ -54,6 +54,13 @@ export interface PaymentStatus {
     is_paid: boolean;
 }
 
+interface AllocationClaim {
+    allocation_id: string;
+    user: string;
+    amount_e8s: bigint;
+    claimed_at: bigint;
+}
+
 class AllocationService {
     private icrc1Service = new ICRC1Service();
 
@@ -468,6 +475,12 @@ class AllocationService {
         if ('err' in result) {
             throw new Error(result.err);
         }
+    }
+
+    async getSponsorClaims(sponsorId: string): Promise<AllocationClaim[]> {
+        const actor = await backendService.getActor();
+        const claims = await actor.get_all_allocation_claims();
+        return claims.filter((claim: AllocationClaim) => claim.user.toString() === sponsorId);
     }
 }
 
