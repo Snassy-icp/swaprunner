@@ -428,4 +428,35 @@
 
 .achievement-header-progress.depleted .achievement-header-progress-bar {
     background: #f44336;
+}
+
+.sponsor-loading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.sponsor-loading .spinner {
+    animation: spin 1s linear infinite;
+}
+
+.sponsor-error {
+    padding: 16px;
+    color: #dc3545;
+    font-size: 14px;
+    background: rgba(220, 53, 69, 0.1);
+    border-radius: 8px;
+    margin: 8px 16px;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 } 
