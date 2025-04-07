@@ -482,6 +482,15 @@ class AllocationService {
         const claims = await actor.get_all_allocation_claims();
         return claims.filter((claim: AllocationClaim) => claim.user.toString() === sponsorId);
     }
+
+    async getSponsorAllocations(sponsorId: string): Promise<{
+        allocation: Allocation;
+        status: string;
+    }[]> {
+        const actor = await backendService.getActor();
+        const allAllocations = await actor.get_all_user_allocations();
+        return allAllocations.filter((a: { allocation: Allocation }) => a.allocation.creator.toString() === sponsorId);
+    }
 }
 
 export const allocationService = new AllocationService(); 

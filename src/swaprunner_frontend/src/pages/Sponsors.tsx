@@ -6,11 +6,14 @@ import { tokenService } from '../services/token';
 import { formatTokenAmount } from '../utils/format';
 import { TokenMetadata } from '../types/token';
 import '../styles/Sponsors.css';
+import { useTokens } from '../contexts/TokenContext';
+import { Principal } from '@dfinity/principal';
+
 interface UserProfile {
-    principal: string;
+    principal: Principal;
     name: string;
     description: string;
-    logo_url: [string] | [];
+    logo_url: [] | [string];
     social_links: Array<{
         platform: string;
         url: string;
@@ -30,9 +33,11 @@ interface AllocationClaim {
 
 interface SponsorWithClaims {
     profile: UserProfile;
-    totalClaims: number;
-    totalAmountE8s: bigint;
-    tokenMetadata?: TokenMetadata;
+    allocations: {
+        token: string;
+        totalAllocated: bigint;
+        totalClaimed: bigint;
+    }[];
 }
 
 export const Sponsors: React.FC = () => {
@@ -40,6 +45,7 @@ export const Sponsors: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [expandedSponsors, setExpandedSponsors] = useState<Set<string>>(new Set());
+    const { tokens } = useTokens();
 
     useEffect(() => {
         loadSponsors();
@@ -49,30 +55,45 @@ export const Sponsors: React.FC = () => {
         try {
             setLoading(true);
             setError(null);
-            const profiles = await userProfileService.getVerifiedProfiles();
             
-            const sponsorsWithClaims = await Promise.all(profiles.map(async (profile: UserProfile) => {
-                const claims = await allocationService.getSponsorClaims(profile.principal);
-                const totalClaims = claims.length;
-                const totalAmountE8s = claims.reduce((sum: bigint, claim: AllocationClaim) => sum + claim.amount_e8s, BigInt(0));
+            const verifiedProfiles = await userProfileService.getVerifiedProfiles();
+            
+            const sponsorsWithClaims = await Promise.all(verifiedProfiles.map(async (profile) => {
+                const allocations = await allocationService.getSponsorAllocations(profile.principal.toString());
+                const tokenStats = new Map<string, { totalAllocated: bigint; totalClaimed: bigint }>();
 
-                // Find token link if it exists
-                const tokenLink = profile.social_links.find((link: { platform: string; url: string }) => link.platform === 'token');
-                let tokenMetadata: TokenMetadata | undefined;
-
-                if (tokenLink) {
-                    try {
-                        tokenMetadata = await tokenService.getMetadataWithLogo(tokenLink.url);
-                    } catch (err) {
-                        console.warn(`Failed to fetch token metadata for ${tokenLink.url}:`, err);
+                for (const { allocation } of allocations) {
+                    const token = allocation.token.canister_id.toString();
+                    if (!tokenStats.has(token)) {
+                        tokenStats.set(token, { totalAllocated: BigInt(0), totalClaimed: BigInt(0) });
                     }
+                    const stats = tokenStats.get(token)!;
+                    stats.totalAllocated += allocation.token.total_amount_e8s;
+
+                    const claims = await allocationService.getAllocationClaims(allocation.id);
+                    stats.totalClaimed += claims.reduce((sum, claim) => sum + claim.amount_e8s, BigInt(0));
                 }
 
+                // Ensure profile matches the expected type
+                const typedProfile: UserProfile = {
+                    principal: profile.principal,
+                    name: profile.name,
+                    description: profile.description,
+                    logo_url: profile.logo_url ? [profile.logo_url] : [],
+                    social_links: profile.social_links,
+                    created_at: BigInt(profile.created_at),
+                    updated_at: BigInt(profile.updated_at),
+                    created_by: profile.created_by.toString(),
+                    verified: profile.verified
+                };
+
                 return {
-                    profile,
-                    totalClaims,
-                    totalAmountE8s,
-                    tokenMetadata
+                    profile: typedProfile,
+                    allocations: Array.from(tokenStats.entries()).map(([token, stats]) => ({
+                        token,
+                        totalAllocated: stats.totalAllocated,
+                        totalClaimed: stats.totalClaimed
+                    }))
                 };
             }));
 
@@ -125,15 +146,15 @@ export const Sponsors: React.FC = () => {
                 <h1>Sponsors</h1>
                 <div className="sponsors-list">
                     {sponsors.map((sponsor) => (
-                        <div key={sponsor.profile.principal} className="sponsor-card">
+                        <div key={sponsor.profile.principal.toString()} className="sponsor-card">
                             <div 
                                 className="sponsor-header"
-                                onClick={() => toggleSponsor(sponsor.profile.principal)}
+                                onClick={() => toggleSponsor(sponsor.profile.principal.toString())}
                             >
                                 <div className="sponsor-logo-cell">
                                     <img 
                                         className="sponsor-logo"
-                                        src={sponsor.tokenMetadata?.logo_url || sponsor.profile.logo_url[0] || '/default-logo.png'}
+                                        src={sponsor.profile.logo_url[0] || '/default-logo.png'}
                                         alt={`${sponsor.profile.name} logo`}
                                         onError={(e) => {
                                             const img = e.target as HTMLImageElement;
@@ -153,16 +174,25 @@ export const Sponsors: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="sponsor-stats">
-                                        <span>{sponsor.totalClaims} claims</span>
-                                        <span>•</span>
-                                        <span>{formatTokenAmount(sponsor.totalAmountE8s, sponsor.tokenId || '')} {sponsor.tokenMetadata?.symbol || 'tokens'} distributed</span>
+                                        {sponsor.allocations.map((allocation, index) => {
+                                            const token = tokens.find(t => t.canisterId === allocation.token);
+                                            const claimPercentage = Number((allocation.totalClaimed * BigInt(100)) / allocation.totalAllocated);
+                                            const symbol = token?.metadata?.symbol || 'tokens';
+                                            return (
+                                                <div key={index} className="token-stats">
+                                                    <span>{formatTokenAmount(allocation.totalClaimed, allocation.token)} / {formatTokenAmount(allocation.totalAllocated, allocation.token)} {symbol}</span>
+                                                    <span>•</span>
+                                                    <span>{claimPercentage}% claimed</span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                                 <button className="expand-button">
-                                    {expandedSponsors.has(sponsor.profile.principal) ? <FiChevronUp /> : <FiChevronDown />}
+                                    {expandedSponsors.has(sponsor.profile.principal.toString()) ? <FiChevronUp /> : <FiChevronDown />}
                                 </button>
                             </div>
-                            {expandedSponsors.has(sponsor.profile.principal) && (
+                            {expandedSponsors.has(sponsor.profile.principal.toString()) && (
                                 <div className="sponsor-details">
                                     <p className="sponsor-description">{sponsor.profile.description}</p>
                                     {sponsor.profile.social_links.length > 0 && (
