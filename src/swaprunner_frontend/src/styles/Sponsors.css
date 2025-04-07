@@ -361,10 +361,13 @@
 }
 
 .allocation-item {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 12px;
+    padding: 12px;
+    border-radius: 6px;
+    background: var(--background-light);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .allocation-item:last-child {
@@ -422,6 +425,27 @@
 .allocation-range span:last-child {
     color: var(--text-primary);
     font-family: monospace;
+}
+
+.allocation-gift {
+    margin-left: auto;
+    font-size: 20px;
+}
+
+.allocation-gift.claimed {
+    color: var(--text-secondary);  /* gray */
+}
+
+.allocation-gift.depleted {
+    color: #dc3545;  /* red */
+}
+
+.allocation-gift.available {
+    color: #ffd700;  /* yellow */
+}
+
+.allocation-gift.future {
+    color: #4CAF50;  /* green */
 }
 
 .sponsor-header-progress {
@@ -617,8 +641,4 @@
 
 .achievement-gift.available {
     color: #ffd700;  /* yellow */
-}
-
-.achievement-gift.future {
-    color: #4CAF50;  /* green */
 } 

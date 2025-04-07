@@ -698,6 +698,12 @@ export const Sponsors: React.FC = () => {
                                                                                             />
                                                                                         </div>
                                                                                     </div>
+                                                                                    <FiGift className={`allocation-gift ${
+                                                                                        userClaims.some(claim => claim.allocation.id === alloc.allocation.id) ? 'claimed' :
+                                                                                        alloc.claims.remaining_balance === BigInt(0) ? 'depleted' :
+                                                                                        userAchievements.some(a => a.achievement_id === achievementId) ? 'available' :
+                                                                                        'future'
+                                                                                    }`} />
                                                                                 </div>
                                                                             );
                                                                         })}
