@@ -49,6 +49,7 @@ interface AllocationWithAchievement {
     claims: {
         total_claimed: bigint;
         claim_count: number;
+        remaining_balance: bigint;
     };
 }
 
@@ -106,6 +107,9 @@ export const Sponsors: React.FC = () => {
                         const totalClaimed = claims.reduce((sum, claim) => sum + claim.amount_e8s, BigInt(0));
                         stats.totalClaimed += totalClaimed;
 
+                        // Get remaining balance
+                        const remainingBalance = await allocationService.getAllocationBalance(allocation.id);
+
                         // Group by achievement
                         if (!achievementAllocations[achievement.id]) {
                             achievementAllocations[achievement.id] = [];
@@ -115,7 +119,8 @@ export const Sponsors: React.FC = () => {
                             achievement,
                             claims: {
                                 total_claimed: totalClaimed,
-                                claim_count: claims.length
+                                claim_count: claims.length,
+                                remaining_balance: remainingBalance
                             }
                         });
                     }
@@ -297,6 +302,10 @@ export const Sponsors: React.FC = () => {
                                                                     <div className="allocation-claims">
                                                                         <span>Claims:</span>
                                                                         <span>{formatTokenAmount(alloc.claims.total_claimed, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'} ({claimPercentage}%) by {alloc.claims.claim_count} users</span>
+                                                                    </div>
+                                                                    <div className="allocation-remaining">
+                                                                        <span>Remaining:</span>
+                                                                        <span>{formatTokenAmount(alloc.claims.remaining_balance, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
                                                                     </div>
                                                                     <div className="allocation-range">
                                                                         <span>Per User Range:</span>
