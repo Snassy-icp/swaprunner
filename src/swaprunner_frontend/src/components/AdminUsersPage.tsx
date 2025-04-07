@@ -373,14 +373,14 @@ const CreateProfileForm: React.FC<CreateProfileFormProps> = ({ onSubmit, onCance
                         <div key={index} className="social-link-item">
                             <input
                                 type="text"
-                                placeholder="Platform (e.g., Twitter)"
+                                placeholder="Platform (e.g., Twitter, token)"
                                 value={link.platform}
                                 onChange={e => updateSocialLink(index, 'platform', e.target.value)}
                                 required
                             />
                             <input
-                                type="url"
-                                placeholder="URL"
+                                type="text"
+                                placeholder="URL or Canister ID"
                                 value={link.url}
                                 onChange={e => updateSocialLink(index, 'url', e.target.value)}
                                 required
@@ -498,14 +498,14 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSubmit, on
                         <div key={index} className="social-link-item">
                             <input
                                 type="text"
-                                placeholder="Platform (e.g., Twitter)"
+                                placeholder="Platform (e.g., Twitter, token)"
                                 value={link.platform}
                                 onChange={e => updateSocialLink(index, 'platform', e.target.value)}
                                 required
                             />
                             <input
-                                type="url"
-                                placeholder="URL"
+                                type="text"
+                                placeholder="URL or Canister ID"
                                 value={link.url}
                                 onChange={e => updateSocialLink(index, 'url', e.target.value)}
                                 required
