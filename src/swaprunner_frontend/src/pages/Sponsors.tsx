@@ -436,7 +436,10 @@ export const Sponsors: React.FC = () => {
                                                             <div key={achievementId} className="achievement-group">
                                                                 <div 
                                                                     className="achievement-header"
-                                                                    onClick={() => toggleAchievement(achievementId)}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        toggleAchievement(achievementId);
+                                                                    }}
                                                                     style={{ cursor: 'pointer' }}
                                                                 >
                                                                     <div className="achievement-icon-wrapper">
@@ -452,23 +455,23 @@ export const Sponsors: React.FC = () => {
                                                                     </div>
                                                                     <div className="achievement-info">
                                                                         <h5>{allocations[0].achievement.name}</h5>
-                                                                        <p>{allocations[0].achievement.description}</p>
-                                                                        <div className="achievement-criteria">
-                                                                            <strong>How to earn:</strong> {allocations[0].achievement.criteria}
-                                                                        </div>
                                                                     </div>
-                                                                    <button className="expand-button">
+                                                                    <button
+                                                                        className="expand-button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            toggleAchievement(achievementId);
+                                                                        }}
+                                                                    >
                                                                         {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
                                                                     </button>
-                                                                    <div className={`achievement-header-progress ${isDepleted ? 'depleted' : ''}`}>
-                                                                        <div 
-                                                                            className="achievement-header-progress-bar" 
-                                                                            style={{ width: `${remainingPercentage}%` }}
-                                                                        />
-                                                                    </div>
                                                                 </div>
                                                                 {isExpanded && (
                                                                     <div className="allocation-list">
+                                                                        <p className="achievement-description">{allocations[0].achievement.description}</p>
+                                                                        <div className="achievement-criteria">
+                                                                            <strong>How to earn:</strong> {allocations[0].achievement.criteria}
+                                                                        </div>
                                                                         {allocations.map((alloc, index) => {
                                                                             const token = tokens.find(t => t.canisterId === alloc.allocation.token.canister_id.toString());
                                                                             const claimPercentage = Number((alloc.claims.total_claimed * BigInt(100)) / alloc.allocation.token.total_amount_e8s);

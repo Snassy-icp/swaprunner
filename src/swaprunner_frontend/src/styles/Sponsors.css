@@ -540,4 +540,11 @@
 .sponsor-token .metadata-value.monospace {
     font-family: monospace;
     font-size: 0.75rem;
+}
+
+.achievement-description {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.4;
+    margin: 0 0 16px 0;
 } 
