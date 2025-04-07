@@ -31,14 +31,16 @@ interface CreateUserProfileArgs {
     }>;
 }
 
+interface SocialLink {
+    platform: string;
+    url: string;
+}
+
 interface UpdateUserProfileArgs {
     name: [string] | [];
     description: [string] | [];
     logo_url: [string] | [];
-    social_links?: Array<{
-        platform: string;
-        url: string;
-    }>;
+    social_links: [SocialLink[]] | [];
     verified: [boolean] | [];
 }
 
@@ -157,7 +159,8 @@ const AdminUsersPage: React.FC = () => {
                 verified: !profile.verified ? [true] : [false],
                 name: profile.name ? [profile.name] : [],
                 description: profile.description ? [profile.description] : [],
-                logo_url: profile.logo_url
+                logo_url: profile.logo_url,
+                social_links: profile.social_links ? [profile.social_links] : []
             });
         } catch (err) {
             setError('Failed to toggle verification');
@@ -420,7 +423,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSubmit, on
         name: profile.name ? [profile.name] : [],
         description: profile.description ? [profile.description] : [],
         logo_url: profile.logo_url,
-        social_links: profile.social_links,
+        social_links: [profile.social_links],
         verified: profile.verified ? [true] : [false]
     });
 
@@ -432,23 +435,29 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSubmit, on
     const addSocialLink = () => {
         setFormData(prev => ({
             ...prev,
-            social_links: [...(prev.social_links || []), { platform: '', url: '' }]
+            social_links: [
+                [...(prev.social_links[0] || []), { platform: '', url: '' }]
+            ]
         }));
     };
 
     const removeSocialLink = (index: number) => {
         setFormData(prev => ({
             ...prev,
-            social_links: (prev.social_links || []).filter((_, i) => i !== index)
+            social_links: [
+                (prev.social_links[0] || []).filter((_, i: number) => i !== index)
+            ]
         }));
     };
 
     const updateSocialLink = (index: number, field: 'platform' | 'url', value: string) => {
         setFormData(prev => ({
             ...prev,
-            social_links: (prev.social_links || []).map((link, i) => 
-                i === index ? { ...link, [field]: value } : link
-            )
+            social_links: [
+                (prev.social_links[0] || []).map((link: SocialLink, i: number) => 
+                    i === index ? { ...link, [field]: value } : link
+                )
+            ]
         }));
     };
 
@@ -485,7 +494,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSubmit, on
             <div className="form-group">
                 <label>Social Links:</label>
                 <div className="social-links-list">
-                    {(formData.social_links || []).map((link, index) => (
+                    {(formData.social_links[0] || []).map((link, index) => (
                         <div key={index} className="social-link-item">
                             <input
                                 type="text"
