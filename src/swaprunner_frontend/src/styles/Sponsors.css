@@ -285,6 +285,28 @@
     gap: 8px;
 }
 
+.allocation-progress {
+    margin-top: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    height: 4px;
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+}
+
+.allocation-progress-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: #28a745;
+    transition: width 0.3s ease-out;
+}
+
+.allocation-progress-depleted .allocation-progress-bar {
+    background: #dc3545;
+}
+
 .allocation-amount,
 .allocation-claims,
 .allocation-remaining,
