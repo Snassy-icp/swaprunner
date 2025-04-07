@@ -47,6 +47,7 @@
     cursor: pointer;
     transition: background-color 0.2s;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
 }
 
 .sponsor-header:hover {
@@ -407,27 +408,41 @@
     font-family: monospace;
 }
 
-.achievement-header-progress {
+.sponsor-header-progress {
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
     height: 4px;
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 0 0 8px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
 }
 
-.achievement-header-progress-bar {
-    position: absolute;
-    bottom: 0;
-    left: 0;
+.sponsor-header-progress .progress-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sponsor-header-progress .progress-loading .spinning {
+    width: 12px;
+    height: 12px;
+    color: var(--text-secondary);
+    animation: spin 1s linear infinite;
+}
+
+.sponsor-header-progress .progress-bar-wrapper {
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sponsor-header-progress .progress-bar {
     height: 100%;
     background: #4CAF50;
-    transition: width 0.3s ease;
-}
-
-.achievement-header-progress.depleted .achievement-header-progress-bar {
-    background: #f44336;
+    transition: width 0.3s ease-out;
 }
 
 .sponsor-loading {

@@ -371,6 +371,33 @@ export const Sponsors: React.FC = () => {
                                 <button className="expand-button">
                                     {expandedSponsors.has(sponsor.profile.principal.toString()) ? <FiChevronUp /> : <FiChevronDown />}
                                 </button>
+                                <div className="sponsor-header-progress">
+                                    {sponsor.isLoading ? (
+                                        <div className="progress-loading">
+                                            <FiLoader className="spinning" />
+                                        </div>
+                                    ) : sponsor.data ? (
+                                        <div className="progress-bar-wrapper">
+                                            {(() => {
+                                                const totalPercentages = sponsor.data.allocations.reduce((sum, allocation) => {
+                                                    const remaining = Number(allocation.totalAllocated - allocation.totalClaimed);
+                                                    const total = Number(allocation.totalAllocated);
+                                                    return sum + (remaining * 100 / total);
+                                                }, 0);
+                                                const averagePercentage = sponsor.data.allocations.length > 0 ? 
+                                                    Math.max(0, Math.min(100, totalPercentages / sponsor.data.allocations.length)) : 0;
+                                                
+                                                return (
+                                                    <div 
+                                                        className="progress-bar" 
+                                                        style={{ width: `${averagePercentage}%` }}
+                                                        title={`${averagePercentage.toFixed(1)}% remaining`}
+                                                    />
+                                                );
+                                            })()}
+                                        </div>
+                                    ) : null}
+                                </div>
                             </div>
                             {expandedSponsors.has(sponsor.profile.principal.toString()) && (
                                 <>
