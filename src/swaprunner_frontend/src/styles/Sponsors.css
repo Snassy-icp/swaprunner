@@ -192,4 +192,117 @@
         flex-direction: column;
         gap: 4px;
     }
+}
+
+.achievement-allocations {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-color);
+}
+
+.achievement-allocations h4 {
+    margin: 0 0 16px 0;
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.achievement-group {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+.achievement-group .achievement-header {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.achievement-group .achievement-icon-wrapper {
+    flex-shrink: 0;
+}
+
+.achievement-group .achievement-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.achievement-group .achievement-icon {
+    width: 48px;
+    height: 48px;
+    color: #ffd700;
+}
+
+.achievement-group .achievement-info {
+    flex: 1;
+}
+
+.achievement-group h5 {
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.achievement-group p {
+    margin: 0 0 12px 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.achievement-criteria {
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+.allocation-list {
+    padding: 16px;
+}
+
+.allocation-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.allocation-item:last-child {
+    margin-bottom: 0;
+}
+
+.allocation-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.allocation-amount,
+.allocation-claims,
+.allocation-range {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.allocation-amount span:first-child,
+.allocation-claims span:first-child,
+.allocation-range span:first-child {
+    color: var(--text-secondary);
+}
+
+.allocation-amount span:last-child,
+.allocation-claims span:last-child,
+.allocation-range span:last-child {
+    color: var(--text-primary);
+    font-family: monospace;
 } 

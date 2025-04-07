@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FiChevronDown, FiChevronUp, FiCheck, FiExternalLink } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp, FiCheck, FiExternalLink, FiAward } from 'react-icons/fi';
 import { userProfileService } from '../services/userProfile';
 import { allocationService } from '../services/allocation';
 import { tokenService } from '../services/token';
@@ -8,6 +8,7 @@ import { TokenMetadata } from '../types/token';
 import '../styles/Sponsors.css';
 import { useTokens } from '../contexts/TokenContext';
 import { Principal } from '@dfinity/principal';
+import { backendService } from '../services/backend';
 
 interface UserProfile {
     principal: Principal;
@@ -24,11 +25,31 @@ interface UserProfile {
     verified: boolean;
 }
 
-interface AllocationClaim {
-    allocation_id: string;
-    user: string;
-    amount_e8s: bigint;
-    claimed_at: bigint;
+interface Achievement {
+    id: string;
+    name: string;
+    description: string;
+    criteria: string;
+    logo_url?: string;
+}
+
+interface AllocationWithAchievement {
+    allocation: {
+        id: string;
+        token: {
+            canister_id: string;
+            total_amount_e8s: bigint;
+            per_user: {
+                min_e8s: bigint;
+                max_e8s: bigint;
+            };
+        };
+    };
+    achievement: Achievement;
+    claims: {
+        total_claimed: bigint;
+        claim_count: number;
+    };
 }
 
 interface SponsorWithClaims {
@@ -38,6 +59,9 @@ interface SponsorWithClaims {
         totalAllocated: bigint;
         totalClaimed: bigint;
     }[];
+    achievementAllocations: {
+        [achievementId: string]: AllocationWithAchievement[];
+    };
 }
 
 export const Sponsors: React.FC = () => {
@@ -57,10 +81,12 @@ export const Sponsors: React.FC = () => {
             setError(null);
             
             const verifiedProfiles = await userProfileService.getVerifiedProfiles();
+            const actor = await backendService.getActor();
             
             const sponsorsWithClaims = await Promise.all(verifiedProfiles.map(async (profile) => {
                 const allocations = await allocationService.getSponsorAllocations(profile.principal.toString());
                 const tokenStats = new Map<string, { totalAllocated: bigint; totalClaimed: bigint }>();
+                const achievementAllocations: { [key: string]: AllocationWithAchievement[] } = {};
 
                 for (const { allocation } of allocations) {
                     const token = allocation.token.canister_id.toString();
@@ -70,11 +96,31 @@ export const Sponsors: React.FC = () => {
                     const stats = tokenStats.get(token)!;
                     stats.totalAllocated += allocation.token.total_amount_e8s;
 
-                    const claims = await allocationService.getAllocationClaims(allocation.id);
-                    stats.totalClaimed += claims.reduce((sum, claim) => sum + claim.amount_e8s, BigInt(0));
+                    // Get achievement details
+                    const achievementResult = await actor.get_achievement_details(allocation.achievement_id);
+                    if ('ok' in achievementResult) {
+                        const achievement = achievementResult.ok;
+                        
+                        // Get claims for this allocation
+                        const claims = await allocationService.getAllocationClaims(allocation.id);
+                        const totalClaimed = claims.reduce((sum, claim) => sum + claim.amount_e8s, BigInt(0));
+                        stats.totalClaimed += totalClaimed;
+
+                        // Group by achievement
+                        if (!achievementAllocations[achievement.id]) {
+                            achievementAllocations[achievement.id] = [];
+                        }
+                        achievementAllocations[achievement.id].push({
+                            allocation,
+                            achievement,
+                            claims: {
+                                total_claimed: totalClaimed,
+                                claim_count: claims.length
+                            }
+                        });
+                    }
                 }
 
-                // Ensure profile matches the expected type
                 const typedProfile: UserProfile = {
                     principal: profile.principal,
                     name: profile.name,
@@ -93,7 +139,8 @@ export const Sponsors: React.FC = () => {
                         token,
                         totalAllocated: stats.totalAllocated,
                         totalClaimed: stats.totalClaimed
-                    }))
+                    })),
+                    achievementAllocations
                 };
             }));
 
@@ -210,6 +257,60 @@ export const Sponsors: React.FC = () => {
                                             ))}
                                         </div>
                                     )}
+                                    
+                                    {/* Achievement Allocations Section */}
+                                    <div className="achievement-allocations">
+                                        <h4>Sponsored Achievements</h4>
+                                        {Object.entries(sponsor.achievementAllocations).map(([achievementId, allocations]) => (
+                                            <div key={achievementId} className="achievement-group">
+                                                <div className="achievement-header">
+                                                    <div className="achievement-icon-wrapper">
+                                                        {allocations[0].achievement.logo_url ? (
+                                                            <img 
+                                                                src={allocations[0].achievement.logo_url} 
+                                                                alt={allocations[0].achievement.name}
+                                                                className="achievement-logo"
+                                                            />
+                                                        ) : (
+                                                            <FiAward className="achievement-icon" />
+                                                        )}
+                                                    </div>
+                                                    <div className="achievement-info">
+                                                        <h5>{allocations[0].achievement.name}</h5>
+                                                        <p>{allocations[0].achievement.description}</p>
+                                                        <div className="achievement-criteria">
+                                                            <strong>How to earn:</strong> {allocations[0].achievement.criteria}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="allocation-list">
+                                                    {allocations.map((alloc, index) => {
+                                                        const token = tokens.find(t => t.canisterId === alloc.allocation.token.canister_id.toString());
+                                                        const claimPercentage = Number((alloc.claims.total_claimed * BigInt(100)) / alloc.allocation.token.total_amount_e8s);
+                                                        return (
+                                                            <div key={index} className="allocation-item">
+                                                                <div className="allocation-stats">
+                                                                    <div className="allocation-amount">
+                                                                        <span>Total Allocated:</span>
+                                                                        <span>{formatTokenAmount(alloc.allocation.token.total_amount_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
+                                                                    </div>
+                                                                    <div className="allocation-claims">
+                                                                        <span>Claims:</span>
+                                                                        <span>{formatTokenAmount(alloc.claims.total_claimed, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'} ({claimPercentage}%) by {alloc.claims.claim_count} users</span>
+                                                                    </div>
+                                                                    <div className="allocation-range">
+                                                                        <span>Per User Range:</span>
+                                                                        <span>{formatTokenAmount(alloc.allocation.token.per_user.min_e8s, alloc.allocation.token.canister_id.toString())} - {formatTokenAmount(alloc.allocation.token.per_user.max_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
                                     <div className="sponsor-footer">
                                         <span>Joined: {formatDate(sponsor.profile.created_at)}</span>
                                         <span>Last active: {formatDate(sponsor.profile.updated_at)}</span>
