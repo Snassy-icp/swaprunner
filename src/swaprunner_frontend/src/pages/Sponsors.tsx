@@ -209,21 +209,14 @@ export const Sponsors: React.FC = () => {
                 <h1>Sponsors</h1>
                 <div className="sponsors-list">
                     {sponsors.map((sponsor) => (
-                        <div key={sponsor.profile.principal.toString()} className="sponsor-card">
-                            <div 
-                                className="sponsor-header"
-                                onClick={() => toggleSponsor(sponsor.profile.principal.toString())}
-                            >
+                        <div className="sponsor-card" key={sponsor.profile.principal.toString()}>
+                            <div className="sponsor-header" onClick={() => toggleSponsor(sponsor.profile.principal.toString())}>
                                 <div className="sponsor-logo-cell">
-                                    <img 
-                                        className="sponsor-logo"
-                                        src={sponsor.profile.logo_url[0] || '/default-logo.png'}
-                                        alt={`${sponsor.profile.name} logo`}
-                                        onError={(e) => {
-                                            const img = e.target as HTMLImageElement;
-                                            img.src = '/default-logo.png';
-                                        }}
-                                    />
+                                    {sponsor.profile.logo_url[0] ? (
+                                        <img src={sponsor.profile.logo_url[0]} alt={sponsor.profile.name} className="sponsor-logo" />
+                                    ) : (
+                                        <div className="sponsor-logo" />
+                                    )}
                                 </div>
                                 <div className="sponsor-info">
                                     <div className="sponsor-name">
@@ -236,31 +229,31 @@ export const Sponsors: React.FC = () => {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="sponsor-stats">
-                                        {sponsor.allocations.map((allocation, index) => {
-                                            const token = tokens.find(t => t.canisterId === allocation.token);
-                                            const claimPercentage = Number((allocation.totalClaimed * BigInt(100)) / allocation.totalAllocated);
-                                            const symbol = token?.metadata?.symbol || 'tokens';
-                                            const isDepleted = allocation.totalClaimed === allocation.totalAllocated;
-                                            return (
-                                                <div key={index} className="token-stats">
-                                                    <span>{formatTokenAmount(allocation.totalClaimed, allocation.token)} / {formatTokenAmount(allocation.totalAllocated, allocation.token)} {symbol}</span>
-                                                    <span>•</span>
-                                                    <span>{claimPercentage}% claimed</span>
-                                                    <div className={`token-stats-progress ${isDepleted ? 'depleted' : ''}`}>
-                                                        <div 
-                                                            className="token-stats-progress-bar" 
-                                                            style={{ width: `${100 - claimPercentage}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
                                 </div>
                                 <button className="expand-button">
                                     {expandedSponsors.has(sponsor.profile.principal.toString()) ? <FiChevronUp /> : <FiChevronDown />}
                                 </button>
+                            </div>
+                            <div className="sponsor-stats">
+                                {sponsor.allocations.map((allocation, index) => {
+                                    const token = tokens.find(t => t.canisterId === allocation.token);
+                                    const claimPercentage = Number((allocation.totalClaimed * BigInt(100)) / allocation.totalAllocated);
+                                    const symbol = token?.metadata?.symbol || 'tokens';
+                                    const isDepleted = allocation.totalClaimed === allocation.totalAllocated;
+                                    return (
+                                        <div key={index} className="token-stats">
+                                            <span>{formatTokenAmount(allocation.totalClaimed, allocation.token)} / {formatTokenAmount(allocation.totalAllocated, allocation.token)} {symbol}</span>
+                                            <span>•</span>
+                                            <span>{claimPercentage}% claimed</span>
+                                            <div className={`token-stats-progress ${isDepleted ? 'depleted' : ''}`}>
+                                                <div 
+                                                    className="token-stats-progress-bar" 
+                                                    style={{ width: `${100 - claimPercentage}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                             {expandedSponsors.has(sponsor.profile.principal.toString()) && (
                                 <div className="sponsor-details">
