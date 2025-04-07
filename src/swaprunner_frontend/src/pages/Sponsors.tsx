@@ -83,7 +83,9 @@ export const Sponsors: React.FC = () => {
     }, []);
 
     const formatDate = (timestamp: bigint) => {
-        return new Date(Number(timestamp)).toLocaleString();
+        // Convert from nanoseconds to milliseconds
+        const milliseconds = Number(timestamp) / 1_000_000;
+        return new Date(milliseconds).toLocaleString();
     };
 
     const toggleSponsor = (principalId: string) => {
