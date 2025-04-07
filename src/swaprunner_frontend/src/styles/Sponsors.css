@@ -481,15 +481,16 @@
     gap: 1rem;
 }
 
-.token-header {
+.sponsor-token .token-header {
     display: flex;
     align-items: center;
+    justify-content: flex-start !important;
     gap: 1rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.token-header .token-logo {
+.sponsor-token .token-header .token-logo {
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -498,45 +499,45 @@
     border: 1px solid var(--border-color);
 }
 
-.token-title {
+.sponsor-token .token-title {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
 }
 
-.token-name {
+.sponsor-token .token-name {
     font-size: 1rem;
     color: var(--text-primary);
     font-weight: 500;
 }
 
-.token-symbol {
+.sponsor-token .token-symbol {
     font-size: 0.875rem;
     color: var(--text-secondary);
 }
 
-.token-metadata {
+.sponsor-token .token-metadata {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
 }
 
-.metadata-row {
+.sponsor-token .metadata-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 0.875rem;
 }
 
-.metadata-label {
+.sponsor-token .metadata-label {
     color: var(--text-secondary);
 }
 
-.metadata-value {
+.sponsor-token .metadata-value {
     color: var(--text-primary);
 }
 
-.metadata-value.monospace {
+.sponsor-token .metadata-value.monospace {
     font-family: monospace;
     font-size: 0.75rem;
 } 
