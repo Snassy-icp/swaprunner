@@ -241,11 +241,18 @@ export const Sponsors: React.FC = () => {
                                             const token = tokens.find(t => t.canisterId === allocation.token);
                                             const claimPercentage = Number((allocation.totalClaimed * BigInt(100)) / allocation.totalAllocated);
                                             const symbol = token?.metadata?.symbol || 'tokens';
+                                            const isDepleted = allocation.totalClaimed === allocation.totalAllocated;
                                             return (
                                                 <div key={index} className="token-stats">
                                                     <span>{formatTokenAmount(allocation.totalClaimed, allocation.token)} / {formatTokenAmount(allocation.totalAllocated, allocation.token)} {symbol}</span>
                                                     <span>•</span>
                                                     <span>{claimPercentage}% claimed</span>
+                                                    <div className={`token-stats-progress ${isDepleted ? 'depleted' : ''}`}>
+                                                        <div 
+                                                            className="token-stats-progress-bar" 
+                                                            style={{ width: `${100 - claimPercentage}%` }}
+                                                        />
+                                                    </div>
                                                 </div>
                                             );
                                         })}
