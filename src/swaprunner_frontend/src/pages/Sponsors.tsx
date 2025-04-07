@@ -125,12 +125,21 @@ export const Sponsors: React.FC = () => {
                             >
                                 <div className="sponsor-info">
                                     <div className="sponsor-name">
-                                        {profile.name}
-                                        {profile.verified && (
-                                            <span className="verified-badge" title="Verified Sponsor">
-                                                <FiCheck />
-                                            </span>
+                                        {profile.logo_url && (
+                                            <img 
+                                                src={profile.logo_url} 
+                                                alt={`${profile.name} logo`}
+                                                className="sponsor-logo"
+                                            />
                                         )}
+                                        <div className="name-with-badge">
+                                            {profile.name}
+                                            {profile.verified && (
+                                                <span className="verified-badge" title="Verified Sponsor">
+                                                    <FiCheck />
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="sponsor-stats">
                                         <span>{totalClaims} claims</span>

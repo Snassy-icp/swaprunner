@@ -60,11 +60,26 @@
 .sponsor-name {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     font-size: 18px;
     font-weight: 500;
     color: var(--text-primary);
     margin-bottom: 4px;
+}
+
+.sponsor-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+}
+
+.name-with-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .verified-badge {
