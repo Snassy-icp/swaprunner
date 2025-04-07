@@ -86,11 +86,38 @@ export const Sponsors: React.FC = () => {
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [expandedSponsors, setExpandedSponsors] = useState<Set<string>>(new Set());
     const [expandedAchievements, setExpandedAchievements] = useState<Set<string>>(new Set());
+    const [loadedLogos, setLoadedLogos] = useState<Record<string, string>>({});
     const { tokens } = useTokens();
 
     useEffect(() => {
         loadSponsors();
     }, []);
+
+    // Load logos for expanded sponsors
+    useEffect(() => {
+        const loadTokenLogos = async () => {
+            for (const sponsor of sponsors) {
+                if (expandedSponsors.has(sponsor.profile.principal.toString())) {
+                    const tokenLink = sponsor.profile.social_links.find(
+                        link => link.platform.toLowerCase() === 'token'
+                    );
+                    if (tokenLink && !loadedLogos[tokenLink.url]) {
+                        try {
+                            const logo = await tokenService.getTokenLogo(tokenLink.url);
+                            setLoadedLogos(prev => ({
+                                ...prev,
+                                [tokenLink.url]: logo || '/generic_token.svg'
+                            }));
+                        } catch (err) {
+                            console.error('Error loading token logo:', err);
+                        }
+                    }
+                }
+            }
+        };
+
+        loadTokenLogos();
+    }, [expandedSponsors, sponsors]);
 
     const loadSponsors = async () => {
         try {
@@ -349,9 +376,13 @@ export const Sponsors: React.FC = () => {
                                                                         <div className="token-header">
                                                                             {token.metadata?.hasLogo && (
                                                                                 <img 
-                                                                                    src={`/api/v1/token/${token.canisterId}/logo`}
+                                                                                    src={loadedLogos[token.canisterId] || '/generic_token.svg'}
                                                                                     alt={token.metadata?.symbol || 'Token'} 
                                                                                     className="token-logo"
+                                                                                    onError={(e) => {
+                                                                                        const img = e.target as HTMLImageElement;
+                                                                                        img.src = token.metadata?.symbol === 'ICP' ? '/icp_symbol.svg' : '/generic_token.svg';
+                                                                                    }}
                                                                                 />
                                                                             )}
                                                                             <div className="token-title">
