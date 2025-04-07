@@ -220,9 +220,31 @@
     padding: 1rem;
     background: var(--card-bg);
     border-radius: 8px;
-    margin-bottom: 1rem;
+    margin-bottom: 0;
     position: relative;
     overflow: hidden;
+    transition: background-color 0.2s ease;
+}
+
+.achievement-group .achievement-header:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.achievement-group .achievement-header .expand-button {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    z-index: 1;
+    transition: transform 0.2s ease;
+}
+
+.achievement-group .achievement-header .expand-button:hover {
+    color: var(--text-primary);
 }
 
 .achievement-group .achievement-icon-wrapper {
@@ -270,6 +292,18 @@
 
 .allocation-list {
     padding: 16px;
+    animation: expandContent 0.3s ease-out;
+}
+
+@keyframes expandContent {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .allocation-item {

@@ -70,6 +70,7 @@ export const Sponsors: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [expandedSponsors, setExpandedSponsors] = useState<Set<string>>(new Set());
+    const [expandedAchievements, setExpandedAchievements] = useState<Set<string>>(new Set());
     const { tokens } = useTokens();
 
     useEffect(() => {
@@ -170,6 +171,16 @@ export const Sponsors: React.FC = () => {
             newExpandedSponsors.add(principalId);
         }
         setExpandedSponsors(newExpandedSponsors);
+    };
+
+    const toggleAchievement = (achievementId: string) => {
+        const newExpandedAchievements = new Set(expandedAchievements);
+        if (newExpandedAchievements.has(achievementId)) {
+            newExpandedAchievements.delete(achievementId);
+        } else {
+            newExpandedAchievements.add(achievementId);
+        }
+        setExpandedAchievements(newExpandedAchievements);
     };
 
     if (loading) {
@@ -276,10 +287,15 @@ export const Sponsors: React.FC = () => {
                                             );
                                             const remainingPercentage = (totalRemaining / totalAllocated) * 100;
                                             const isDepleted = totalRemaining === 0;
+                                            const isExpanded = expandedAchievements.has(achievementId);
 
                                             return (
                                                 <div key={achievementId} className="achievement-group">
-                                                    <div className="achievement-header">
+                                                    <div 
+                                                        className="achievement-header"
+                                                        onClick={() => toggleAchievement(achievementId)}
+                                                        style={{ cursor: 'pointer' }}
+                                                    >
                                                         <div className="achievement-icon-wrapper">
                                                             {allocations[0].achievement.logo_url ? (
                                                                 <img 
@@ -298,6 +314,9 @@ export const Sponsors: React.FC = () => {
                                                                 <strong>How to earn:</strong> {allocations[0].achievement.criteria}
                                                             </div>
                                                         </div>
+                                                        <button className="expand-button">
+                                                            {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+                                                        </button>
                                                         <div className={`achievement-header-progress ${isDepleted ? 'depleted' : ''}`}>
                                                             <div 
                                                                 className="achievement-header-progress-bar" 
@@ -305,42 +324,44 @@ export const Sponsors: React.FC = () => {
                                                             />
                                                         </div>
                                                     </div>
-                                                    <div className="allocation-list">
-                                                        {allocations.map((alloc, index) => {
-                                                            const token = tokens.find(t => t.canisterId === alloc.allocation.token.canister_id.toString());
-                                                            const claimPercentage = Number((alloc.claims.total_claimed * BigInt(100)) / alloc.allocation.token.total_amount_e8s);
-                                                            return (
-                                                                <div key={index} className="allocation-item">
-                                                                    <div className="allocation-stats">
-                                                                        <div className="allocation-amount">
-                                                                            <span>Total Allocated:</span>
-                                                                            <span>{formatTokenAmount(alloc.allocation.token.total_amount_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
-                                                                        </div>
-                                                                        <div className="allocation-claims">
-                                                                            <span>Claims:</span>
-                                                                            <span>{formatTokenAmount(alloc.claims.total_claimed, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'} ({claimPercentage}%) by {alloc.claims.claim_count} users</span>
-                                                                        </div>
-                                                                        <div className="allocation-remaining">
-                                                                            <span>Remaining:</span>
-                                                                            <span>{formatTokenAmount(alloc.claims.remaining_balance, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
-                                                                        </div>
-                                                                        <div className="allocation-range">
-                                                                            <span>Per User Range:</span>
-                                                                            <span>{formatTokenAmount(alloc.allocation.token.per_user.min_e8s, alloc.allocation.token.canister_id.toString())} - {formatTokenAmount(alloc.allocation.token.per_user.max_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
-                                                                        </div>
-                                                                        <div className={`allocation-progress ${alloc.claims.remaining_balance === BigInt(0) ? 'allocation-progress-depleted' : ''}`}>
-                                                                            <div 
-                                                                                className="allocation-progress-bar" 
-                                                                                style={{ 
-                                                                                    width: `${(Number(alloc.claims.remaining_balance) * 100) / Number(alloc.allocation.token.total_amount_e8s)}%` 
-                                                                                }}
-                                                                            />
+                                                    {isExpanded && (
+                                                        <div className="allocation-list">
+                                                            {allocations.map((alloc, index) => {
+                                                                const token = tokens.find(t => t.canisterId === alloc.allocation.token.canister_id.toString());
+                                                                const claimPercentage = Number((alloc.claims.total_claimed * BigInt(100)) / alloc.allocation.token.total_amount_e8s);
+                                                                return (
+                                                                    <div key={index} className="allocation-item">
+                                                                        <div className="allocation-stats">
+                                                                            <div className="allocation-amount">
+                                                                                <span>Total Allocated:</span>
+                                                                                <span>{formatTokenAmount(alloc.allocation.token.total_amount_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
+                                                                            </div>
+                                                                            <div className="allocation-claims">
+                                                                                <span>Claims:</span>
+                                                                                <span>{formatTokenAmount(alloc.claims.total_claimed, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'} ({claimPercentage}%) by {alloc.claims.claim_count} users</span>
+                                                                            </div>
+                                                                            <div className="allocation-remaining">
+                                                                                <span>Remaining:</span>
+                                                                                <span>{formatTokenAmount(alloc.claims.remaining_balance, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
+                                                                            </div>
+                                                                            <div className="allocation-range">
+                                                                                <span>Per User Range:</span>
+                                                                                <span>{formatTokenAmount(alloc.allocation.token.per_user.min_e8s, alloc.allocation.token.canister_id.toString())} - {formatTokenAmount(alloc.allocation.token.per_user.max_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
+                                                                            </div>
+                                                                            <div className={`allocation-progress ${alloc.claims.remaining_balance === BigInt(0) ? 'allocation-progress-depleted' : ''}`}>
+                                                                                <div 
+                                                                                    className="allocation-progress-bar" 
+                                                                                    style={{ 
+                                                                                        width: `${(Number(alloc.claims.remaining_balance) * 100) / Number(alloc.allocation.token.total_amount_e8s)}%` 
+                                                                                    }}
+                                                                                />
+                                                                            </div>
                                                                         </div>
                                                                     </div>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             );
                                         })}
