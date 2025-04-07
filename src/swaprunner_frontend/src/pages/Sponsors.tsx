@@ -369,12 +369,16 @@ export const Sponsors: React.FC = () => {
                                     </div>
                                 </div>
                                 <button className="expand-button">
-                                    {expandedSponsors.has(sponsor.profile.principal.toString()) ? <FiChevronUp /> : <FiChevronDown />}
+                                    {sponsor.isLoading || (sponsor.data && sponsor.data.allocations.length === 0) ? (
+                                        <FiLoader className="spinning" />
+                                    ) : (
+                                        expandedSponsors.has(sponsor.profile.principal.toString()) ? <FiChevronUp /> : <FiChevronDown />
+                                    )}
                                 </button>
                                 <div className="sponsor-header-progress">
                                     {sponsor.isLoading || (sponsor.data && sponsor.data.allocations.length === 0) ? (
-                                        <div className="progress-loading">
-                                            <FiLoader className="spinning" />
+                                        <div className="progress-bar-wrapper">
+                                            <div className="progress-bar" style={{ width: '100%', opacity: '0.2' }} />
                                         </div>
                                     ) : sponsor.data ? (
                                         <div className="progress-bar-wrapper">

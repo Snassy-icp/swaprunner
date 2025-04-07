@@ -163,6 +163,13 @@
     align-items: center;
 }
 
+.expand-button .spinning {
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    color: var(--text-secondary);
+}
+
 .sponsor-details {
     padding: 0 20px 20px;
     border-top: 1px solid var(--border-color);
