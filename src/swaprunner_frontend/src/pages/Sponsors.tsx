@@ -372,7 +372,7 @@ export const Sponsors: React.FC = () => {
                                     {expandedSponsors.has(sponsor.profile.principal.toString()) ? <FiChevronUp /> : <FiChevronDown />}
                                 </button>
                                 <div className="sponsor-header-progress">
-                                    {sponsor.isLoading ? (
+                                    {sponsor.isLoading || (sponsor.data && sponsor.data.allocations.length === 0) ? (
                                         <div className="progress-loading">
                                             <FiLoader className="spinning" />
                                         </div>
@@ -413,25 +413,34 @@ export const Sponsors: React.FC = () => {
                                     ) : sponsor.data && (
                                         <div className="sponsor-details">
                                             <div className="sponsor-stats">
-                                                {sponsor.data.allocations.map((allocation, index) => {
-                                                    const token = tokens.find(t => t.canisterId === allocation.token);
-                                                    const claimPercentage = Number((allocation.totalClaimed * BigInt(100)) / allocation.totalAllocated);
-                                                    const symbol = token?.metadata?.symbol || 'tokens';
-                                                    const isDepleted = allocation.totalClaimed === allocation.totalAllocated;
-                                                    return (
-                                                        <div key={index} className="token-stats">
-                                                            <span>{formatTokenAmount(allocation.totalClaimed, allocation.token)} / {formatTokenAmount(allocation.totalAllocated, allocation.token)} {symbol}</span>
-                                                            <span>•</span>
-                                                            <span>{claimPercentage}% claimed</span>
-                                                            <div className={`token-stats-progress ${isDepleted ? 'depleted' : ''}`}>
-                                                                <div 
-                                                                    className="token-stats-progress-bar" 
-                                                                    style={{ width: `${100 - claimPercentage}%` }}
-                                                                />
-                                                            </div>
+                                                {sponsor.data.allocations.length === 0 ? (
+                                                    <div className="token-stats">
+                                                        <div className="token-stats-loading">
+                                                            <FiLoader className="spinning" />
+                                                            <span>Loading token stats...</span>
                                                         </div>
-                                                    );
-                                                })}
+                                                    </div>
+                                                ) : (
+                                                    sponsor.data.allocations.map((allocation, index) => {
+                                                        const token = tokens.find(t => t.canisterId === allocation.token);
+                                                        const claimPercentage = Number((allocation.totalClaimed * BigInt(100)) / allocation.totalAllocated);
+                                                        const symbol = token?.metadata?.symbol || 'tokens';
+                                                        const isDepleted = allocation.totalClaimed === allocation.totalAllocated;
+                                                        return (
+                                                            <div key={index} className="token-stats">
+                                                                <span>{formatTokenAmount(allocation.totalClaimed, allocation.token)} / {formatTokenAmount(allocation.totalAllocated, allocation.token)} {symbol}</span>
+                                                                <span>•</span>
+                                                                <span>{claimPercentage}% claimed</span>
+                                                                <div className={`token-stats-progress ${isDepleted ? 'depleted' : ''}`}>
+                                                                    <div 
+                                                                        className="token-stats-progress-bar" 
+                                                                        style={{ width: `${100 - claimPercentage}%` }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })
+                                                )}
                                             </div>
                                             <div className="sponsor-details">
                                                 <p className="sponsor-description">{sponsor.profile.description}</p>
