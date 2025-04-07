@@ -547,4 +547,25 @@
     font-size: 14px;
     line-height: 1.4;
     margin: 0 0 16px 0;
+}
+
+.achievement-icon-wrapper .spinning {
+    animation: spin 1s linear infinite;
+    width: 48px;
+    height: 48px;
+    color: var(--text-secondary);
+}
+
+.achievement-info .error-text {
+    color: #dc3545;
+    margin: 0;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 } 

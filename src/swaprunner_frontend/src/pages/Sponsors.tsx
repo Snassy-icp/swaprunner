@@ -53,6 +53,12 @@ interface AllocationWithAchievement {
     };
 }
 
+interface AchievementLoadingState {
+    isLoading: boolean;
+    error?: string;
+    data?: AllocationWithAchievement[];
+}
+
 interface SponsorWithClaims {
     profile: UserProfile;
     allocations: {
@@ -76,7 +82,7 @@ interface SponsorLoadingState {
             totalClaimed: bigint;
         }[];
         achievementAllocations: {
-            [achievementId: string]: AllocationWithAchievement[];
+            [achievementId: string]: AchievementLoadingState;
         };
     };
 }
@@ -167,7 +173,30 @@ export const Sponsors: React.FC = () => {
             const actor = await backendService.getActor();
             const allocations = await allocationService.getSponsorAllocations(profile.principal.toString());
             const tokenStats = new Map<string, { totalAllocated: bigint; totalClaimed: bigint }>();
-            const achievementAllocations: { [key: string]: AllocationWithAchievement[] } = {};
+            const achievementAllocations: { [key: string]: AchievementLoadingState } = {};
+
+            // Initialize achievement allocations with loading state
+            allocations.forEach(({ allocation }) => {
+                achievementAllocations[allocation.achievement_id] = {
+                    isLoading: true
+                };
+            });
+
+            // Update sponsor with initial loading states
+            setSponsors(currentSponsors => 
+                currentSponsors.map(s => 
+                    s.profile.principal.toString() === profile.principal.toString()
+                        ? {
+                            ...s,
+                            isLoading: false,
+                            data: {
+                                allocations: [],
+                                achievementAllocations
+                            }
+                        }
+                        : s
+                )
+            );
 
             for (const { allocation } of allocations) {
                 const token = allocation.token.canister_id.toString();
@@ -177,43 +206,82 @@ export const Sponsors: React.FC = () => {
                 const stats = tokenStats.get(token)!;
                 stats.totalAllocated += allocation.token.total_amount_e8s;
 
-                const achievementResult = await actor.get_achievement_details(allocation.achievement_id);
-                if ('ok' in achievementResult) {
-                    const achievement = achievementResult.ok;
-                    const claims = await allocationService.getAllocationClaims(allocation.id);
-                    const totalClaimed = claims.reduce((sum, claim) => sum + claim.amount_e8s, BigInt(0));
-                    stats.totalClaimed += totalClaimed;
-                    const remainingBalance = await allocationService.getAllocationBalance(allocation.id);
+                try {
+                    const achievementResult = await actor.get_achievement_details(allocation.achievement_id);
+                    if ('ok' in achievementResult) {
+                        const achievement = achievementResult.ok;
+                        const claims = await allocationService.getAllocationClaims(allocation.id);
+                        const totalClaimed = claims.reduce((sum, claim) => sum + claim.amount_e8s, BigInt(0));
+                        stats.totalClaimed += totalClaimed;
+                        const remainingBalance = await allocationService.getAllocationBalance(allocation.id);
 
-                    if (!achievementAllocations[achievement.id]) {
-                        achievementAllocations[achievement.id] = [];
+                        // Update the specific achievement's data
+                        setSponsors(currentSponsors => 
+                            currentSponsors.map(s => {
+                                if (s.profile.principal.toString() !== profile.principal.toString()) return s;
+                                return {
+                                    ...s,
+                                    data: {
+                                        ...s.data!,
+                                        achievementAllocations: {
+                                            ...s.data!.achievementAllocations,
+                                            [achievement.id]: {
+                                                isLoading: false,
+                                                data: [
+                                                    ...(s.data!.achievementAllocations[achievement.id]?.data || []),
+                                                    {
+                                                        allocation,
+                                                        achievement,
+                                                        claims: {
+                                                            total_claimed: totalClaimed,
+                                                            claim_count: claims.length,
+                                                            remaining_balance: remainingBalance
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                };
+                            })
+                        );
                     }
-                    achievementAllocations[achievement.id].push({
-                        allocation,
-                        achievement,
-                        claims: {
-                            total_claimed: totalClaimed,
-                            claim_count: claims.length,
-                            remaining_balance: remainingBalance
-                        }
-                    });
+                } catch (err) {
+                    console.error('Error loading achievement:', err);
+                    setSponsors(currentSponsors => 
+                        currentSponsors.map(s => {
+                            if (s.profile.principal.toString() !== profile.principal.toString()) return s;
+                            return {
+                                ...s,
+                                data: {
+                                    ...s.data!,
+                                    achievementAllocations: {
+                                        ...s.data!.achievementAllocations,
+                                        [allocation.achievement_id]: {
+                                            isLoading: false,
+                                            error: 'Failed to load achievement data'
+                                        }
+                                    }
+                                }
+                            };
+                        })
+                    );
                 }
             }
 
-            // Update the specific sponsor's data
+            // Update final token stats
             setSponsors(currentSponsors => 
                 currentSponsors.map(s => 
                     s.profile.principal.toString() === profile.principal.toString()
                         ? {
                             ...s,
-                            isLoading: false,
                             data: {
+                                ...s.data!,
                                 allocations: Array.from(tokenStats.entries()).map(([token, stats]) => ({
                                     token,
                                     totalAllocated: stats.totalAllocated,
                                     totalClaimed: stats.totalClaimed
-                                })),
-                                achievementAllocations
+                                }))
                             }
                         }
                         : s
@@ -422,7 +490,35 @@ export const Sponsors: React.FC = () => {
                                                 {/* Achievement Allocations Section */}
                                                 <div className="achievement-allocations">
                                                     <h4>Sponsored Achievements</h4>
-                                                    {sponsor.data && Object.entries(sponsor.data.achievementAllocations).map(([achievementId, allocations]) => {
+                                                    {sponsor.data && Object.entries(sponsor.data.achievementAllocations).map(([achievementId, achievementState]) => {
+                                                        if (achievementState.isLoading) {
+                                                            return (
+                                                                <div key={achievementId} className="achievement-group">
+                                                                    <div className="achievement-header">
+                                                                        <div className="achievement-icon-wrapper">
+                                                                            <FiLoader className="spinning" />
+                                                                        </div>
+                                                                        <div className="achievement-info">
+                                                                            <h5>Loading achievement...</h5>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        if (achievementState.error) {
+                                                            return (
+                                                                <div key={achievementId} className="achievement-group">
+                                                                    <div className="achievement-header">
+                                                                        <div className="achievement-info">
+                                                                            <h5 className="error-text">{achievementState.error}</h5>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        const allocations = achievementState.data!;
                                                         // Calculate totals for all allocations of this achievement
                                                         const totalAllocated = allocations.reduce((sum, alloc) => 
                                                             sum + Number(alloc.allocation.token.total_amount_e8s), 0
