@@ -599,4 +599,26 @@
     to {
         transform: rotate(360deg);
     }
+}
+
+.achievement-gift {
+    margin-left: auto;
+    margin-right: 8px;
+    font-size: 20px;
+}
+
+.achievement-gift.claimed {
+    color: var(--text-secondary);  /* gray */
+}
+
+.achievement-gift.depleted {
+    color: #dc3545;  /* red */
+}
+
+.achievement-gift.available {
+    color: #ffd700;  /* yellow */
+}
+
+.achievement-gift.future {
+    color: #4CAF50;  /* green */
 } 

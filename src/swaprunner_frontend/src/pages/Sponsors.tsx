@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FiChevronDown, FiChevronUp, FiCheck, FiExternalLink, FiAward, FiLoader } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp, FiCheck, FiExternalLink, FiAward, FiLoader, FiGift } from 'react-icons/fi';
 import { userProfileService } from '../services/userProfile';
 import { allocationService } from '../services/allocation';
 import { tokenService } from '../services/token';
@@ -9,6 +9,7 @@ import '../styles/Sponsors.css';
 import { useTokens } from '../contexts/TokenContext';
 import { Principal } from '@dfinity/principal';
 import { backendService } from '../services/backend';
+import { useAuth } from '../contexts/AuthContext';
 
 interface UserProfile {
     principal: Principal;
@@ -87,17 +88,67 @@ interface SponsorLoadingState {
     };
 }
 
+interface UserClaim {
+    allocation: {
+        id: string;
+        creator: string;
+        achievement_id: string;
+        token: {
+            canister_id: string;
+            total_amount_e8s: bigint;
+            per_user: {
+                min_e8s: bigint;
+                max_e8s: bigint;
+            };
+        };
+        created_at: number;
+    };
+    claim: {
+        allocation_id: string;
+        user: string;
+        amount_e8s: bigint;
+        claimed_at: bigint;
+    };
+}
+
+interface UserAchievement {
+    user: string;
+    achievement_id: string;
+    discovered_at: number;
+}
+
 export const Sponsors: React.FC = () => {
     const [sponsors, setSponsors] = useState<SponsorLoadingState[]>([]);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
     const [expandedSponsors, setExpandedSponsors] = useState<Set<string>>(new Set());
     const [expandedAchievements, setExpandedAchievements] = useState<Set<string>>(new Set());
     const [loadedLogos, setLoadedLogos] = useState<Record<string, string>>({});
+    const [userClaims, setUserClaims] = useState<UserClaim[]>([]);
+    const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
     const { tokens } = useTokens();
+    const { isAuthenticated } = useAuth();
 
     useEffect(() => {
         loadSponsors();
     }, []);
+
+    useEffect(() => {
+        const loadUserData = async () => {
+            if (isAuthenticated) {
+                try {
+                    const [claims, achievements] = await Promise.all([
+                        allocationService.getUserClaims(),
+                        backendService.getActor().then(actor => actor.get_user_achievements())
+                    ]);
+                    setUserClaims(claims);
+                    setUserAchievements(achievements);
+                } catch (error) {
+                    console.error('Error loading user data:', error);
+                }
+            }
+        };
+        loadUserData();
+    }, [isAuthenticated]);
 
     // Load logos for expanded sponsors
     useEffect(() => {
@@ -594,6 +645,12 @@ export const Sponsors: React.FC = () => {
                                                                     <div className="achievement-info">
                                                                         <h5>{allocations[0].achievement.name}</h5>
                                                                     </div>
+                                                                    <FiGift className={`achievement-gift ${
+                                                                        userClaims.some(claim => claim.allocation.id === allocations[0].allocation.id) ? 'claimed' :
+                                                                        totalRemaining === 0 ? 'depleted' :
+                                                                        userAchievements.some(a => a.achievement_id === achievementId) ? 'available' :
+                                                                        'future'
+                                                                    }`} />
                                                                     <button
                                                                         className="expand-button"
                                                                         onClick={(e) => {
