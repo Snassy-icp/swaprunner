@@ -1,8 +1,10 @@
 .help-page {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
   color: var(--text-primary);
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .help-header {
@@ -41,6 +43,12 @@
   display: flex;
   flex-direction: column;
   gap: 32px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 24px;
+  color: #ffffff;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .help-content section {
@@ -69,6 +77,8 @@
   font-size: 14px;
   line-height: 1.6;
   color: var(--text-secondary);
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .help-content ul, 
@@ -233,4 +243,32 @@
 /* Override the default word-break for verification steps */
 .verification-steps li {
   word-break: normal;
+}
+
+.help-section {
+  margin-bottom: 32px;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.help-section p {
+  line-height: 1.6;
+  margin-bottom: 16px;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.help-section ul,
+.help-section ol {
+  margin-bottom: 16px;
+  padding-left: 24px;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.help-section li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+  word-break: normal;
+  overflow-wrap: break-word;
 } 

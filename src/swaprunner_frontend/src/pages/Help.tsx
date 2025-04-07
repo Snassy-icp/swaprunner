@@ -1,6 +1,6 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft } from 'react-icons/fi';
+import { useNavigate, Link } from 'react-router-dom';
+import { FiArrowLeft, FiHelpCircle, FiShield, FiAward } from 'react-icons/fi';
 import '../styles/Help.css';
 
 export const Help: React.FC = () => {
@@ -165,6 +165,20 @@ export const Help: React.FC = () => {
             <a href="/help/verification">Learn more about verification</a>
           </p>
         </section>
+
+        <section>
+          <h2>Rewards</h2>
+          <p>
+            <a href="/help/rewards">Learn more about rewards</a>
+          </p>
+        </section>
+
+        <div className="help-note">
+          <FiHelpCircle className="note-icon" />
+          <p>
+            Can't find what you're looking for? Contact our support team for assistance.
+          </p>
+        </div>
       </div>
     </div>
   );

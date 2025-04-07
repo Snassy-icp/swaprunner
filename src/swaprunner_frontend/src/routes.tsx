@@ -12,6 +12,7 @@ import { useSlippage } from './contexts/SlippageContext';
 import { PoolsPage } from './pages/Pools';
 import { Statistics } from './pages/Statistics';
 import { Verification } from './pages/help/Verification';
+import { Rewards } from './pages/help/Rewards';
 import { Me } from './pages/Me';
 import AdminAchievementsPage from './components/AdminAchievementsPage';
 import AdminUsersPage from './components/AdminUsersPage';
@@ -60,6 +61,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/stats" element={<Stats />} />
             <Route path="/help/verification" element={<Verification />} />
+            <Route path="/help/rewards" element={<Rewards />} />
         </Routes>
     );
 }; 
