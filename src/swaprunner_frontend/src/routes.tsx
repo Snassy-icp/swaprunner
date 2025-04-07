@@ -14,6 +14,7 @@ import { Statistics } from './pages/Statistics';
 import { Verification } from './pages/help/Verification';
 import { Rewards } from './pages/help/Rewards';
 import { Me } from './pages/Me';
+import { Sponsors } from './pages/Sponsors';
 import AdminAchievementsPage from './components/AdminAchievementsPage';
 import AdminUsersPage from './components/AdminUsersPage';
 
@@ -54,6 +55,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/me" element={<Me />} />
             <Route path="/statistics" element={<Statistics />} />
+            <Route path="/sponsors" element={<Sponsors />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/admin/tokens" element={<AdminTokensPage />} />
             <Route path="/admin/prices" element={<AdminPricesPage />} />

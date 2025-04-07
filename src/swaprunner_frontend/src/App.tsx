@@ -9,7 +9,7 @@ import { ClaimProvider } from './contexts/ClaimContext';
 import { AppRoutes } from './routes';
 import { Header } from './components/Header';
 import { analyticsService } from './services/analytics';
-import { FiHelpCircle, FiRefreshCw, FiUser, FiLogIn, FiCheck, FiCopy, FiMenu, FiRepeat, FiCreditCard, FiList, FiDroplet, FiBarChart2 } from 'react-icons/fi';
+import { FiHelpCircle, FiRefreshCw, FiUser, FiLogIn, FiCheck, FiCopy, FiMenu, FiRepeat, FiCreditCard, FiList, FiDroplet, FiBarChart2, FiHeart } from 'react-icons/fi';
 import { isFeatureEnabled } from './config/featureFlags';
 import { useAuth } from './contexts/AuthContext';
 import './App.css';
@@ -180,6 +180,18 @@ const FixedHeader: React.FC = () => {
             >
               <FiBarChart2 />
               Statistics
+            </a>
+            <a 
+              href="/sponsors"
+              className={`hamburger-item ${location.pathname === '/sponsors' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/sponsors');
+                setShowHamburgerMenu(false);
+              }}
+            >
+              <FiHeart />
+              Sponsors
             </a>
             {isAdmin && (
               <a 
