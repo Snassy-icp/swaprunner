@@ -123,15 +123,17 @@ export const Sponsors: React.FC = () => {
                                 className="sponsor-header" 
                                 onClick={() => toggleSponsor(profile.principal)}
                             >
+                                {profile.logo_url && (
+                                    <div className="sponsor-logo-cell">
+                                        <img 
+                                            src={profile.logo_url} 
+                                            alt={`${profile.name} logo`}
+                                            className="sponsor-logo"
+                                        />
+                                    </div>
+                                )}
                                 <div className="sponsor-info">
                                     <div className="sponsor-name">
-                                        {profile.logo_url && (
-                                            <img 
-                                                src={profile.logo_url} 
-                                                alt={`${profile.name} logo`}
-                                                className="sponsor-logo"
-                                            />
-                                        )}
                                         <div className="name-with-badge">
                                             {profile.name}
                                             {profile.verified && (

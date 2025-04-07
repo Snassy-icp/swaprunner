@@ -42,38 +42,47 @@
 
 .sponsor-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    align-items: stretch;
     padding: 16px 20px;
     cursor: pointer;
     transition: background-color 0.2s;
+    gap: 16px;
 }
 
 .sponsor-header:hover {
     background: rgba(255, 255, 255, 0.1);
 }
 
+.sponsor-logo-cell {
+    display: flex;
+    align-items: center;
+    padding-right: 4px;
+}
+
+.sponsor-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
 .sponsor-info {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
 }
 
 .sponsor-name {
     display: flex;
     align-items: center;
-    gap: 12px;
     font-size: 18px;
     font-weight: 500;
     color: var(--text-primary);
-    margin-bottom: 4px;
-}
-
-.sponsor-logo {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-    background: var(--panel-bg);
-    border: 1px solid var(--border-color);
 }
 
 .name-with-badge {
