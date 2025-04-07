@@ -331,4 +331,34 @@
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-primary);
     border-color: var(--text-secondary);
+}
+
+.token-link-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    margin-bottom: 16px;
+}
+
+.token-link-item label {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.token-link-item input {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--panel-bg);
+    color: var(--text-primary);
+    font-family: monospace;
+}
+
+.token-link-item input:focus {
+    outline: none;
+    border-color: var(--accent-color);
 } 

@@ -369,18 +369,37 @@ const CreateProfileForm: React.FC<CreateProfileFormProps> = ({ onSubmit, onCance
             <div className="form-group">
                 <label>Social Links:</label>
                 <div className="social-links-list">
-                    {formData.social_links.map((link, index) => (
+                    <div className="token-link-item">
+                        <label>Token Canister ID:</label>
+                        <input
+                            type="text"
+                            placeholder="Enter token canister ID"
+                            value={formData.social_links.find(link => link.platform === 'token')?.url || ''}
+                            onChange={e => {
+                                const tokenLink = formData.social_links.findIndex(link => link.platform === 'token');
+                                if (tokenLink >= 0) {
+                                    updateSocialLink(tokenLink, 'url', e.target.value);
+                                } else {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        social_links: [...prev.social_links, { platform: 'token', url: e.target.value }]
+                                    }));
+                                }
+                            }}
+                        />
+                    </div>
+                    {formData.social_links.filter(link => link.platform !== 'token').map((link, index) => (
                         <div key={index} className="social-link-item">
                             <input
                                 type="text"
-                                placeholder="Platform (e.g., Twitter, token)"
+                                placeholder="Platform (e.g., Twitter)"
                                 value={link.platform}
                                 onChange={e => updateSocialLink(index, 'platform', e.target.value)}
                                 required
                             />
                             <input
-                                type="text"
-                                placeholder="URL or Canister ID"
+                                type="url"
+                                placeholder="URL"
                                 value={link.url}
                                 onChange={e => updateSocialLink(index, 'url', e.target.value)}
                                 required
@@ -494,26 +513,47 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSubmit, on
             <div className="form-group">
                 <label>Social Links:</label>
                 <div className="social-links-list">
-                    {(formData.social_links[0] || []).map((link, index) => (
+                    <div className="token-link-item">
+                        <label>Token Canister ID:</label>
+                        <input
+                            type="text"
+                            placeholder="Enter token canister ID"
+                            value={(formData.social_links[0] || []).find(link => link.platform === 'token')?.url || ''}
+                            onChange={e => {
+                                const tokenLink = (formData.social_links[0] || []).findIndex(link => link.platform === 'token');
+                                if (tokenLink >= 0) {
+                                    updateSocialLink(tokenLink, 'url', e.target.value);
+                                } else {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        social_links: [
+                                            [...(prev.social_links[0] || []), { platform: 'token', url: e.target.value }]
+                                        ]
+                                    }));
+                                }
+                            }}
+                        />
+                    </div>
+                    {(formData.social_links[0] || []).filter(link => link.platform !== 'token').map((link, index) => (
                         <div key={index} className="social-link-item">
                             <input
                                 type="text"
-                                placeholder="Platform (e.g., Twitter, token)"
+                                placeholder="Platform (e.g., Twitter)"
                                 value={link.platform}
-                                onChange={e => updateSocialLink(index, 'platform', e.target.value)}
+                                onChange={e => updateSocialLink(index + (formData.social_links[0]?.some(l => l.platform === 'token') ? 1 : 0), 'platform', e.target.value)}
                                 required
                             />
                             <input
-                                type="text"
-                                placeholder="URL or Canister ID"
+                                type="url"
+                                placeholder="URL"
                                 value={link.url}
-                                onChange={e => updateSocialLink(index, 'url', e.target.value)}
+                                onChange={e => updateSocialLink(index + (formData.social_links[0]?.some(l => l.platform === 'token') ? 1 : 0), 'url', e.target.value)}
                                 required
                             />
                             <button 
                                 type="button" 
                                 className="remove-link-button"
-                                onClick={() => removeSocialLink(index)}
+                                onClick={() => removeSocialLink(index + (formData.social_links[0]?.some(l => l.platform === 'token') ? 1 : 0))}
                             >
                                 <FiX />
                             </button>
