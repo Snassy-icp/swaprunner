@@ -216,9 +216,13 @@
 
 .achievement-group .achievement-header {
     display: flex;
-    gap: 16px;
-    padding: 16px;
-    background: rgba(255, 255, 255, 0.05);
+    align-items: center;
+    padding: 1rem;
+    background: var(--card-bg);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
 }
 
 .achievement-group .achievement-icon-wrapper {
@@ -330,4 +334,27 @@
 .allocation-range span:last-child {
     color: var(--text-primary);
     font-family: monospace;
+}
+
+.achievement-header-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 0 0 8px 8px;
+}
+
+.achievement-header-progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 100%;
+    background: #4CAF50;
+    transition: width 0.3s ease;
+}
+
+.achievement-header-progress.depleted .achievement-header-progress-bar {
+    background: #f44336;
 } 
