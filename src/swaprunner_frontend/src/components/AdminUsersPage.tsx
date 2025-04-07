@@ -298,6 +298,29 @@ const CreateProfileForm: React.FC<CreateProfileFormProps> = ({ onSubmit, onCance
         onSubmit(formData);
     };
 
+    const addSocialLink = () => {
+        setFormData(prev => ({
+            ...prev,
+            social_links: [...prev.social_links, { platform: '', url: '' }]
+        }));
+    };
+
+    const removeSocialLink = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            social_links: prev.social_links.filter((_, i) => i !== index)
+        }));
+    };
+
+    const updateSocialLink = (index: number, field: 'platform' | 'url', value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            social_links: prev.social_links.map((link, i) => 
+                i === index ? { ...link, [field]: value } : link
+            )
+        }));
+    };
+
     return (
         <form className="profile-form" onSubmit={handleSubmit}>
             <h2>Create New Profile</h2>
@@ -340,6 +363,44 @@ const CreateProfileForm: React.FC<CreateProfileFormProps> = ({ onSubmit, onCance
                 />
             </div>
 
+            <div className="form-group">
+                <label>Social Links:</label>
+                <div className="social-links-list">
+                    {formData.social_links.map((link, index) => (
+                        <div key={index} className="social-link-item">
+                            <input
+                                type="text"
+                                placeholder="Platform (e.g., Twitter)"
+                                value={link.platform}
+                                onChange={e => updateSocialLink(index, 'platform', e.target.value)}
+                                required
+                            />
+                            <input
+                                type="url"
+                                placeholder="URL"
+                                value={link.url}
+                                onChange={e => updateSocialLink(index, 'url', e.target.value)}
+                                required
+                            />
+                            <button 
+                                type="button" 
+                                className="remove-link-button"
+                                onClick={() => removeSocialLink(index)}
+                            >
+                                <FiX />
+                            </button>
+                        </div>
+                    ))}
+                    <button 
+                        type="button" 
+                        className="add-link-button"
+                        onClick={addSocialLink}
+                    >
+                        Add Social Link
+                    </button>
+                </div>
+            </div>
+
             <div className="form-actions">
                 <button type="submit" className="submit-button">Create Profile</button>
                 <button type="button" className="cancel-button" onClick={onCancel}>Cancel</button>
@@ -366,6 +427,29 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSubmit, on
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onSubmit(formData);
+    };
+
+    const addSocialLink = () => {
+        setFormData(prev => ({
+            ...prev,
+            social_links: [...(prev.social_links || []), { platform: '', url: '' }]
+        }));
+    };
+
+    const removeSocialLink = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            social_links: (prev.social_links || []).filter((_, i) => i !== index)
+        }));
+    };
+
+    const updateSocialLink = (index: number, field: 'platform' | 'url', value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            social_links: (prev.social_links || []).map((link, i) => 
+                i === index ? { ...link, [field]: value } : link
+            )
+        }));
     };
 
     return (
@@ -396,6 +480,44 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSubmit, on
                     value={formData.logo_url[0] || ''}
                     onChange={e => setFormData(prev => ({ ...prev, logo_url: e.target.value ? [e.target.value] : [] }))}
                 />
+            </div>
+
+            <div className="form-group">
+                <label>Social Links:</label>
+                <div className="social-links-list">
+                    {(formData.social_links || []).map((link, index) => (
+                        <div key={index} className="social-link-item">
+                            <input
+                                type="text"
+                                placeholder="Platform (e.g., Twitter)"
+                                value={link.platform}
+                                onChange={e => updateSocialLink(index, 'platform', e.target.value)}
+                                required
+                            />
+                            <input
+                                type="url"
+                                placeholder="URL"
+                                value={link.url}
+                                onChange={e => updateSocialLink(index, 'url', e.target.value)}
+                                required
+                            />
+                            <button 
+                                type="button" 
+                                className="remove-link-button"
+                                onClick={() => removeSocialLink(index)}
+                            >
+                                <FiX />
+                            </button>
+                        </div>
+                    ))}
+                    <button 
+                        type="button" 
+                        className="add-link-button"
+                        onClick={addSocialLink}
+                    >
+                        Add Social Link
+                    </button>
+                </div>
             </div>
 
             <div className="form-group checkbox-group">

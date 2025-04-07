@@ -271,4 +271,64 @@
 
 .load-more-button:hover {
     background-color: #0056b3;
+}
+
+.social-links-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.social-link-item {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.social-link-item input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--panel-bg);
+    color: var(--text-primary);
+}
+
+.social-link-item input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.remove-link-button {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.remove-link-button:hover {
+    color: #dc3545;
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.add-link-button {
+    background: none;
+    border: 1px dashed var(--border-color);
+    color: var(--text-secondary);
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 8px;
+    margin-top: 4px;
+    transition: all 0.2s;
+}
+
+.add-link-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
 } 
