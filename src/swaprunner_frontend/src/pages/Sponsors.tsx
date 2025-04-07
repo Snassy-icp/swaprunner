@@ -209,13 +209,15 @@ export const Sponsors: React.FC = () => {
     };
 
     const toggleSponsor = (principalId: string) => {
-        const newExpandedSponsors = new Set(expandedSponsors);
-        if (newExpandedSponsors.has(principalId)) {
-            newExpandedSponsors.delete(principalId);
-        } else {
-            newExpandedSponsors.add(principalId);
-        }
-        setExpandedSponsors(newExpandedSponsors);
+        setExpandedSponsors(prev => {
+            const newExpandedSponsors = new Set(prev);
+            if (newExpandedSponsors.has(principalId)) {
+                newExpandedSponsors.delete(principalId);
+            } else {
+                newExpandedSponsors.add(principalId);
+            }
+            return newExpandedSponsors;
+        });
     };
 
     const toggleAchievement = (achievementId: string) => {
@@ -245,7 +247,11 @@ export const Sponsors: React.FC = () => {
                 <div className="sponsors-list">
                     {sponsors.map((sponsor) => (
                         <div className="sponsor-card" key={sponsor.profile.principal.toString()}>
-                            <div className="sponsor-header" onClick={() => toggleSponsor(sponsor.profile.principal.toString())}>
+                            <div 
+                                className="sponsor-header" 
+                                onClick={() => toggleSponsor(sponsor.profile.principal.toString())}
+                                style={{ cursor: 'pointer' }}
+                            >
                                 <div className="sponsor-logo-cell">
                                     {sponsor.profile.logo_url[0] ? (
                                         <img src={sponsor.profile.logo_url[0]} alt={sponsor.profile.name} className="sponsor-logo" />
@@ -269,154 +275,158 @@ export const Sponsors: React.FC = () => {
                                     {expandedSponsors.has(sponsor.profile.principal.toString()) ? <FiChevronUp /> : <FiChevronDown />}
                                 </button>
                             </div>
-                            {sponsor.isLoading ? (
-                                <div className="sponsor-loading">
-                                    <FiLoader className="spinner" />
-                                    <span>Loading sponsor details...</span>
-                                </div>
-                            ) : sponsor.error ? (
-                                <div className="sponsor-error">
-                                    {sponsor.error}
-                                </div>
-                            ) : sponsor.data && (
+                            {expandedSponsors.has(sponsor.profile.principal.toString()) && (
                                 <>
-                                    <div className="sponsor-stats">
-                                        {sponsor.data.allocations.map((allocation, index) => {
-                                            const token = tokens.find(t => t.canisterId === allocation.token);
-                                            const claimPercentage = Number((allocation.totalClaimed * BigInt(100)) / allocation.totalAllocated);
-                                            const symbol = token?.metadata?.symbol || 'tokens';
-                                            const isDepleted = allocation.totalClaimed === allocation.totalAllocated;
-                                            return (
-                                                <div key={index} className="token-stats">
-                                                    <span>{formatTokenAmount(allocation.totalClaimed, allocation.token)} / {formatTokenAmount(allocation.totalAllocated, allocation.token)} {symbol}</span>
-                                                    <span>•</span>
-                                                    <span>{claimPercentage}% claimed</span>
-                                                    <div className={`token-stats-progress ${isDepleted ? 'depleted' : ''}`}>
-                                                        <div 
-                                                            className="token-stats-progress-bar" 
-                                                            style={{ width: `${100 - claimPercentage}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                    <div className="sponsor-details">
-                                        <p className="sponsor-description">{sponsor.profile.description}</p>
-                                        {sponsor.profile.social_links.length > 0 && (
-                                            <div className="social-links">
-                                                {sponsor.profile.social_links.map((link, index) => (
-                                                    <a 
-                                                        key={index}
-                                                        href={link.url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="social-link"
-                                                    >
-                                                        {link.platform}
-                                                    </a>
-                                                ))}
-                                            </div>
-                                        )}
-                                        
-                                        {/* Achievement Allocations Section */}
-                                        <div className="achievement-allocations">
-                                            <h4>Sponsored Achievements</h4>
-                                            {Object.entries(sponsor.data.achievementAllocations).map(([achievementId, allocations]) => {
-                                                // Calculate totals for all allocations of this achievement
-                                                const totalAllocated = allocations.reduce((sum, alloc) => 
-                                                    sum + Number(alloc.allocation.token.total_amount_e8s), 0
-                                                );
-                                                const totalRemaining = allocations.reduce((sum, alloc) => 
-                                                    sum + Number(alloc.claims.remaining_balance), 0
-                                                );
-                                                const remainingPercentage = (totalRemaining / totalAllocated) * 100;
-                                                const isDepleted = totalRemaining === 0;
-                                                const isExpanded = expandedAchievements.has(achievementId);
-
-                                                return (
-                                                    <div key={achievementId} className="achievement-group">
-                                                        <div 
-                                                            className="achievement-header"
-                                                            onClick={() => toggleAchievement(achievementId)}
-                                                            style={{ cursor: 'pointer' }}
-                                                        >
-                                                            <div className="achievement-icon-wrapper">
-                                                                {allocations[0].achievement.logo_url ? (
-                                                                    <img 
-                                                                        src={allocations[0].achievement.logo_url} 
-                                                                        alt={allocations[0].achievement.name}
-                                                                        className="achievement-logo"
-                                                                    />
-                                                                ) : (
-                                                                    <FiAward className="achievement-icon" />
-                                                                )}
-                                                            </div>
-                                                            <div className="achievement-info">
-                                                                <h5>{allocations[0].achievement.name}</h5>
-                                                                <p>{allocations[0].achievement.description}</p>
-                                                                <div className="achievement-criteria">
-                                                                    <strong>How to earn:</strong> {allocations[0].achievement.criteria}
-                                                                </div>
-                                                            </div>
-                                                            <button className="expand-button">
-                                                                {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
-                                                            </button>
-                                                            <div className={`achievement-header-progress ${isDepleted ? 'depleted' : ''}`}>
+                                    {sponsor.isLoading ? (
+                                        <div className="sponsor-loading">
+                                            <FiLoader className="spinner" />
+                                            <span>Loading sponsor details...</span>
+                                        </div>
+                                    ) : sponsor.error ? (
+                                        <div className="sponsor-error">
+                                            {sponsor.error}
+                                        </div>
+                                    ) : sponsor.data && (
+                                        <div className="sponsor-details">
+                                            <div className="sponsor-stats">
+                                                {sponsor.data.allocations.map((allocation, index) => {
+                                                    const token = tokens.find(t => t.canisterId === allocation.token);
+                                                    const claimPercentage = Number((allocation.totalClaimed * BigInt(100)) / allocation.totalAllocated);
+                                                    const symbol = token?.metadata?.symbol || 'tokens';
+                                                    const isDepleted = allocation.totalClaimed === allocation.totalAllocated;
+                                                    return (
+                                                        <div key={index} className="token-stats">
+                                                            <span>{formatTokenAmount(allocation.totalClaimed, allocation.token)} / {formatTokenAmount(allocation.totalAllocated, allocation.token)} {symbol}</span>
+                                                            <span>•</span>
+                                                            <span>{claimPercentage}% claimed</span>
+                                                            <div className={`token-stats-progress ${isDepleted ? 'depleted' : ''}`}>
                                                                 <div 
-                                                                    className="achievement-header-progress-bar" 
-                                                                    style={{ width: `${remainingPercentage}%` }}
+                                                                    className="token-stats-progress-bar" 
+                                                                    style={{ width: `${100 - claimPercentage}%` }}
                                                                 />
                                                             </div>
                                                         </div>
-                                                        {isExpanded && (
-                                                            <div className="allocation-list">
-                                                                {allocations.map((alloc, index) => {
-                                                                    const token = tokens.find(t => t.canisterId === alloc.allocation.token.canister_id.toString());
-                                                                    const claimPercentage = Number((alloc.claims.total_claimed * BigInt(100)) / alloc.allocation.token.total_amount_e8s);
-                                                                    return (
-                                                                        <div key={index} className="allocation-item">
-                                                                            <div className="allocation-stats">
-                                                                                <div className="allocation-amount">
-                                                                                    <span>Total Allocated:</span>
-                                                                                    <span>{formatTokenAmount(alloc.allocation.token.total_amount_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
-                                                                                </div>
-                                                                                <div className="allocation-claims">
-                                                                                    <span>Claims:</span>
-                                                                                    <span>{formatTokenAmount(alloc.claims.total_claimed, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'} ({claimPercentage}%) by {alloc.claims.claim_count} users</span>
-                                                                                </div>
-                                                                                <div className="allocation-remaining">
-                                                                                    <span>Remaining:</span>
-                                                                                    <span>{formatTokenAmount(alloc.claims.remaining_balance, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
-                                                                                </div>
-                                                                                <div className="allocation-range">
-                                                                                    <span>Per User Range:</span>
-                                                                                    <span>{formatTokenAmount(alloc.allocation.token.per_user.min_e8s, alloc.allocation.token.canister_id.toString())} - {formatTokenAmount(alloc.allocation.token.per_user.max_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
-                                                                                </div>
-                                                                                <div className={`allocation-progress ${alloc.claims.remaining_balance === BigInt(0) ? 'allocation-progress-depleted' : ''}`}>
-                                                                                    <div 
-                                                                                        className="allocation-progress-bar" 
-                                                                                        style={{ 
-                                                                                            width: `${(Number(alloc.claims.remaining_balance) * 100) / Number(alloc.allocation.token.total_amount_e8s)}%` 
-                                                                                        }}
-                                                                                    />
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        )}
+                                                    );
+                                                })}
+                                            </div>
+                                            <div className="sponsor-details">
+                                                <p className="sponsor-description">{sponsor.profile.description}</p>
+                                                {sponsor.profile.social_links.length > 0 && (
+                                                    <div className="social-links">
+                                                        {sponsor.profile.social_links.map((link, index) => (
+                                                            <a 
+                                                                key={index}
+                                                                href={link.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="social-link"
+                                                            >
+                                                                {link.platform}
+                                                            </a>
+                                                        ))}
                                                     </div>
-                                                );
-                                            })}
-                                        </div>
+                                                )}
+                                                
+                                                {/* Achievement Allocations Section */}
+                                                <div className="achievement-allocations">
+                                                    <h4>Sponsored Achievements</h4>
+                                                    {sponsor.data && Object.entries(sponsor.data.achievementAllocations).map(([achievementId, allocations]) => {
+                                                        // Calculate totals for all allocations of this achievement
+                                                        const totalAllocated = allocations.reduce((sum, alloc) => 
+                                                            sum + Number(alloc.allocation.token.total_amount_e8s), 0
+                                                        );
+                                                        const totalRemaining = allocations.reduce((sum, alloc) => 
+                                                            sum + Number(alloc.claims.remaining_balance), 0
+                                                        );
+                                                        const remainingPercentage = (totalRemaining / totalAllocated) * 100;
+                                                        const isDepleted = totalRemaining === 0;
+                                                        const isExpanded = expandedAchievements.has(achievementId);
 
-                                        <div className="sponsor-footer">
-                                            <span>Joined: {formatDate(sponsor.profile.created_at)}</span>
-                                            <span>Last active: {formatDate(sponsor.profile.updated_at)}</span>
+                                                        return (
+                                                            <div key={achievementId} className="achievement-group">
+                                                                <div 
+                                                                    className="achievement-header"
+                                                                    onClick={() => toggleAchievement(achievementId)}
+                                                                    style={{ cursor: 'pointer' }}
+                                                                >
+                                                                    <div className="achievement-icon-wrapper">
+                                                                        {allocations[0].achievement.logo_url ? (
+                                                                            <img 
+                                                                                src={allocations[0].achievement.logo_url} 
+                                                                                alt={allocations[0].achievement.name}
+                                                                                className="achievement-logo"
+                                                                            />
+                                                                        ) : (
+                                                                            <FiAward className="achievement-icon" />
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="achievement-info">
+                                                                        <h5>{allocations[0].achievement.name}</h5>
+                                                                        <p>{allocations[0].achievement.description}</p>
+                                                                        <div className="achievement-criteria">
+                                                                            <strong>How to earn:</strong> {allocations[0].achievement.criteria}
+                                                                        </div>
+                                                                    </div>
+                                                                    <button className="expand-button">
+                                                                        {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
+                                                                    </button>
+                                                                    <div className={`achievement-header-progress ${isDepleted ? 'depleted' : ''}`}>
+                                                                        <div 
+                                                                            className="achievement-header-progress-bar" 
+                                                                            style={{ width: `${remainingPercentage}%` }}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                {isExpanded && (
+                                                                    <div className="allocation-list">
+                                                                        {allocations.map((alloc, index) => {
+                                                                            const token = tokens.find(t => t.canisterId === alloc.allocation.token.canister_id.toString());
+                                                                            const claimPercentage = Number((alloc.claims.total_claimed * BigInt(100)) / alloc.allocation.token.total_amount_e8s);
+                                                                            return (
+                                                                                <div key={index} className="allocation-item">
+                                                                                    <div className="allocation-stats">
+                                                                                        <div className="allocation-amount">
+                                                                                            <span>Total Allocated:</span>
+                                                                                            <span>{formatTokenAmount(alloc.allocation.token.total_amount_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
+                                                                                        </div>
+                                                                                        <div className="allocation-claims">
+                                                                                            <span>Claims:</span>
+                                                                                            <span>{formatTokenAmount(alloc.claims.total_claimed, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'} ({claimPercentage}%) by {alloc.claims.claim_count} users</span>
+                                                                                        </div>
+                                                                                        <div className="allocation-remaining">
+                                                                                            <span>Remaining:</span>
+                                                                                            <span>{formatTokenAmount(alloc.claims.remaining_balance, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
+                                                                                        </div>
+                                                                                        <div className="allocation-range">
+                                                                                            <span>Per User Range:</span>
+                                                                                            <span>{formatTokenAmount(alloc.allocation.token.per_user.min_e8s, alloc.allocation.token.canister_id.toString())} - {formatTokenAmount(alloc.allocation.token.per_user.max_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
+                                                                                        </div>
+                                                                                        <div className={`allocation-progress ${alloc.claims.remaining_balance === BigInt(0) ? 'allocation-progress-depleted' : ''}`}>
+                                                                                            <div 
+                                                                                                className="allocation-progress-bar" 
+                                                                                                style={{ 
+                                                                                                    width: `${(Number(alloc.claims.remaining_balance) * 100) / Number(alloc.allocation.token.total_amount_e8s)}%` 
+                                                                                                }}
+                                                                                            />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                <div className="sponsor-footer">
+                                                    <span>Joined: {formatDate(sponsor.profile.created_at)}</span>
+                                                    <span>Last active: {formatDate(sponsor.profile.updated_at)}</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </>
                             )}
                         </div>
