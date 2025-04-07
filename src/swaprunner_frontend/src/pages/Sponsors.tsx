@@ -689,6 +689,21 @@ export const Sponsors: React.FC = () => {
                                                                                             <span>Per User Range:</span>
                                                                                             <span>{formatTokenAmount(alloc.allocation.token.per_user.min_e8s, alloc.allocation.token.canister_id.toString())} - {formatTokenAmount(alloc.allocation.token.per_user.max_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
                                                                                         </div>
+                                                                                        <div className="allocation-status">
+                                                                                            <span>Status:</span>
+                                                                                            <span className="status-with-icon">
+                                                                                                {userClaims.some(claim => claim.allocation.id === alloc.allocation.id) ? 'Claimed' :
+                                                                                                alloc.claims.remaining_balance === BigInt(0) ? 'Depleted' :
+                                                                                                userAchievements.some(a => a.achievement_id === achievementId) ? 'Available' :
+                                                                                                'Not Yet Available'}
+                                                                                                <FiGift className={`allocation-gift ${
+                                                                                                    userClaims.some(claim => claim.allocation.id === alloc.allocation.id) ? 'claimed' :
+                                                                                                    alloc.claims.remaining_balance === BigInt(0) ? 'depleted' :
+                                                                                                    userAchievements.some(a => a.achievement_id === achievementId) ? 'available' :
+                                                                                                    'future'
+                                                                                                }`} />
+                                                                                            </span>
+                                                                                        </div>
                                                                                         <div className={`allocation-progress ${alloc.claims.remaining_balance === BigInt(0) ? 'allocation-progress-depleted' : ''}`}>
                                                                                             <div 
                                                                                                 className="allocation-progress-bar" 
@@ -698,12 +713,6 @@ export const Sponsors: React.FC = () => {
                                                                                             />
                                                                                         </div>
                                                                                     </div>
-                                                                                    <FiGift className={`allocation-gift ${
-                                                                                        userClaims.some(claim => claim.allocation.id === alloc.allocation.id) ? 'claimed' :
-                                                                                        alloc.claims.remaining_balance === BigInt(0) ? 'depleted' :
-                                                                                        userAchievements.some(a => a.achievement_id === achievementId) ? 'available' :
-                                                                                        'future'
-                                                                                    }`} />
                                                                                 </div>
                                                                             );
                                                                         })}

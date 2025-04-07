@@ -405,7 +405,8 @@
 .allocation-amount,
 .allocation-claims,
 .allocation-remaining,
-.allocation-range {
+.allocation-range,
+.allocation-status {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -415,16 +416,25 @@
 .allocation-amount span:first-child,
 .allocation-claims span:first-child,
 .allocation-remaining span:first-child,
-.allocation-range span:first-child {
+.allocation-range span:first-child,
+.allocation-status span:first-child {
     color: var(--text-secondary);
 }
 
 .allocation-amount span:last-child,
 .allocation-claims span:last-child,
 .allocation-remaining span:last-child,
-.allocation-range span:last-child {
+.allocation-range span:last-child,
+.allocation-status .status-with-icon {
     color: var(--text-primary);
     font-family: monospace;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.allocation-status .allocation-gift {
+    font-size: 16px;
 }
 
 .allocation-gift {
