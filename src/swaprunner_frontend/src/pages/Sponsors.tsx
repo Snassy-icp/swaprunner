@@ -232,7 +232,9 @@ export const Sponsors: React.FC = () => {
     };
 
     const formatDate = (timestamp: bigint): string => {
-        return new Date(Number(timestamp)).toLocaleString();
+        // Convert nanoseconds to milliseconds by dividing by 1_000_000
+        const milliseconds = Number(timestamp) / 1_000_000;
+        return new Date(milliseconds).toLocaleString();
     };
 
     const toggleSponsor = (principalId: string) => {
