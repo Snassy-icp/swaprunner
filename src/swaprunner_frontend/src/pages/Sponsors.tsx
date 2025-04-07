@@ -311,19 +311,78 @@ export const Sponsors: React.FC = () => {
                                             </div>
                                             <div className="sponsor-details">
                                                 <p className="sponsor-description">{sponsor.profile.description}</p>
+                                                {/* Social Links Section */}
                                                 {sponsor.profile.social_links.length > 0 && (
                                                     <div className="social-links">
-                                                        {sponsor.profile.social_links.map((link, index) => (
-                                                            <a 
-                                                                key={index}
-                                                                href={link.url}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="social-link"
-                                                            >
-                                                                {link.platform}
-                                                            </a>
-                                                        ))}
+                                                        {sponsor.profile.social_links
+                                                            .filter(link => link.platform.toLowerCase() !== 'token')
+                                                            .map((link, index) => (
+                                                                <a 
+                                                                    key={index}
+                                                                    href={link.url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="social-link"
+                                                                >
+                                                                    {link.platform}
+                                                                </a>
+                                                            ))}
+                                                    </div>
+                                                )}
+
+                                                {/* Token Section */}
+                                                {sponsor.profile.social_links.find(link => link.platform.toLowerCase() === 'token') && (
+                                                    <div className="sponsor-token">
+                                                        {(() => {
+                                                            const tokenLink = sponsor.profile.social_links.find(
+                                                                link => link.platform.toLowerCase() === 'token'
+                                                            );
+                                                            if (!tokenLink) return null;
+                                                            
+                                                            const token = tokens.find(t => t.canisterId === tokenLink.url);
+                                                            if (!token) return null;
+
+                                                            return (
+                                                                <>
+                                                                    <h4>Project Token</h4>
+                                                                    <div className="token-info">
+                                                                        <div className="token-header">
+                                                                            {token.metadata?.hasLogo && (
+                                                                                <img 
+                                                                                    src={`/api/v1/token/${token.canisterId}/logo`}
+                                                                                    alt={token.metadata?.symbol || 'Token'} 
+                                                                                    className="token-logo"
+                                                                                />
+                                                                            )}
+                                                                            <div className="token-title">
+                                                                                <span className="token-name">{token.metadata?.name || 'Unknown Token'}</span>
+                                                                                <span className="token-symbol">{token.metadata?.symbol || 'UNKNOWN'}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="token-metadata">
+                                                                            <div className="metadata-row">
+                                                                                <span className="metadata-label">Standard</span>
+                                                                                <span className="metadata-value">{token.metadata?.standard || 'Unknown'}</span>
+                                                                            </div>
+                                                                            <div className="metadata-row">
+                                                                                <span className="metadata-label">Decimals</span>
+                                                                                <span className="metadata-value">{token.metadata?.decimals || 0}</span>
+                                                                            </div>
+                                                                            <div className="metadata-row">
+                                                                                <span className="metadata-label">Fee</span>
+                                                                                <span className="metadata-value">
+                                                                                    {token.metadata?.fee ? formatTokenAmount(token.metadata.fee, token.canisterId) : '0'} {token.metadata?.symbol || 'tokens'}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="metadata-row">
+                                                                                <span className="metadata-label">Canister</span>
+                                                                                <span className="metadata-value monospace">{token.canisterId}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 )}
                                                 
