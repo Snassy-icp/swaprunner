@@ -1,21 +1,23 @@
 .sponsors-page {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0 0 20px;
     width: 100%;
-    max-width: 480px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 16px;
-    min-height: 100vh;
-    box-sizing: border-box;
-    padding-top: 80px; /* Add space for fixed header */
 }
 
-.swap-box {
-    background: var(--panel-bg);
-    border: 1px solid var(--border-color);
+.sponsors-box {
+    background: #1A1D26;
     border-radius: 16px;
-    padding: 24px;
+    padding: 20px;
     width: 100%;
+    max-width: 800px;
+    margin: 0;
+    border: 1px solid var(--border-color);
     box-sizing: border-box;
-}
+  }
 
 .sponsors-content {
     width: 100%;
