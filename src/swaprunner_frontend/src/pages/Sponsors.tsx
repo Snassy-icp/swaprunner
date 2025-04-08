@@ -776,19 +776,7 @@ export const Sponsors: React.FC = () => {
                                                                     </div>
                                                                     <div className="achievement-info">
                                                                         <h5>{allocations[0].achievement.name}</h5>
-                                                                        <div className="achievement-totals">
-                                                                            {isLoadingAnyUSDPrice ? (
-                                                                                <FiLoader className="spinner" />
-                                                                            ) : totalUSDAllocated > 0 && (
-                                                                                <>
-                                                                                    <span className="usd-value">
-                                                                                        ${totalUSDRemaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ${totalUSDAllocated.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                                    </span>
-                                                                                    <span className="separator">•</span>
-                                                                                </>
-                                                                            )}
-                                                                            <span>{remainingPercentage.toFixed(1)}% remaining</span>
-                                                                        </div>
+                                                                        <p>{allocations[0].achievement.description}</p>
                                                                     </div>
                                                                     <FiGift className={`achievement-gift ${(() => {
                                                                         // Check for any yellow (available) boxes first
@@ -827,6 +815,17 @@ export const Sponsors: React.FC = () => {
                                                                     >
                                                                         {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
                                                                     </button>
+                                                                    <div className="achievement-header-progress">
+                                                                        <div 
+                                                                            className="progress-bar" 
+                                                                            style={{ 
+                                                                                width: `${allocations.reduce((sum, alloc) => 
+                                                                                    sum + (Number(alloc.claims.remaining_balance) * 100) / Number(alloc.allocation.token.total_amount_e8s), 
+                                                                                    0
+                                                                                ) / allocations.length}%` 
+                                                                            }}
+                                                                        />
+                                                                    </div>
                                                                 </div>
                                                                 {isExpanded && (
                                                                     <div className="allocation-list">

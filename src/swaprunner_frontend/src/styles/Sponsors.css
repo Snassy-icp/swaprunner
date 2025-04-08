@@ -285,12 +285,12 @@
 .achievement-group .achievement-header {
     display: flex;
     align-items: center;
-    padding: 16px;
     gap: 16px;
+    padding: 16px;
     background: rgba(255, 255, 255, 0.03);
+    position: relative;
+    overflow: hidden;
     border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.2s;
 }
 
 .achievement-group .achievement-header:hover {
@@ -507,13 +507,15 @@
 }
 
 .sponsor-header-progress {
-    position: relative;
-    width: 100%;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
     height: 4px;
-    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
-    overflow: hidden;
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .sponsor-header-progress .progress-loading {
@@ -832,4 +834,24 @@
     to {
         transform: rotate(360deg);
     }
+}
+
+.achievement-header-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    overflow: hidden;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.achievement-header-progress .progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 100%;
+    background: var(--green);
+    transition: width 0.3s ease-in-out;
 } 
