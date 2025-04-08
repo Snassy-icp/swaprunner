@@ -182,8 +182,11 @@ export const Sponsors: React.FC = () => {
             setIsInitialLoading(true);
             const verifiedProfiles = await userProfileService.getVerifiedProfiles();
             
-            // Initialize sponsors with loading states
-            setSponsors(verifiedProfiles.map(profile => ({
+            // Randomly shuffle the verified profiles array
+            const shuffledProfiles = [...verifiedProfiles].sort(() => Math.random() - 0.5);
+            
+            // Initialize sponsors with loading states using shuffled array
+            setSponsors(shuffledProfiles.map(profile => ({
                 profile: {
                     principal: profile.principal,
                     name: profile.name,
@@ -199,8 +202,8 @@ export const Sponsors: React.FC = () => {
             })));
             setIsInitialLoading(false);
 
-            // Load each sponsor's data individually
-            for (const profile of verifiedProfiles) {
+            // Load each sponsor's data individually using shuffled array
+            for (const profile of shuffledProfiles) {
                 const typedProfile: UserProfile = {
                     principal: profile.principal,
                     name: profile.name,
