@@ -4016,4 +4016,19 @@ shared (deployer) actor class SwapRunner() = this {
             Principal.fromActor(this)
         );
     };
+
+    // Transfer allocation ownership to another user
+    public shared(msg) func transfer_allocation(allocation_id: Nat, new_owner: Principal) : async Result.Result<(), Text> {
+        let caller = msg.caller;
+
+        // Call allocation module to handle transfer
+        Allocation.transfer_allocation(
+            caller,
+            allocation_id,
+            new_owner,
+            allocations,
+            allocation_statuses,
+            userLogins
+        )
+    };
 }

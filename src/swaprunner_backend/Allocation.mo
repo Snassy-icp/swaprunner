@@ -830,4 +830,49 @@ module {
         // Return success
         #ok(())
     };
+
+    // Transfer allocation ownership to another user
+    public func transfer_allocation(
+        caller: Principal,
+        allocation_id: Nat,
+        new_owner: Principal,
+        allocations: HashMap.HashMap<Text, T.Allocation>,
+        allocation_statuses: HashMap.HashMap<Text, T.AllocationStatus>,
+        user_logins: HashMap.HashMap<Text, Nat>,
+    ) : Result.Result<(), Text> {
+        // Get allocation
+        let allocation = switch (allocations.get(Nat.toText(allocation_id))) {
+            case null return #err("Allocation not found");
+            case (?a) a;
+        };
+
+        // Verify caller is creator
+        if (caller != allocation.creator) {
+            return #err("Only the creator can transfer this allocation");
+        };
+
+        // Verify new owner exists in user_logins
+        switch (user_logins.get(Principal.toText(new_owner))) {
+            case null return #err("New owner must be an existing user");
+            case (?_) {};
+        };
+
+        // Verify current status allows transfer (Draft, Active, or Depleted)
+        switch (allocation_statuses.get(Nat.toText(allocation_id))) {
+            case (?#Draft or ?#Active or ?#Depleted) {};
+            case (?status) return #err("Allocation cannot be transferred in its current status");
+            case null return #err("Allocation status not found");
+        };
+
+        // Create updated allocation with new owner
+        let updated_allocation = {
+            allocation with
+            creator = new_owner;
+        };
+
+        // Update allocation
+        allocations.put(Nat.toText(allocation_id), updated_allocation);
+
+        #ok(())
+    };
 }
