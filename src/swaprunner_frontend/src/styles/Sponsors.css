@@ -48,6 +48,7 @@
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s;
+    position: relative;
 }
 
 .sponsor-header:hover {
@@ -484,6 +485,8 @@
     height: 4px;
     background: rgba(255, 255, 255, 0.1);
     overflow: hidden;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
 }
 
 .sponsor-header-progress .progress-loading {
