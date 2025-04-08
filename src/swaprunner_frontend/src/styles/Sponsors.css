@@ -796,7 +796,8 @@
 
 .sponsor-usd-values {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
     gap: 8px;
     font-size: 14px;
     color: var(--text-secondary);
@@ -804,6 +805,7 @@
 
 .sponsor-usd-values span {
     white-space: nowrap;
+    width: fit-content;
 }
 
 .sponsor-usd-values .remaining-positive {
