@@ -327,8 +327,17 @@ class AllocationService {
      * Helper method to get a single allocation by ID
      */
     private async getAllocation(allocationId: string): Promise<Allocation | null> {
-        const allocations = await this.getMyCreatedAllocations();
-        return allocations.find(a => a.allocation.id === allocationId)?.allocation || null;
+        try {
+            const actor = await backendService.getActor();
+            const result = await actor.get_allocation(allocationId);
+            if ('ok' in result) {
+                return result.ok.allocation;
+            }
+            return null;
+        } catch (err) {
+            console.error('Error getting allocation:', err);
+            return null;
+        }
     }
 
     /**
