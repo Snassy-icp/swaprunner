@@ -1457,9 +1457,7 @@ export const AllocationsSection: React.FC = () => {
                 setLoading(true);
                 const adminStatus = await adminService.isAdmin();
                 setIsAdminUser(adminStatus);
-                if (adminStatus) {
-                    await loadAllocations();
-                }
+                await loadAllocations();
             } catch (error) {
                 console.error('Error checking admin status:', error);
                 setError('Failed to check admin status');
