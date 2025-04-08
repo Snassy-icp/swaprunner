@@ -162,13 +162,20 @@ export const TokenSelect: React.FC<TokenSelectProps> = ({
       );
     });
 
-    // Sort tokens to prioritize custom tokens
+    // Sort tokens alphabetically by symbol, then prioritize custom tokens
     return filtered.sort((a, b) => {
+      // Get symbols, handling array cases
+      const symbolA = (Array.isArray(a.metadata?.symbol) ? a.metadata?.symbol[0] : a.metadata?.symbol)?.toLowerCase() || '';
+      const symbolB = (Array.isArray(b.metadata?.symbol) ? b.metadata?.symbol[0] : b.metadata?.symbol)?.toLowerCase() || '';
+      
+      // First sort by custom token status
       const aIsCustom = customTokens.includes(a.canisterId);
       const bIsCustom = customTokens.includes(b.canisterId);
       if (aIsCustom && !bIsCustom) return -1;
       if (!aIsCustom && bIsCustom) return 1;
-      return 0;
+      
+      // Then sort alphabetically by symbol
+      return symbolA.localeCompare(symbolB);
     });
   }, [tokens, searchQuery, customTokens]);
 
