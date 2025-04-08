@@ -942,16 +942,25 @@ export const Sponsors: React.FC = () => {
                                                                                                 {userClaims.some(claim => claim.allocation.id === alloc.allocation.id) ? 'Claimed' :
                                                                                                 alloc.claims.remaining_balance === BigInt(0) ? 'Depleted' :
                                                                                                 userAchievements.some(a => a.achievement_id === achievementId) ? 'Available' :
-                                                                                                'Not Yet Available'}
+                                                                                                'You Do Not Have This Achievement Yet'}
                                                                                             </span>
-                                                                                            <span>
-                                                                                                <FiGift className={`allocation-gift ${
-                                                                                                    userClaims.some(claim => claim.allocation.id === alloc.allocation.id) ? 'claimed' :
-                                                                                                    alloc.claims.remaining_balance === BigInt(0) ? 'depleted' :
-                                                                                                    userAchievements.some(a => a.achievement_id === achievementId) ? 'available' :
-                                                                                                    'future'
-                                                                                                }`} />
-                                                                                            </span>
+                                                                                            {(() => {
+                                                                                                // Don't show icon if depleted
+                                                                                                if (alloc.claims.remaining_balance === BigInt(0) && 
+                                                                                                    !userClaims.some(claim => claim.allocation.id === alloc.allocation.id)) {
+                                                                                                    return null;
+                                                                                                }
+
+                                                                                                return (
+                                                                                                    <span>
+                                                                                                        <FiGift className={`allocation-gift ${
+                                                                                                            userClaims.some(claim => claim.allocation.id === alloc.allocation.id) ? 'claimed' :
+                                                                                                            userAchievements.some(a => a.achievement_id === achievementId) ? 'available' :
+                                                                                                            'future'
+                                                                                                        }`} />
+                                                                                                    </span>
+                                                                                                );
+                                                                                            })()}
                                                                                         </div>
                                                                                         <div className={`allocation-progress ${alloc.claims.remaining_balance === BigInt(0) ? 'allocation-progress-depleted' : ''}`}>
                                                                                             <div 

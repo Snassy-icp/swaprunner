@@ -726,6 +726,14 @@
     color: #ffd700;  /* yellow */
 }
 
+.achievement-gift.available {
+    color: #ffd700;  /* yellow */
+}
+
+.achievement-gift.future {
+    color: #4CAF50;  /* yellow */
+}
+
 .sponsor-gift {
     margin-left: auto;
     margin-right: 8px;
