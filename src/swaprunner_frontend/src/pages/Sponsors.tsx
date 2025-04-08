@@ -10,6 +10,7 @@ import { useTokens } from '../contexts/TokenContext';
 import { Principal } from '@dfinity/principal';
 import { backendService } from '../services/backend';
 import { useAuth } from '../contexts/AuthContext';
+import { priceService } from '../services/price';
 
 interface UserProfile {
     principal: Principal;
@@ -125,6 +126,8 @@ export const Sponsors: React.FC = () => {
     const [loadedLogos, setLoadedLogos] = useState<Record<string, string>>({});
     const [userClaims, setUserClaims] = useState<UserClaim[]>([]);
     const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
+    const [tokenUSDPrices, setTokenUSDPrices] = useState<Record<string, number>>({});
+    const [loadingUSDPrices, setLoadingUSDPrices] = useState<Record<string, boolean>>({});
     const { tokens } = useTokens();
     const { isAuthenticated } = useAuth();
 
@@ -249,6 +252,35 @@ export const Sponsors: React.FC = () => {
                 )
             );
 
+            // Load USD prices for all unique tokens
+            const uniqueTokens = new Set<string>();
+            allocations.forEach(({ allocation }) => {
+                const tokenId = allocation.token.canister_id.toString();
+                uniqueTokens.add(tokenId);
+                setLoadingUSDPrices(prev => ({
+                    ...prev,
+                    [tokenId]: true
+                }));
+            });
+
+            // Load USD prices in parallel
+            await Promise.all(Array.from(uniqueTokens).map(async tokenId => {
+                try {
+                    const price = await priceService.getTokenUSDPrice(tokenId);
+                    setTokenUSDPrices(prev => ({
+                        ...prev,
+                        [tokenId]: price
+                    }));
+                } catch (error) {
+                    console.error('Failed to fetch USD price for token:', tokenId, error);
+                } finally {
+                    setLoadingUSDPrices(prev => ({
+                        ...prev,
+                        [tokenId]: false
+                    }));
+                }
+            }));
+
             for (const { allocation } of allocations) {
                 const token = allocation.token.canister_id.toString();
                 if (!tokenStats.has(token)) {
@@ -348,6 +380,21 @@ export const Sponsors: React.FC = () => {
                 )
             );
         }
+    };
+
+    const calculateUSDValue = (amount_e8s: bigint, tokenId: string): string => {
+        const price = tokenUSDPrices[tokenId];
+        if (!price) return '-';
+        
+        const token = tokens.find(t => t.canisterId === tokenId);
+        if (!token?.metadata) return '-';
+        
+        const decimals = token.metadata.decimals ?? 8;
+        const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+        const amountInWholeUnits = Number(amount_e8s) / Number(baseUnitMultiplier);
+        const value = amountInWholeUnits * price;
+        
+        return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     const formatDate = (timestamp: bigint): string => {
@@ -520,7 +567,19 @@ export const Sponsors: React.FC = () => {
                                                         const isDepleted = allocation.totalClaimed === allocation.totalAllocated;
                                                         return (
                                                             <div key={index} className="token-stats">
-                                                                <span>{formatTokenAmount(allocation.totalClaimed, allocation.token)} / {formatTokenAmount(allocation.totalAllocated, allocation.token)} {symbol}</span>
+                                                                <span>
+                                                                    {formatTokenAmount(allocation.totalClaimed, allocation.token)} / {formatTokenAmount(allocation.totalAllocated, allocation.token)} {symbol}
+                                                                    {loadingUSDPrices[allocation.token] ? (
+                                                                        <FiLoader className="spinner" />
+                                                                    ) : tokenUSDPrices[allocation.token] && (
+                                                                        <>
+                                                                            <span className="separator">•</span>
+                                                                            <span className="usd-value">
+                                                                                {calculateUSDValue(allocation.totalClaimed, allocation.token)} / {calculateUSDValue(allocation.totalAllocated, allocation.token)}
+                                                                            </span>
+                                                                        </>
+                                                                    )}
+                                                                </span>
                                                                 <span>•</span>
                                                                 <span>{claimPercentage}% claimed</span>
                                                                 <div className={`token-stats-progress ${isDepleted ? 'depleted' : ''}`}>
@@ -658,6 +717,39 @@ export const Sponsors: React.FC = () => {
                                                         const isDepleted = totalRemaining === 0;
                                                         const isExpanded = expandedAchievements.has(achievementId);
 
+                                                        // Calculate total USD values
+                                                        const totalUSDAllocated = allocations.reduce((sum, alloc) => {
+                                                            const tokenId = alloc.allocation.token.canister_id.toString();
+                                                            const price = tokenUSDPrices[tokenId];
+                                                            if (!price) return sum;
+                                                            
+                                                            const token = tokens.find(t => t.canisterId === tokenId);
+                                                            if (!token?.metadata) return sum;
+                                                            
+                                                            const decimals = token.metadata.decimals ?? 8;
+                                                            const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+                                                            const amountInWholeUnits = Number(alloc.allocation.token.total_amount_e8s) / Number(baseUnitMultiplier);
+                                                            return sum + (amountInWholeUnits * price);
+                                                        }, 0);
+
+                                                        const totalUSDRemaining = allocations.reduce((sum, alloc) => {
+                                                            const tokenId = alloc.allocation.token.canister_id.toString();
+                                                            const price = tokenUSDPrices[tokenId];
+                                                            if (!price) return sum;
+                                                            
+                                                            const token = tokens.find(t => t.canisterId === tokenId);
+                                                            if (!token?.metadata) return sum;
+                                                            
+                                                            const decimals = token.metadata.decimals ?? 8;
+                                                            const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+                                                            const amountInWholeUnits = Number(alloc.claims.remaining_balance) / Number(baseUnitMultiplier);
+                                                            return sum + (amountInWholeUnits * price);
+                                                        }, 0);
+
+                                                        const isLoadingAnyUSDPrice = allocations.some(alloc => 
+                                                            loadingUSDPrices[alloc.allocation.token.canister_id.toString()]
+                                                        );
+
                                                         return (
                                                             <div key={achievementId} className="achievement-group">
                                                                 <div 
@@ -681,6 +773,19 @@ export const Sponsors: React.FC = () => {
                                                                     </div>
                                                                     <div className="achievement-info">
                                                                         <h5>{allocations[0].achievement.name}</h5>
+                                                                        <div className="achievement-totals">
+                                                                            {isLoadingAnyUSDPrice ? (
+                                                                                <FiLoader className="spinner" />
+                                                                            ) : totalUSDAllocated > 0 && (
+                                                                                <>
+                                                                                    <span className="usd-value">
+                                                                                        ${totalUSDRemaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ${totalUSDAllocated.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                                    </span>
+                                                                                    <span className="separator">•</span>
+                                                                                </>
+                                                                            )}
+                                                                            <span>{remainingPercentage.toFixed(1)}% remaining</span>
+                                                                        </div>
                                                                     </div>
                                                                     <FiGift className={`achievement-gift ${(() => {
                                                                         // Check for any yellow (available) boxes first
@@ -734,19 +839,67 @@ export const Sponsors: React.FC = () => {
                                                                                     <div className="allocation-details">
                                                                                         <div className="allocation-amount">
                                                                                             <span>Total Allocated:</span>
-                                                                                            <span>{formatTokenAmount(alloc.allocation.token.total_amount_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
+                                                                                            <span>
+                                                                                                {formatTokenAmount(alloc.allocation.token.total_amount_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}
+                                                                                                {loadingUSDPrices[alloc.allocation.token.canister_id.toString()] ? (
+                                                                                                    <FiLoader className="spinner" />
+                                                                                                ) : tokenUSDPrices[alloc.allocation.token.canister_id.toString()] && (
+                                                                                                    <>
+                                                                                                        <span className="separator">•</span>
+                                                                                                        <span className="usd-value">
+                                                                                                            {calculateUSDValue(alloc.allocation.token.total_amount_e8s, alloc.allocation.token.canister_id.toString())}
+                                                                                                        </span>
+                                                                                                    </>
+                                                                                                )}
+                                                                                            </span>
                                                                                         </div>
                                                                                         <div className="allocation-claims">
                                                                                             <span>Claims:</span>
-                                                                                            <span>{formatTokenAmount(alloc.claims.total_claimed, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'} ({claimPercentage}%) by {alloc.claims.claim_count} users</span>
+                                                                                            <span>
+                                                                                                {formatTokenAmount(alloc.claims.total_claimed, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'} ({claimPercentage}%) by {alloc.claims.claim_count} users
+                                                                                                {loadingUSDPrices[alloc.allocation.token.canister_id.toString()] ? (
+                                                                                                    <FiLoader className="spinner" />
+                                                                                                ) : tokenUSDPrices[alloc.allocation.token.canister_id.toString()] && (
+                                                                                                    <>
+                                                                                                        <span className="separator">•</span>
+                                                                                                        <span className="usd-value">
+                                                                                                            {calculateUSDValue(alloc.claims.total_claimed, alloc.allocation.token.canister_id.toString())}
+                                                                                                        </span>
+                                                                                                    </>
+                                                                                                )}
+                                                                                            </span>
                                                                                         </div>
                                                                                         <div className="allocation-remaining">
                                                                                             <span>Remaining:</span>
-                                                                                            <span>{formatTokenAmount(alloc.claims.remaining_balance, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
+                                                                                            <span>
+                                                                                                {formatTokenAmount(alloc.claims.remaining_balance, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}
+                                                                                                {loadingUSDPrices[alloc.allocation.token.canister_id.toString()] ? (
+                                                                                                    <FiLoader className="spinner" />
+                                                                                                ) : tokenUSDPrices[alloc.allocation.token.canister_id.toString()] && (
+                                                                                                    <>
+                                                                                                        <span className="separator">•</span>
+                                                                                                        <span className="usd-value">
+                                                                                                            {calculateUSDValue(alloc.claims.remaining_balance, alloc.allocation.token.canister_id.toString())}
+                                                                                                        </span>
+                                                                                                    </>
+                                                                                                )}
+                                                                                            </span>
                                                                                         </div>
                                                                                         <div className="allocation-range">
                                                                                             <span>Per User Range:</span>
-                                                                                            <span>{formatTokenAmount(alloc.allocation.token.per_user.min_e8s, alloc.allocation.token.canister_id.toString())} - {formatTokenAmount(alloc.allocation.token.per_user.max_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
+                                                                                            <span>
+                                                                                                {formatTokenAmount(alloc.allocation.token.per_user.min_e8s, alloc.allocation.token.canister_id.toString())} - {formatTokenAmount(alloc.allocation.token.per_user.max_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}
+                                                                                                {loadingUSDPrices[alloc.allocation.token.canister_id.toString()] ? (
+                                                                                                    <FiLoader className="spinner" />
+                                                                                                ) : tokenUSDPrices[alloc.allocation.token.canister_id.toString()] && (
+                                                                                                    <>
+                                                                                                        <span className="separator">•</span>
+                                                                                                        <span className="usd-value">
+                                                                                                            {calculateUSDValue(alloc.allocation.token.per_user.min_e8s, alloc.allocation.token.canister_id.toString())} - {calculateUSDValue(alloc.allocation.token.per_user.max_e8s, alloc.allocation.token.canister_id.toString())}
+                                                                                                        </span>
+                                                                                                    </>
+                                                                                                )}
+                                                                                            </span>
                                                                                         </div>
                                                                                         <div className="allocation-status">
                                                                                             <span>

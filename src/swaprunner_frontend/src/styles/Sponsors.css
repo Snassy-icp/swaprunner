@@ -694,4 +694,39 @@
 
 .sponsor-gift.future {
     color: #4CAF50;  /* green */
+}
+
+.usd-value {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
+
+.achievement-totals {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+.achievement-totals .spinner {
+    animation: spin 1s linear infinite;
+    font-size: 0.9em;
+}
+
+.token-stats .spinner {
+    animation: spin 1s linear infinite;
+    font-size: 0.9em;
+    margin-left: 0.5rem;
+}
+
+.allocation-details .spinner {
+    animation: spin 1s linear infinite;
+    font-size: 0.9em;
+    margin-left: 0.5rem;
+}
+
+.separator {
+    margin: 0 0.5rem;
+    color: var(--text-secondary);
 } 
