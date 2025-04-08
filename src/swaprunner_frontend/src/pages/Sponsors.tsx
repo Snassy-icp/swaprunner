@@ -157,27 +157,25 @@ export const Sponsors: React.FC = () => {
     useEffect(() => {
         const loadTokenLogos = async () => {
             for (const sponsor of sponsors) {
-                if (expandedSponsors.has(sponsor.profile.principal.toString())) {
-                    const tokenLink = sponsor.profile.social_links.find(
-                        link => link.platform.toLowerCase() === 'token'
-                    );
-                    if (tokenLink && !loadedLogos[tokenLink.url]) {
-                        try {
-                            const logo = await tokenService.getTokenLogo(tokenLink.url);
-                            setLoadedLogos(prev => ({
-                                ...prev,
-                                [tokenLink.url]: logo || '/generic_token.svg'
-                            }));
-                        } catch (err) {
-                            console.error('Error loading token logo:', err);
-                        }
+                const tokenLink = sponsor.profile.social_links.find(
+                    link => link.platform.toLowerCase() === 'token'
+                );
+                if (tokenLink && !loadedLogos[tokenLink.url]) {
+                    try {
+                        const logo = await tokenService.getTokenLogo(tokenLink.url);
+                        setLoadedLogos(prev => ({
+                            ...prev,
+                            [tokenLink.url]: logo || '/generic_token.svg'
+                        }));
+                    } catch (err) {
+                        console.error('Error loading token logo:', err);
                     }
                 }
             }
         };
 
         loadTokenLogos();
-    }, [expandedSponsors, sponsors]);
+    }, [sponsors]);
 
     const loadSponsors = async () => {
         try {
