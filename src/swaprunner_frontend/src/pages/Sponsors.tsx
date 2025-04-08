@@ -419,6 +419,43 @@ export const Sponsors: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
+                                {sponsor.isLoading || !sponsor.data ? (
+                                    <FiLoader className="spinning" />
+                                ) : (
+                                    <FiGift className={`sponsor-gift ${(() => {
+                                        // Check all achievements for any yellow boxes
+                                        if (Object.entries(sponsor.data.achievementAllocations).some(([achievementId, state]) => 
+                                            state.data?.some(alloc => 
+                                                userAchievements.some(a => a.achievement_id === achievementId) &&
+                                                !userClaims.some(claim => claim.allocation.id === alloc.allocation.id) &&
+                                                alloc.claims.remaining_balance > BigInt(0)
+                                            )
+                                        )) {
+                                            return 'available';
+                                        }
+                                        
+                                        // Check for any green boxes
+                                        if (Object.entries(sponsor.data.achievementAllocations).some(([achievementId, state]) => 
+                                            state.data?.some(alloc => 
+                                                !userAchievements.some(a => a.achievement_id === achievementId) &&
+                                                alloc.claims.remaining_balance > BigInt(0)
+                                            )
+                                        )) {
+                                            return 'future';
+                                        }
+                                        
+                                        // Check for any gray boxes
+                                        if (Object.entries(sponsor.data.achievementAllocations).some(([_, state]) => 
+                                            state.data?.some(alloc => 
+                                                userClaims.some(claim => claim.allocation.id === alloc.allocation.id)
+                                            )
+                                        )) {
+                                            return 'claimed';
+                                        }
+                                        
+                                        return 'depleted';
+                                    })()}`} />
+                                )}
                                 <button className="expand-button">
                                     {sponsor.isLoading || (sponsor.data && sponsor.data.allocations.length === 0) ? (
                                         <FiLoader className="spinning" />
