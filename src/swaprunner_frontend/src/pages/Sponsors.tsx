@@ -672,7 +672,7 @@ export const Sponsors: React.FC = () => {
                                                                             const claimPercentage = Number((alloc.claims.total_claimed * BigInt(100)) / alloc.allocation.token.total_amount_e8s);
                                                                             return (
                                                                                 <div key={index} className="allocation-item">
-                                                                                    <div className="allocation-stats">
+                                                                                    <div className="allocation-details">
                                                                                         <div className="allocation-amount">
                                                                                             <span>Total Allocated:</span>
                                                                                             <span>{formatTokenAmount(alloc.allocation.token.total_amount_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
@@ -690,12 +690,13 @@ export const Sponsors: React.FC = () => {
                                                                                             <span>{formatTokenAmount(alloc.allocation.token.per_user.min_e8s, alloc.allocation.token.canister_id.toString())} - {formatTokenAmount(alloc.allocation.token.per_user.max_e8s, alloc.allocation.token.canister_id.toString())} {token?.metadata?.symbol || 'tokens'}</span>
                                                                                         </div>
                                                                                         <div className="allocation-status">
-                                                                                            <span>Status:</span>
-                                                                                            <span className="status-with-icon">
+                                                                                            <span>
                                                                                                 {userClaims.some(claim => claim.allocation.id === alloc.allocation.id) ? 'Claimed' :
                                                                                                 alloc.claims.remaining_balance === BigInt(0) ? 'Depleted' :
                                                                                                 userAchievements.some(a => a.achievement_id === achievementId) ? 'Available' :
                                                                                                 'Not Yet Available'}
+                                                                                            </span>
+                                                                                            <span>
                                                                                                 <FiGift className={`allocation-gift ${
                                                                                                     userClaims.some(claim => claim.allocation.id === alloc.allocation.id) ? 'claimed' :
                                                                                                     alloc.claims.remaining_balance === BigInt(0) ? 'depleted' :
