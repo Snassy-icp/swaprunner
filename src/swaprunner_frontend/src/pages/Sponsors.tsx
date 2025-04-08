@@ -464,6 +464,22 @@ export const Sponsors: React.FC = () => {
                                                         <FiCheck />
                                                     </span>
                                                 )}
+                                                <div className="sponsor-usd-values">
+                                                    {sponsor.isLoading || !sponsor.data ? (
+                                                        <FiLoader className="spinning" />
+                                                    ) : (
+                                                        <>
+                                                            <span>Total: ${sponsor.data.allocations.reduce((sum, allocation) => {
+                                                                const usdValue = calculateUSDValue(allocation.totalAllocated, allocation.token);
+                                                                return sum + (usdValue === '-' ? 0 : parseFloat(usdValue.replace('$', '')));
+                                                            }, 0).toFixed(2)}</span>
+                                                            <span>Remaining: ${sponsor.data.allocations.reduce((sum, allocation) => {
+                                                                const usdValue = calculateUSDValue(allocation.totalAllocated - allocation.totalClaimed, allocation.token);
+                                                                return sum + (usdValue === '-' ? 0 : parseFloat(usdValue.replace('$', '')));
+                                                            }, 0).toFixed(2)}</span>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
