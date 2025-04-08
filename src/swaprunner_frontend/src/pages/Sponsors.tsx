@@ -645,12 +645,34 @@ export const Sponsors: React.FC = () => {
                                                                     <div className="achievement-info">
                                                                         <h5>{allocations[0].achievement.name}</h5>
                                                                     </div>
-                                                                    <FiGift className={`achievement-gift ${
-                                                                        userClaims.some(claim => claim.allocation.id === allocations[0].allocation.id) ? 'claimed' :
-                                                                        totalRemaining === 0 ? 'depleted' :
-                                                                        userAchievements.some(a => a.achievement_id === achievementId) ? 'available' :
-                                                                        'future'
-                                                                    }`} />
+                                                                    <FiGift className={`achievement-gift ${(() => {
+                                                                        // Check for any yellow (available) boxes first
+                                                                        if (allocations.some(alloc => 
+                                                                            userAchievements.some(a => a.achievement_id === achievementId) && 
+                                                                            !userClaims.some(claim => claim.allocation.id === alloc.allocation.id) &&
+                                                                            alloc.claims.remaining_balance > BigInt(0)
+                                                                        )) {
+                                                                            return 'available';
+                                                                        }
+                                                                        
+                                                                        // Then check for any green (future) boxes
+                                                                        if (allocations.some(alloc => 
+                                                                            !userAchievements.some(a => a.achievement_id === achievementId) &&
+                                                                            alloc.claims.remaining_balance > BigInt(0)
+                                                                        )) {
+                                                                            return 'future';
+                                                                        }
+                                                                        
+                                                                        // Then check for any gray (claimed) boxes
+                                                                        if (allocations.some(alloc => 
+                                                                            userClaims.some(claim => claim.allocation.id === alloc.allocation.id)
+                                                                        )) {
+                                                                            return 'claimed';
+                                                                        }
+                                                                        
+                                                                        // If none of the above, all must be depleted (red)
+                                                                        return 'depleted';
+                                                                    })()}`} />
                                                                     <button
                                                                         className="expand-button"
                                                                         onClick={(e) => {
