@@ -11,6 +11,9 @@ import { Principal } from '@dfinity/principal';
 import { backendService } from '../services/backend';
 import { useAuth } from '../contexts/AuthContext';
 import { priceService } from '../services/price';
+import { useClaims } from '../contexts/ClaimContext';
+import { useAchievements } from '../contexts/AchievementContext';
+import '../styles/ClaimSuccessModal.css';
 
 interface UserProfile {
     principal: Principal;
@@ -130,6 +133,13 @@ export const Sponsors: React.FC = () => {
     const [loadingUSDPrices, setLoadingUSDPrices] = useState<Record<string, boolean>>({});
     const { tokens } = useTokens();
     const { isAuthenticated } = useAuth();
+    const [claiming, setClaiming] = useState<string | null>(null);
+    const [claimSuccess, setClaimSuccess] = useState<{
+        amount: bigint;
+        tokenId: string;
+        achievementName: string;
+    } | null>(null);
+    const [claimError, setClaimError] = useState<string | null>(null);
 
     useEffect(() => {
         loadSponsors();
@@ -424,6 +434,31 @@ export const Sponsors: React.FC = () => {
             newExpandedAchievements.add(achievementId);
         }
         setExpandedAchievements(newExpandedAchievements);
+    };
+
+    const handleClaim = async (allocationId: string, tokenId: string, achievementName: string) => {
+        try {
+            if (claiming) return; // Prevent multiple claims at once
+            setClaiming(allocationId);
+            setClaimError(null);
+            
+            const claimedAmount = await allocationService.claimAndWithdrawAllocation(allocationId);
+            
+            // Show success modal
+            setClaimSuccess({
+                amount: claimedAmount,
+                tokenId: tokenId,
+                achievementName: achievementName
+            });
+
+            // Refresh the data
+            loadSponsors();
+        } catch (err: any) {
+            setClaimError('Failed to claim reward: ' + (err.message || String(err)));
+            console.error('Error claiming reward:', err);
+        } finally {
+            setClaiming(null);
+        }
     };
 
     if (isInitialLoading) {
@@ -854,11 +889,28 @@ export const Sponsors: React.FC = () => {
                                                                         }
 
                                                                         return (
-                                                                            <FiGift className={`achievement-gift ${
-                                                                                hasAvailable ? 'available' :
-                                                                                hasFuture ? 'future' :
-                                                                                'claimed'
-                                                                            }`} />
+                                                                            <FiGift 
+                                                                                className={`achievement-gift ${
+                                                                                    hasAvailable ? `available ${claiming === allocations[0]?.allocation.id ? 'claiming' : ''}` :
+                                                                                    hasFuture ? 'future' :
+                                                                                    'claimed'
+                                                                                }`}
+                                                                                onClick={hasAvailable ? () => {
+                                                                                    const firstAvailableAlloc = allocations.find(alloc => 
+                                                                                        userAchievements.some(a => a.achievement_id === achievementId) && 
+                                                                                        !userClaims.some(claim => claim.allocation.id === alloc.allocation.id) &&
+                                                                                        alloc.claims.remaining_balance > BigInt(0)
+                                                                                    );
+                                                                                    if (firstAvailableAlloc) {
+                                                                                        handleClaim(
+                                                                                            firstAvailableAlloc.allocation.id,
+                                                                                            firstAvailableAlloc.allocation.token.canister_id.toString(),
+                                                                                            firstAvailableAlloc.achievement.name
+                                                                                        );
+                                                                                    }
+                                                                                } : undefined}
+                                                                                style={hasAvailable ? { cursor: 'pointer' } : undefined}
+                                                                            />
                                                                         );
                                                                     })()}
                                                                     <button
@@ -977,13 +1029,23 @@ export const Sponsors: React.FC = () => {
                                                                                                 }
 
                                                                                                 return (
-                                                                                                    <span>
-                                                                                                        <FiGift className={`allocation-gift ${
+                                                                                                    <FiGift 
+                                                                                                        className={`allocation-gift ${
                                                                                                             userClaims.some(claim => claim.allocation.id === alloc.allocation.id) ? 'claimed' :
-                                                                                                            userAchievements.some(a => a.achievement_id === achievementId) ? 'available' :
+                                                                                                            userAchievements.some(a => a.achievement_id === achievementId) ? `available ${claiming === alloc.allocation.id ? 'claiming' : ''}` :
                                                                                                             'future'
-                                                                                                        }`} />
-                                                                                                    </span>
+                                                                                                        }`}
+                                                                                                        onClick={userAchievements.some(a => a.achievement_id === achievementId) && 
+                                                                                                                !userClaims.some(claim => claim.allocation.id === alloc.allocation.id) ? 
+                                                                                                            () => handleClaim(
+                                                                                                                alloc.allocation.id,
+                                                                                                                alloc.allocation.token.canister_id.toString(),
+                                                                                                                allocations[0].achievement.name
+                                                                                                            ) : undefined}
+                                                                                                        style={userAchievements.some(a => a.achievement_id === achievementId) && 
+                                                                                                               !userClaims.some(claim => claim.allocation.id === alloc.allocation.id) ? 
+                                                                                                            { cursor: 'pointer' } : undefined}
+                                                                                                    />
                                                                                                 );
                                                                                             })()}
                                                                                         </div>
@@ -1019,6 +1081,27 @@ export const Sponsors: React.FC = () => {
                     ))}
                 </div>
             </div>
+
+            {/* Add success modal */}
+            {claimSuccess && (
+                <div className="modal-overlay">
+                    <div className="claim-success-modal">
+                        <div className="success-icon">
+                            <FiCheck />
+                        </div>
+                        <h3>Claim Successful!</h3>
+                        <p>You have successfully claimed {formatTokenAmount(claimSuccess.amount, claimSuccess.tokenId)} from the achievement "{claimSuccess.achievementName}".</p>
+                        <button onClick={() => setClaimSuccess(null)}>Close</button>
+                    </div>
+                </div>
+            )}
+
+            {/* Add error display */}
+            {claimError && (
+                <div className="error-message">
+                    {claimError}
+                </div>
+            )}
         </div>
     );
 }; 
