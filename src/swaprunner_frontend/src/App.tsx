@@ -75,9 +75,10 @@ const FixedHeader: React.FC = () => {
       // Clear token service caches
       await tokenService.clearCache('all');  // Clears both logo and token metadata
       
-      // Clear price service caches
-      priceService.clearAllCaches();  // Clears price and pool caches
-
+      // Clear token service caches and force refresh metadata
+      await tokenService.clearCache('all');  // Clears both logo and token metadata
+      await tokenService.refreshTokenCache(); // Force clear IndexedDB cache
+    
       // Finally reload the page
       window.location.reload();
     } catch (err) {
