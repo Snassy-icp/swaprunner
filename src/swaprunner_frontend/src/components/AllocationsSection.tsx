@@ -672,6 +672,8 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     const [transferPrincipal, setTransferPrincipal] = useState('');
     const [isTransferring, setIsTransferring] = useState(false);
     const [transferError, setTransferError] = useState<string | null>(null);
+    const [showTransferConfirmation, setShowTransferConfirmation] = useState(false);
+    const [pendingTransferPrincipal, setPendingTransferPrincipal] = useState('');
 
     useEffect(() => {
         if (expanded) {
@@ -998,12 +1000,16 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     const handleTransfer = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!transferPrincipal.trim()) return;
+        setPendingTransferPrincipal(transferPrincipal);
+        setShowTransferConfirmation(true);
+    };
 
+    const confirmTransfer = async () => {
         try {
             setIsTransferring(true);
             setTransferError(null);
             const actor = await backendService.getActor();
-            await actor.transfer_allocation(Number(allocationWithStatus.allocation.id), Principal.fromText(transferPrincipal));
+            await actor.transfer_allocation(Number(allocationWithStatus.allocation.id), Principal.fromText(pendingTransferPrincipal));
             
             // Clear form and refresh allocations
             setTransferPrincipal('');
@@ -1411,6 +1417,25 @@ Warning: Once activated, the payment fee will be drawn and funds will be transfe
                         onStatusChange();
                     }
                 }}
+            />
+            <ConfirmationModal
+                isOpen={showTransferConfirmation}
+                onClose={() => {
+                    setShowTransferConfirmation(false);
+                    setPendingTransferPrincipal('');
+                }}
+                onConfirm={confirmTransfer}
+                title="Transfer Allocation"
+                message={`Are you sure you want to transfer this allocation to ${pendingTransferPrincipal}? This action cannot be undone.
+
+The new owner will have full control over the allocation, including:
+- Ability to cancel the allocation
+- Ability to top up the allocation
+- Ability to transfer it to another user
+
+Make sure you have entered the correct principal ID.`}
+                confirmText="Transfer"
+                isDanger={true}
             />
         </div>
     );
