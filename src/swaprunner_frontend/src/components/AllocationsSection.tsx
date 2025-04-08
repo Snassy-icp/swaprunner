@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiPlus, FiX, FiAlertCircle, FiCheck, FiArrowUp } from 'react-icons/fi';
+import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiPlus, FiX, FiAlertCircle, FiCheck, FiArrowUp, FiSend } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { allocationService, Allocation, AllocationStatus, AllocationWithStatus, AllocationFeeConfig, CreateAllocationArgs, PaymentStatus } from '../services/allocation';
 import { CollapsibleSection } from '../pages/Me';
@@ -669,6 +669,9 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     const [showClaims, setShowClaims] = useState(false);
     const [showTopUpModal, setShowTopUpModal] = useState(false);
     const statsService = new StatsService();
+    const [transferPrincipal, setTransferPrincipal] = useState('');
+    const [isTransferring, setIsTransferring] = useState(false);
+    const [transferError, setTransferError] = useState<string | null>(null);
 
     useEffect(() => {
         if (expanded) {
@@ -992,6 +995,29 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
 
     const showCancelButton = isAdmin || allocationWithStatus.status === 'Draft';
 
+    const handleTransfer = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!transferPrincipal.trim()) return;
+
+        try {
+            setIsTransferring(true);
+            setTransferError(null);
+            const actor = await backendService.getActor();
+            await actor.transfer_allocation(Number(allocationWithStatus.allocation.id), Principal.fromText(transferPrincipal));
+            
+            // Clear form and refresh allocations
+            setTransferPrincipal('');
+            if (onStatusChange) {
+                onStatusChange();
+            }
+        } catch (error: any) {
+            console.error('Error transferring allocation:', error);
+            setTransferError(error.message || 'Failed to transfer allocation');
+        } finally {
+            setIsTransferring(false);
+        }
+    };
+
     return (
         <div className="allocation-card">
             <div 
@@ -1279,6 +1305,37 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                                 </div>
                             </div>
                         )}
+
+                        {/* Add transfer form */}
+                        <form className="allocation-transfer-form" onSubmit={handleTransfer}>
+                            <input
+                                type="text"
+                                placeholder="Enter principal ID of new owner"
+                                value={transferPrincipal}
+                                onChange={(e) => {
+                                    setTransferError(null);
+                                    setTransferPrincipal(e.target.value);
+                                }}
+                                disabled={isTransferring}
+                            />
+                            <button 
+                                type="submit"
+                                disabled={isTransferring || !transferPrincipal.trim()}
+                            >
+                                {isTransferring ? (
+                                    <>
+                                        <FiLoader className="spinning" />
+                                        Transferring...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FiSend />
+                                        Transfer
+                                    </>
+                                )}
+                            </button>
+                        </form>
+                        {transferError && <div className="error">{transferError}</div>}
 
                         <div className="claims-section">
                             <div className="claims-header" onClick={() => setShowClaims(!showClaims)}>
