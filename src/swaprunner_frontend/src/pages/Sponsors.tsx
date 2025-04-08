@@ -580,7 +580,6 @@ export const Sponsors: React.FC = () => {
                                                                         </>
                                                                     )}
                                                                 </span>
-                                                                <span>•</span>
                                                                 <span>{claimPercentage}% claimed</span>
                                                                 <div className={`token-stats-progress ${isDepleted ? 'depleted' : ''}`}>
                                                                     <div 
@@ -593,7 +592,7 @@ export const Sponsors: React.FC = () => {
                                                     })
                                                 )}
                                             </div>
-                                            <div className="sponsor-details">
+                                            <div className="sponsor-details-inner">
                                                 <p className="sponsor-description">{sponsor.profile.description}</p>
                                                 {/* Social Links Section */}
                                                 {sponsor.profile.social_links.length > 0 && (
