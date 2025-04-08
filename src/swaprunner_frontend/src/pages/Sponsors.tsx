@@ -486,39 +486,49 @@ export const Sponsors: React.FC = () => {
                                     {sponsor.isLoading || !sponsor.data ? (
                                         <FiLoader className="spinning" />
                                     ) : (
-                                        <FiGift className={`sponsor-gift ${(() => {
-                                            // Check all achievements for any yellow boxes
-                                            if (Object.entries(sponsor.data.achievementAllocations).some(([achievementId, state]) => 
+                                        (() => {
+                                            // Check all achievements for any yellow or green boxes
+                                            const hasAvailableOrFuture = Object.entries(sponsor.data.achievementAllocations).some(([achievementId, state]) => 
                                                 state.data?.some(alloc => 
-                                                    userAchievements.some(a => a.achievement_id === achievementId) &&
+                                                    (userAchievements.some(a => a.achievement_id === achievementId) &&
                                                     !userClaims.some(claim => claim.allocation.id === alloc.allocation.id) &&
-                                                    alloc.claims.remaining_balance > BigInt(0)
+                                                    alloc.claims.remaining_balance > BigInt(0)) ||
+                                                    (!userAchievements.some(a => a.achievement_id === achievementId) &&
+                                                    alloc.claims.remaining_balance > BigInt(0))
                                                 )
-                                            )) {
-                                                return 'available';
-                                            }
+                                            );
                                             
-                                            // Check for any green boxes
-                                            if (Object.entries(sponsor.data.achievementAllocations).some(([achievementId, state]) => 
-                                                state.data?.some(alloc => 
-                                                    !userAchievements.some(a => a.achievement_id === achievementId) &&
-                                                    alloc.claims.remaining_balance > BigInt(0)
-                                                )
-                                            )) {
-                                                return 'future';
-                                            }
-                                            
-                                            // Check for any gray boxes
-                                            if (Object.entries(sponsor.data.achievementAllocations).some(([_, state]) => 
+                                            // Check for any claimed boxes
+                                            const hasClaimed = Object.entries(sponsor.data.achievementAllocations).some(([_, state]) => 
                                                 state.data?.some(alloc => 
                                                     userClaims.some(claim => claim.allocation.id === alloc.allocation.id)
                                                 )
-                                            )) {
-                                                return 'claimed';
+                                            );
+
+                                            // Only render if there are available, future, or claimed rewards
+                                            if (!hasAvailableOrFuture && !hasClaimed) {
+                                                return null;
                                             }
-                                            
-                                            return 'depleted';
-                                        })()}`} />
+
+                                            return (
+                                                <FiGift className={`sponsor-gift ${
+                                                    Object.entries(sponsor.data.achievementAllocations).some(([achievementId, state]) => 
+                                                        state.data?.some(alloc => 
+                                                            userAchievements.some(a => a.achievement_id === achievementId) &&
+                                                            !userClaims.some(claim => claim.allocation.id === alloc.allocation.id) &&
+                                                            alloc.claims.remaining_balance > BigInt(0)
+                                                        )
+                                                    ) ? 'available' :
+                                                    Object.entries(sponsor.data.achievementAllocations).some(([achievementId, state]) => 
+                                                        state.data?.some(alloc => 
+                                                            !userAchievements.some(a => a.achievement_id === achievementId) &&
+                                                            alloc.claims.remaining_balance > BigInt(0)
+                                                        )
+                                                    ) ? 'future' :
+                                                    'claimed'
+                                                }`} />
+                                            );
+                                        })()
                                     )}
                                     <button className="expand-button">
                                         {sponsor.isLoading || (sponsor.data && sponsor.data.allocations.length === 0) ? (
@@ -794,34 +804,38 @@ export const Sponsors: React.FC = () => {
                                                                         <h5>{allocations[0].achievement.name}</h5>
                                                                         <p>{allocations[0].achievement.description}</p>
                                                                     </div>
-                                                                    <FiGift className={`achievement-gift ${(() => {
-                                                                        // Check for any yellow (available) boxes first
-                                                                        if (allocations.some(alloc => 
+                                                                    {(() => {
+                                                                        // Check for any available rewards
+                                                                        const hasAvailable = allocations.some(alloc => 
                                                                             userAchievements.some(a => a.achievement_id === achievementId) && 
                                                                             !userClaims.some(claim => claim.allocation.id === alloc.allocation.id) &&
                                                                             alloc.claims.remaining_balance > BigInt(0)
-                                                                        )) {
-                                                                            return 'available';
-                                                                        }
+                                                                        );
                                                                         
-                                                                        // Then check for any green (future) boxes
-                                                                        if (allocations.some(alloc => 
+                                                                        // Check for any future rewards
+                                                                        const hasFuture = allocations.some(alloc => 
                                                                             !userAchievements.some(a => a.achievement_id === achievementId) &&
                                                                             alloc.claims.remaining_balance > BigInt(0)
-                                                                        )) {
-                                                                            return 'future';
-                                                                        }
-                                                                        
-                                                                        // Then check for any gray (claimed) boxes
-                                                                        if (allocations.some(alloc => 
+                                                                        );
+
+                                                                        // Check for any claimed rewards
+                                                                        const hasClaimed = allocations.some(alloc => 
                                                                             userClaims.some(claim => claim.allocation.id === alloc.allocation.id)
-                                                                        )) {
-                                                                            return 'claimed';
+                                                                        );
+
+                                                                        // Only render if there are available, future, or claimed rewards
+                                                                        if (!hasAvailable && !hasFuture && !hasClaimed) {
+                                                                            return null;
                                                                         }
-                                                                        
-                                                                        // If none of the above, all must be depleted (red)
-                                                                        return 'depleted';
-                                                                    })()}`} />
+
+                                                                        return (
+                                                                            <FiGift className={`achievement-gift ${
+                                                                                hasAvailable ? 'available' :
+                                                                                hasFuture ? 'future' :
+                                                                                'claimed'
+                                                                            }`} />
+                                                                        );
+                                                                    })()}
                                                                     <button
                                                                         className="expand-button"
                                                                         onClick={(e) => {
