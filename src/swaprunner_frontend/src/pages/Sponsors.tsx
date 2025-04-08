@@ -447,69 +447,71 @@ export const Sponsors: React.FC = () => {
                                 onClick={() => toggleSponsor(sponsor.profile.principal.toString())}
                                 style={{ cursor: 'pointer' }}
                             >
-                                <div className="sponsor-logo-cell">
-                                    {sponsor.profile.logo_url[0] ? (
-                                        <img src={sponsor.profile.logo_url[0]} alt={sponsor.profile.name} className="sponsor-logo" />
-                                    ) : (
-                                        <div className="sponsor-logo" />
-                                    )}
-                                </div>
-                                <div className="sponsor-info">
-                                    <div className="sponsor-name">
-                                        <div className="name-with-badge">
-                                            <h3>{sponsor.profile.name}</h3>
-                                            {sponsor.profile.verified && (
-                                                <span className="verified-badge" title="Verified Sponsor">
-                                                    <FiCheck />
-                                                </span>
-                                            )}
+                                <div className="header-content">
+                                    <div className="sponsor-logo-cell">
+                                        {sponsor.profile.logo_url[0] ? (
+                                            <img src={sponsor.profile.logo_url[0]} alt={sponsor.profile.name} className="sponsor-logo" />
+                                        ) : (
+                                            <div className="sponsor-logo" />
+                                        )}
+                                    </div>
+                                    <div className="sponsor-info">
+                                        <div className="sponsor-name">
+                                            <div className="name-with-badge">
+                                                <h3>{sponsor.profile.name}</h3>
+                                                {sponsor.profile.verified && (
+                                                    <span className="verified-badge" title="Verified Sponsor">
+                                                        <FiCheck />
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                {sponsor.isLoading || !sponsor.data ? (
-                                    <FiLoader className="spinning" />
-                                ) : (
-                                    <FiGift className={`sponsor-gift ${(() => {
-                                        // Check all achievements for any yellow boxes
-                                        if (Object.entries(sponsor.data.achievementAllocations).some(([achievementId, state]) => 
-                                            state.data?.some(alloc => 
-                                                userAchievements.some(a => a.achievement_id === achievementId) &&
-                                                !userClaims.some(claim => claim.allocation.id === alloc.allocation.id) &&
-                                                alloc.claims.remaining_balance > BigInt(0)
-                                            )
-                                        )) {
-                                            return 'available';
-                                        }
-                                        
-                                        // Check for any green boxes
-                                        if (Object.entries(sponsor.data.achievementAllocations).some(([achievementId, state]) => 
-                                            state.data?.some(alloc => 
-                                                !userAchievements.some(a => a.achievement_id === achievementId) &&
-                                                alloc.claims.remaining_balance > BigInt(0)
-                                            )
-                                        )) {
-                                            return 'future';
-                                        }
-                                        
-                                        // Check for any gray boxes
-                                        if (Object.entries(sponsor.data.achievementAllocations).some(([_, state]) => 
-                                            state.data?.some(alloc => 
-                                                userClaims.some(claim => claim.allocation.id === alloc.allocation.id)
-                                            )
-                                        )) {
-                                            return 'claimed';
-                                        }
-                                        
-                                        return 'depleted';
-                                    })()}`} />
-                                )}
-                                <button className="expand-button">
-                                    {sponsor.isLoading || (sponsor.data && sponsor.data.allocations.length === 0) ? (
+                                    {sponsor.isLoading || !sponsor.data ? (
                                         <FiLoader className="spinning" />
                                     ) : (
-                                        expandedSponsors.has(sponsor.profile.principal.toString()) ? <FiChevronUp /> : <FiChevronDown />
+                                        <FiGift className={`sponsor-gift ${(() => {
+                                            // Check all achievements for any yellow boxes
+                                            if (Object.entries(sponsor.data.achievementAllocations).some(([achievementId, state]) => 
+                                                state.data?.some(alloc => 
+                                                    userAchievements.some(a => a.achievement_id === achievementId) &&
+                                                    !userClaims.some(claim => claim.allocation.id === alloc.allocation.id) &&
+                                                    alloc.claims.remaining_balance > BigInt(0)
+                                                )
+                                            )) {
+                                                return 'available';
+                                            }
+                                            
+                                            // Check for any green boxes
+                                            if (Object.entries(sponsor.data.achievementAllocations).some(([achievementId, state]) => 
+                                                state.data?.some(alloc => 
+                                                    !userAchievements.some(a => a.achievement_id === achievementId) &&
+                                                    alloc.claims.remaining_balance > BigInt(0)
+                                                )
+                                            )) {
+                                                return 'future';
+                                            }
+                                            
+                                            // Check for any gray boxes
+                                            if (Object.entries(sponsor.data.achievementAllocations).some(([_, state]) => 
+                                                state.data?.some(alloc => 
+                                                    userClaims.some(claim => claim.allocation.id === alloc.allocation.id)
+                                                )
+                                            )) {
+                                                return 'claimed';
+                                            }
+                                            
+                                            return 'depleted';
+                                        })()}`} />
                                     )}
-                                </button>
+                                    <button className="expand-button">
+                                        {sponsor.isLoading || (sponsor.data && sponsor.data.allocations.length === 0) ? (
+                                            <FiLoader className="spinning" />
+                                        ) : (
+                                            expandedSponsors.has(sponsor.profile.principal.toString()) ? <FiChevronUp /> : <FiChevronDown />
+                                        )}
+                                    </button>
+                                </div>
                                 <div className="sponsor-header-progress">
                                     {sponsor.isLoading || (sponsor.data && sponsor.data.allocations.length === 0) ? (
                                         <div className="progress-bar-wrapper">
