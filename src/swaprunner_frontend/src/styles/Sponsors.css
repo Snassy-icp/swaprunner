@@ -744,8 +744,8 @@
     margin-left: 8px;
 }
 
-.separator {
-    margin: 0 8px;
+.sponsor-details .separator {
+    margin: 0 2px;
     color: var(--text-secondary);
     opacity: 0.5;
 }
@@ -761,8 +761,8 @@
 
 .sponsor-usd-values .usd-row {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .sponsor-usd-values .usd-label {
@@ -785,8 +785,8 @@
 
 .achievement-usd-values .usd-row {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .achievement-usd-values .usd-label {
@@ -799,10 +799,11 @@
 }
 
 .loading-spinner {
+    display: inline-block;
     width: 16px;
     height: 16px;
     border: 2px solid var(--text-tertiary);
-    border-top-color: transparent;
+    border-top: 2px solid transparent;
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }

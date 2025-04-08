@@ -569,20 +569,22 @@ export const Sponsors: React.FC = () => {
                                                         const isDepleted = allocation.totalClaimed === allocation.totalAllocated;
                                                         return (
                                                             <div key={index} className="token-stats">
-                                                                <span>
-                                                                    {formatTokenAmount(allocation.totalClaimed, allocation.token)} / {formatTokenAmount(allocation.totalAllocated, allocation.token)} {symbol}
-                                                                    {loadingUSDPrices[allocation.token] ? (
-                                                                        <FiLoader className="spinner" />
-                                                                    ) : tokenUSDPrices[allocation.token] && (
-                                                                        <>
-                                                                            <span className="separator">•</span>
-                                                                            <span className="usd-value">
-                                                                                {calculateUSDValue(allocation.totalClaimed, allocation.token)} / {calculateUSDValue(allocation.totalAllocated, allocation.token)}
-                                                                            </span>
-                                                                        </>
-                                                                    )}
-                                                                </span>
-                                                                <span>{claimPercentage}% claimed</span>
+                                                                <div>
+                                                                    <span>
+                                                                        {formatTokenAmount(allocation.totalClaimed, allocation.token)} / {formatTokenAmount(allocation.totalAllocated, allocation.token)} {symbol}
+                                                                        {loadingUSDPrices[allocation.token] ? (
+                                                                            <FiLoader className="spinner" />
+                                                                        ) : tokenUSDPrices[allocation.token] && (
+                                                                            <>
+                                                                                <span className="separator">•</span>
+                                                                                <span className="usd-value">
+                                                                                    {calculateUSDValue(allocation.totalClaimed, allocation.token)} / {calculateUSDValue(allocation.totalAllocated, allocation.token)}
+                                                                                </span>
+                                                                            </>
+                                                                        )}
+                                                                    </span>
+                                                                    <span>{claimPercentage}% claimed</span>
+                                                                </div>
                                                                 <div className={`token-stats-progress ${isDepleted ? 'depleted' : ''}`}>
                                                                     <div 
                                                                         className="token-stats-progress-bar" 
