@@ -494,10 +494,15 @@ export const Sponsors: React.FC = () => {
                                                             const usdValue = calculateUSDValue(allocation.totalAllocated, allocation.token);
                                                             return sum + (usdValue === '-' ? 0 : parseFloat(usdValue.replace('$', '')));
                                                         }, 0).toFixed(2)}</span>
-                                                        <span>Remaining: ${sponsor.data.allocations.reduce((sum, allocation) => {
-                                                            const usdValue = calculateUSDValue(allocation.totalAllocated - allocation.totalClaimed, allocation.token);
-                                                            return sum + (usdValue === '-' ? 0 : parseFloat(usdValue.replace('$', '')));
-                                                        }, 0).toFixed(2)}</span>
+                                                        {(() => {
+                                                            const remaining = sponsor.data.allocations.reduce((sum, allocation) => {
+                                                                const usdValue = calculateUSDValue(allocation.totalAllocated - allocation.totalClaimed, allocation.token);
+                                                                return sum + (usdValue === '-' ? 0 : parseFloat(usdValue.replace('$', '')));
+                                                            }, 0);
+                                                            return remaining > 0 ? (
+                                                                <span className="remaining-positive">Remaining: ${remaining.toFixed(2)}</span>
+                                                            ) : null;
+                                                        })()}
                                                     </>
                                                 )}
                                             </div>

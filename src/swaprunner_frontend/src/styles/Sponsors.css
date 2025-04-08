@@ -806,6 +806,10 @@
     white-space: nowrap;
 }
 
+.sponsor-usd-values .remaining-positive {
+    color: #4CAF50;
+}
+
 .sponsor-usd-values .spinning {
     font-size: 14px;
     margin-left: 4px;
