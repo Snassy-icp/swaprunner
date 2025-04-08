@@ -816,15 +816,19 @@ export const Sponsors: React.FC = () => {
                                                                         {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
                                                                     </button>
                                                                     <div className="achievement-header-progress">
-                                                                        <div 
-                                                                            className="progress-bar" 
-                                                                            style={{ 
-                                                                                width: `${allocations.reduce((sum, alloc) => 
-                                                                                    sum + (Number(alloc.claims.remaining_balance) * 100) / Number(alloc.allocation.token.total_amount_e8s), 
-                                                                                    0
-                                                                                ) / allocations.length}%` 
-                                                                            }}
-                                                                        />
+                                                                        {achievementState.isLoading ? (
+                                                                            <div className="progress-bar" style={{ width: '100%', opacity: '0.2' }} />
+                                                                        ) : (
+                                                                            <div 
+                                                                                className="progress-bar" 
+                                                                                style={{ 
+                                                                                    width: `${allocations.reduce((sum, alloc) => 
+                                                                                        sum + (Number(alloc.claims.remaining_balance) * 100) / Number(alloc.allocation.token.total_amount_e8s), 
+                                                                                        0
+                                                                                    ) / allocations.length}%` 
+                                                                                }} 
+                                                                            />
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                                 {isExpanded && (
