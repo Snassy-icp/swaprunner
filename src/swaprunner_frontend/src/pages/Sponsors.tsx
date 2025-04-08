@@ -449,11 +449,30 @@ export const Sponsors: React.FC = () => {
                             >
                                 <div className="header-content">
                                     <div className="sponsor-logo-cell">
-                                        {sponsor.profile.logo_url[0] ? (
+                                        {sponsor.profile.logo_url[0] && sponsor.profile.logo_url[0].length > 0 ? (
                                             <img src={sponsor.profile.logo_url[0]} alt={sponsor.profile.name} className="sponsor-logo" />
-                                        ) : (
-                                            <div className="sponsor-logo" />
-                                        )}
+                                        ) : (() => {
+                                            const tokenLink = sponsor.profile.social_links.find(
+                                                link => link.platform.toLowerCase() === 'token'
+                                            );
+                                            if (tokenLink) {
+                                                const token = tokens.find(t => t.canisterId === tokenLink.url);
+                                                if (token?.metadata?.hasLogo) {
+                                                    return (
+                                                        <img 
+                                                            src={loadedLogos[tokenLink.url] || '/generic_token.svg'}
+                                                            alt={token.metadata?.symbol || 'Token'} 
+                                                            className="sponsor-logo"
+                                                            onError={(e) => {
+                                                                const img = e.target as HTMLImageElement;
+                                                                img.src = token.metadata?.symbol === 'ICP' ? '/icp_symbol.svg' : '/generic_token.svg';
+                                                            }}
+                                                        />
+                                                    );
+                                                }
+                                            }
+                                            return <div className="sponsor-logo" />;
+                                        })()}
                                     </div>
                                     <div className="sponsor-info">
                                         <div className="sponsor-name">
