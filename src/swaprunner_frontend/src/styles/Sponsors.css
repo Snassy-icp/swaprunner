@@ -401,6 +401,7 @@
     flex-direction: column;
     gap: 4px;
     margin: 8px 0;
+    align-items: flex-start;
 }
 
 .allocation-amount span:first-child,
@@ -480,7 +481,7 @@
 
 .allocation-claims {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     flex-wrap: wrap;
     gap: 8px;
     margin: 8px 0;
@@ -587,11 +588,20 @@
     opacity: 0.8;
 }
 
-.token-info {
+.sponsor-details .token-info {
     display: flex;
     flex-direction: column;
     gap: 1rem;
 }
+
+.sponsor-details .token-metadata {
+    padding: 12px;
+    background: var(--panel-bg);
+    border-radius: 12px;
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
 
 .sponsor-token .token-header {
     display: flex;
