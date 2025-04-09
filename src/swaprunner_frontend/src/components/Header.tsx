@@ -44,14 +44,6 @@ export const Header: React.FC = () => {
           {location.pathname === '/pools' && <span>Pools</span>}
         </button>
         <button 
-          className={`tab ${location.pathname === '/transactions' ? 'active' : ''}`}
-          onClick={() => navigate('/transactions')}
-          title="View transaction history"
-        >
-          <FiList />
-          {location.pathname === '/transactions' && <span>Transactions</span>}
-        </button>
-        <button 
           className={`tab ${location.pathname === '/me' ? 'active' : ''} ${availableClaims.length > 0 ? 'has-rewards' : ''}`}
           onClick={() => navigate('/me')}
         >

@@ -147,18 +147,6 @@ const FixedHeader: React.FC = () => {
               Pools
             </a>
             <a 
-              href="/transactions"
-              className={`hamburger-item ${location.pathname === '/transactions' ? 'active' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                navigate('/transactions');
-                setShowHamburgerMenu(false);
-              }}
-            >
-              <FiList />
-              Transactions
-            </a>
-            <a 
               href="/me"
               className={`hamburger-item ${location.pathname === '/me' ? 'active' : ''}`}
               onClick={(e) => {
