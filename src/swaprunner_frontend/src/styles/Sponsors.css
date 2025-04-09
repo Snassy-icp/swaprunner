@@ -465,6 +465,11 @@
     color: #ffd700;
 }
 
+.allocation-gift.available.claiming {
+    color: #ffd700;
+    animation: spin 1s linear infinite;
+}
+
 .allocation-gift.future {
     color: #4CAF50;
 }
@@ -726,10 +731,11 @@
     color: #ffd700;  /* yellow */
 }
 
-.achievement-gift.available {
-    color: #ffd700;  /* yellow */
+.achievement-gift.available.claiming {
+    color: #ffd700;
+    animation: spin 1s linear infinite;
 }
-
+    
 .achievement-gift.future {
     color: #4CAF50;  /* yellow */
 }

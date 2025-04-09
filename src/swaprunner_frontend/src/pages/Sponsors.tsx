@@ -895,11 +895,12 @@ export const Sponsors: React.FC = () => {
                                                                         return (
                                                                             <FiGift 
                                                                                 className={`achievement-gift ${
-                                                                                    hasAvailable ? `available ${claiming === allocations[0]?.allocation.id ? 'claiming' : ''}` :
+                                                                                    hasAvailable ? `available ${allocations.some(alloc => claiming === alloc.allocation.id) ? 'claiming' : ''}` :
                                                                                     hasFuture ? 'future' :
                                                                                     'claimed'
                                                                                 }`}
-                                                                                onClick={hasAvailable ? () => {
+                                                                                onClick={hasAvailable ? (e) => {
+                                                                                    e.stopPropagation();
                                                                                     const firstAvailableAlloc = allocations.find(alloc => 
                                                                                         userAchievements.some(a => a.achievement_id === achievementId) && 
                                                                                         !userClaims.some(claim => claim.allocation.id === alloc.allocation.id) &&
