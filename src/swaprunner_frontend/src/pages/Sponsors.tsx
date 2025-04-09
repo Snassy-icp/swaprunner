@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FiChevronDown, FiChevronUp, FiCheck, FiExternalLink, FiAward, FiLoader, FiGift, FiCheckCircle } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp, FiCheck, FiExternalLink, FiAward, FiLoader, FiGift, FiCheckCircle, FiShoppingCart } from 'react-icons/fi';
 import { userProfileService } from '../services/userProfile';
 import { allocationService } from '../services/allocation';
 import { tokenService } from '../services/token';
@@ -15,6 +15,7 @@ import { useClaims } from '../contexts/ClaimContext';
 import { useAchievements } from '../contexts/AchievementContext';
 import '../styles/ClaimSuccessModal.css';
 import { ClaimSuccessModal } from '../components/AchievementsSection';
+import { useNavigate } from 'react-router-dom';
 
 interface UserProfile {
     principal: Principal;
@@ -146,6 +147,7 @@ export const Sponsors: React.FC = () => {
         };
     } | null>(null);
     const [claimError, setClaimError] = useState<string | null>(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         loadSponsors();
@@ -470,6 +472,10 @@ export const Sponsors: React.FC = () => {
         }
     };
 
+    const handleBuyToken = (tokenId: string) => {
+        navigate(`/?input=ryjl3-tyaaa-aaaaa-aaaba-cai&output=${tokenId}`);
+    };
+
     if (isInitialLoading) {
         return (
             <div className="sponsors-page">
@@ -764,6 +770,12 @@ export const Sponsors: React.FC = () => {
                                                                                 <span className="metadata-label">Canister</span>
                                                                                 <span className="metadata-value monospace">{token.canisterId}</span>
                                                                             </div>
+                                                                            <button 
+                                                                                className="buy-token-button"
+                                                                                onClick={() => handleBuyToken(token.canisterId)}
+                                                                            >
+                                                                                <FiShoppingCart /> Buy {token.metadata?.symbol || 'Token'}
+                                                                            </button>
                                                                         </div>
                                                                     </div>
                                                                 </>

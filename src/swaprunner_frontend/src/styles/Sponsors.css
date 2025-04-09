@@ -877,4 +877,29 @@
     border-bottom-left-radius: 8px;
     border-bottom-right-radius: 8px;
     transition: width 0.3s ease;
+}
+
+.buy-token-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    margin-top: 12px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.buy-token-button:hover {
+    background: var(--primary-color-dark);
+    transform: translateY(-1px);
+}
+
+.buy-token-button:active {
+    transform: translateY(0);
 } 
