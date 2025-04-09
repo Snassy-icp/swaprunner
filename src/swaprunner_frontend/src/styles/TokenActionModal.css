@@ -141,7 +141,7 @@
   font-weight: 500;
 }
 
-.fee-info {
+.modal-fee-info {
   display: flex;
   justify-content: space-between;
   align-items: center;

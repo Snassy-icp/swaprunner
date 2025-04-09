@@ -151,7 +151,7 @@ export const TokenActionModal: React.FC<TokenActionModalProps> = ({
               </div>
             </div>
 
-            <div className="fee-info">
+            <div className="modal-fee-info">
               <span>Transaction Fee</span>
               <span>{formatTokenAmount(fee_e8s, tokenId)} {tokenSymbol}</span>
             </div>
