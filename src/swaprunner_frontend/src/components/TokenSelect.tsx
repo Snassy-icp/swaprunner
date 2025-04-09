@@ -174,6 +174,14 @@ export const TokenSelect: React.FC<TokenSelectProps> = ({
       if (aIsCustom && !bIsCustom) return -1;
       if (!aIsCustom && bIsCustom) return 1;
       
+      // Check if symbols start with letters
+      const aStartsWithLetter = /^[a-z]/.test(symbolA);
+      const bStartsWithLetter = /^[a-z]/.test(symbolB);
+      
+      // Put tokens that don't start with letters at the end
+      if (aStartsWithLetter && !bStartsWithLetter) return -1;
+      if (!aStartsWithLetter && bStartsWithLetter) return 1;
+      
       // Then sort alphabetically by symbol
       return symbolA.localeCompare(symbolB);
     });
