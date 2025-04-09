@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiPlus, FiX, FiAlertCircle, FiCheck, FiArrowUp } from 'react-icons/fi';
+import { FiGift, FiRefreshCw, FiChevronDown, FiChevronUp, FiLoader, FiPlus, FiX, FiAlertCircle, FiCheck, FiArrowUp, FiSend } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { allocationService, Allocation, AllocationStatus, AllocationWithStatus, AllocationFeeConfig, CreateAllocationArgs, PaymentStatus } from '../services/allocation';
 import { CollapsibleSection } from '../pages/Me';
@@ -669,6 +669,11 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
     const [showClaims, setShowClaims] = useState(false);
     const [showTopUpModal, setShowTopUpModal] = useState(false);
     const statsService = new StatsService();
+    const [transferPrincipal, setTransferPrincipal] = useState('');
+    const [isTransferring, setIsTransferring] = useState(false);
+    const [transferError, setTransferError] = useState<string | null>(null);
+    const [showTransferConfirmation, setShowTransferConfirmation] = useState(false);
+    const [pendingTransferPrincipal, setPendingTransferPrincipal] = useState('');
 
     useEffect(() => {
         if (expanded) {
@@ -992,6 +997,33 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
 
     const showCancelButton = isAdmin || allocationWithStatus.status === 'Draft';
 
+    const handleTransfer = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!transferPrincipal.trim()) return;
+        setPendingTransferPrincipal(transferPrincipal);
+        setShowTransferConfirmation(true);
+    };
+
+    const confirmTransfer = async () => {
+        try {
+            setIsTransferring(true);
+            setTransferError(null);
+            const actor = await backendService.getActor();
+            await actor.transfer_allocation(Number(allocationWithStatus.allocation.id), Principal.fromText(pendingTransferPrincipal));
+            
+            // Clear form and refresh allocations
+            setTransferPrincipal('');
+            if (onStatusChange) {
+                onStatusChange();
+            }
+        } catch (error: any) {
+            console.error('Error transferring allocation:', error);
+            setTransferError(error.message || 'Failed to transfer allocation');
+        } finally {
+            setIsTransferring(false);
+        }
+    };
+
     return (
         <div className="allocation-card">
             <div 
@@ -1280,6 +1312,37 @@ const AllocationCard: React.FC<AllocationCardProps> = ({ allocationWithStatus, f
                             </div>
                         )}
 
+                        {/* Add transfer form */}
+                        <form className="allocation-transfer-form" onSubmit={handleTransfer}>
+                            <input
+                                type="text"
+                                placeholder="Enter principal ID of new owner"
+                                value={transferPrincipal}
+                                onChange={(e) => {
+                                    setTransferError(null);
+                                    setTransferPrincipal(e.target.value);
+                                }}
+                                disabled={isTransferring}
+                            />
+                            <button 
+                                type="submit"
+                                disabled={isTransferring || !transferPrincipal.trim()}
+                            >
+                                {isTransferring ? (
+                                    <>
+                                        <FiLoader className="spinning" />
+                                        Transferring...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FiSend />
+                                        Transfer
+                                    </>
+                                )}
+                            </button>
+                        </form>
+                        {transferError && <div className="error">{transferError}</div>}
+
                         <div className="claims-section">
                             <div className="claims-header" onClick={() => setShowClaims(!showClaims)}>
                                 <h4>Claims History</h4>
@@ -1355,6 +1418,25 @@ Warning: Once activated, the payment fee will be drawn and funds will be transfe
                     }
                 }}
             />
+            <ConfirmationModal
+                isOpen={showTransferConfirmation}
+                onClose={() => {
+                    setShowTransferConfirmation(false);
+                    setPendingTransferPrincipal('');
+                }}
+                onConfirm={confirmTransfer}
+                title="Transfer Allocation"
+                message={`Are you sure you want to transfer this allocation to ${pendingTransferPrincipal}? This action cannot be undone.
+
+The new owner will have full control over the allocation, including:
+- Ability to cancel the allocation
+- Ability to top up the allocation
+- Ability to transfer it to another user
+
+Make sure you have entered the correct principal ID.`}
+                confirmText="Transfer"
+                isDanger={true}
+            />
         </div>
     );
 };
@@ -1375,9 +1457,7 @@ export const AllocationsSection: React.FC = () => {
                 setLoading(true);
                 const adminStatus = await adminService.isAdmin();
                 setIsAdminUser(adminStatus);
-                if (adminStatus) {
-                    await loadAllocations();
-                }
+                await loadAllocations();
             } catch (error) {
                 console.error('Error checking admin status:', error);
                 setError('Failed to check admin status');

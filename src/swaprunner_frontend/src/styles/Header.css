@@ -16,6 +16,21 @@
     }
 }
 
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.1);
+    filter: brightness(1.2);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
 .header {
     position: relative;
 }
@@ -80,4 +95,10 @@
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
     border-top: 8px solid #ffffff;
+}
+
+.heart-icon-active {
+  color: #ff4444;
+  animation: pulse 1.5s ease-in-out infinite;
+  font-size: 20px;
 } 

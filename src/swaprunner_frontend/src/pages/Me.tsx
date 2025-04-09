@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiUser, FiLogIn, FiChevronDown, FiChevronUp, FiSettings, FiBarChart2, FiLoader, FiArrowUp, FiArrowDown, FiRefreshCw, FiGift, FiTrendingUp } from 'react-icons/fi';
+import { FiUser, FiLogIn, FiChevronDown, FiChevronUp, FiSettings, FiBarChart2, FiLoader, FiArrowUp, FiArrowDown, FiRefreshCw, FiGift, FiTrendingUp, FiList, FiExternalLink } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { usePool } from '../contexts/PoolContext';
 import { statsService, UserTokenStats, TokenSavingsStats, UserTokenAllocationStats } from '../services/stats';
@@ -684,6 +684,27 @@ export const Me: React.FC = () => {
             )}
           </div>
 
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Transactions" icon={<FiList />} defaultExpanded={false}>
+          <div className="transactions-buttons">
+            <button 
+              className="dex-button icpswap" 
+              onClick={() => window.open(`https://app.icpswap.com/account/${principal}/transactions`, '_blank')}
+            >
+              <span className="dex-name">ICPSwap Transactions</span>
+              <span className="button-description">View your transaction history on ICPSwap</span>
+              <FiExternalLink className="external-link-icon" />
+            </button>
+            <button 
+              className="dex-button kong" 
+              onClick={() => window.open(`https://kong.dev/account/${principal}/transactions`, '_blank')}
+            >
+              <span className="dex-name">Kong Transactions</span>
+              <span className="button-description">View your transaction history on Kong</span>
+              <FiExternalLink className="external-link-icon" />
+            </button>
+          </div>
         </CollapsibleSection>
 
         <CollapsibleSection title="Settings" icon={<FiSettings />} defaultExpanded={false}>

@@ -54,6 +54,41 @@ export interface PaymentStatus {
     is_paid: boolean;
 }
 
+interface AllocationClaim {
+    allocation_id: string;
+    user: string;
+    amount_e8s: bigint;
+    claimed_at: bigint;
+}
+
+export interface SponsorInfo {
+    principal: string;
+    name: string;
+    logo_url: string | null;
+}
+
+export interface ClaimWithSponsor {
+    achievement_id: string;
+    allocation_id: string;
+    token_canister_id: string;
+    claimable_amount: {
+        min_e8s: bigint;
+        max_e8s: bigint;
+    };
+    sponsor: SponsorInfo;
+}
+
+export interface UserClaimWithSponsor {
+    allocation: Allocation;
+    claim: {
+        allocation_id: string;
+        user: string;
+        amount_e8s: bigint;
+        claimed_at: bigint;
+    };
+    sponsor: SponsorInfo;
+}
+
 class AllocationService {
     private icrc1Service = new ICRC1Service();
 
@@ -320,8 +355,17 @@ class AllocationService {
      * Helper method to get a single allocation by ID
      */
     private async getAllocation(allocationId: string): Promise<Allocation | null> {
-        const allocations = await this.getMyCreatedAllocations();
-        return allocations.find(a => a.allocation.id === allocationId)?.allocation || null;
+        try {
+            const actor = await backendService.getActor();
+            const result = await actor.get_allocation(allocationId);
+            if ('ok' in result) {
+                return result.ok.allocation;
+            }
+            return null;
+        } catch (err) {
+            console.error('Error getting allocation:', err);
+            return null;
+        }
     }
 
     /**
@@ -468,6 +512,40 @@ class AllocationService {
         if ('err' in result) {
             throw new Error(result.err);
         }
+    }
+
+    async getSponsorClaims(sponsorId: string): Promise<AllocationClaim[]> {
+        const actor = await backendService.getActor();
+        const claims = await actor.get_all_allocation_claims();
+        return claims.filter((claim: AllocationClaim) => claim.user.toString() === sponsorId);
+    }
+
+    async getSponsorAllocations(sponsorId: string): Promise<{
+        allocation: Allocation;
+        status: string;
+    }[]> {
+        const actor = await backendService.getActor();
+        const allAllocations = await actor.get_all_user_allocations();
+        return allAllocations.filter((a: { allocation: Allocation }) => a.allocation.creator.toString() === sponsorId);
+    }
+
+    /**
+     * Get all available claims with sponsor information for the current user
+     */
+    async getAvailableClaimsWithSponsors(): Promise<ClaimWithSponsor[]> {
+        const actor = await backendService.getActor();
+        console.log('Getting available claims with sponsors...');
+        const claims = await actor.get_available_claims_with_sponsors();
+        console.log('Available claims with sponsors:', claims);
+        return claims;
+    }
+
+    /**
+     * Get all claims with sponsor information for the current user
+     */
+    async getUserClaimsWithSponsors(): Promise<UserClaimWithSponsor[]> {
+        const actor = await backendService.getActor();
+        return actor.get_user_claims_with_sponsors();
     }
 }
 

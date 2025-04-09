@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { FiArrowDown, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiArrowDown, FiChevronDown, FiChevronUp, FiLogIn, FiDownload, FiRepeat } from 'react-icons/fi';
 import { TokenSelect } from './TokenSelect';
 import { icpSwapService } from '../services/icpswap';
 import { kongSwapService } from '../services/kongswap';
@@ -4495,16 +4495,16 @@ const createSplitSwapDetails = async() => {
                       </div>
                       <div className="pool-actions">
                         <button 
-                          className="action-button" 
+                          className="pool-action-button" 
                           title="Deposit"
                           onClick={(e) => {
                             e.stopPropagation();
                             token0Address && handleHeaderDeposit(token0Address);
                           }}
                           disabled={!fromTokenBalance || fromTokenBalance === '0'}
-                        >↓</button>
+                        ><FiLogIn /></button>
                         <button 
-                          className="action-button" 
+                          className="pool-action-button" 
                           title="Withdraw"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -4512,7 +4512,7 @@ const createSplitSwapDetails = async() => {
                           }}
                           disabled={!balances?.undeposited0?.balance_e8s && !balances?.deposited0 || 
                                   (balances?.undeposited0?.balance_e8s || BigInt(0)) + (balances?.deposited0 || BigInt(0)) <= BigInt(0)}
-                        >↑</button>
+                        ><FiDownload /></button>
                         <button 
                           className="collapse-toggle"
                           onClick={(e) => {
@@ -4554,22 +4554,22 @@ const createSplitSwapDetails = async() => {
                               </div>
                               <div className="balance-actions">
                                 <button 
-                                  className="action-button" 
+                                  className="pool-action-button" 
                                   title="Transfer"
                                   onClick={() => handleUndepositedTransfer(token0Address)}
-                                >⊕</button>
+                                ><FiRepeat /></button>
                                 <button 
-                                  className="action-button" 
+                                  className="pool-action-button" 
                                   title="Deposit"
                                   onClick={() => handleUndepositedDeposit(token0Address)}
                                   disabled={!balances?.undeposited0?.balance_e8s || balances.undeposited0.balance_e8s <= BigInt(0)}
-                                >↓</button>
+                                ><FiLogIn /></button>
                                 <button 
-                                  className="action-button" 
+                                  className="pool-action-button" 
                                   title="Withdraw"
                                   onClick={() => handleUndepositedWithdraw(token0Address)}
                                   disabled={!balances?.undeposited0?.balance_e8s || balances.undeposited0.balance_e8s <= BigInt(0)}
-                                >↑</button>
+                                ><FiDownload /></button>
                               </div>
                             </div>
                           )}
@@ -4598,11 +4598,11 @@ const createSplitSwapDetails = async() => {
                             </div>
                             <div className="balance-actions">
                               <button 
-                                className="action-button" 
+                                className="pool-action-button" 
                                 title="Withdraw"
                                 onClick={() => handleDepositedWithdraw(token0Address)}
                                 disabled={!balances?.deposited0 || balances.deposited0 <= BigInt(0)}
-                              >↑</button>
+                              ><FiDownload /></button>
                             </div>
                           </div>
                         </div>
@@ -4653,16 +4653,16 @@ const createSplitSwapDetails = async() => {
                       </div>
                       <div className="pool-actions">
                         <button 
-                          className="action-button" 
+                          className="pool-action-button" 
                           title="Deposit"
                           onClick={(e) => {
                             e.stopPropagation();
                             token1Address && handleHeaderDeposit(token1Address);
                           }}
                           disabled={!toTokenBalance || toTokenBalance === '0'}
-                        >↓</button>
+                        ><FiLogIn /></button>
                         <button 
-                          className="action-button" 
+                          className="pool-action-button" 
                           title="Withdraw"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -4670,7 +4670,7 @@ const createSplitSwapDetails = async() => {
                           }}
                           disabled={!balances?.undeposited1?.balance_e8s && !balances?.deposited1 || 
                                   (balances?.undeposited1?.balance_e8s || BigInt(0)) + (balances?.deposited1 || BigInt(0)) <= BigInt(0)}
-                        >↑</button>
+                        ><FiDownload /></button>
                         <button 
                           className="collapse-toggle"
                           onClick={(e) => {
@@ -4712,22 +4712,22 @@ const createSplitSwapDetails = async() => {
                               </div>
                               <div className="balance-actions">
                                 <button 
-                                  className="action-button" 
+                                  className="pool-action-button" 
                                   title="Transfer"
                                   onClick={() => handleUndepositedTransfer(token1Address)}
-                                >⊕</button>
+                                ><FiRepeat /></button>
                                 <button 
-                                  className="action-button" 
+                                  className="pool-action-button" 
                                   title="Deposit"
                                   onClick={() => handleUndepositedDeposit(token1Address)}
                                   disabled={!balances?.undeposited1?.balance_e8s || balances.undeposited1.balance_e8s <= BigInt(0)}
-                                >↓</button>
+                                ><FiLogIn /></button>
                                 <button 
-                                  className="action-button" 
+                                  className="pool-action-button" 
                                   title="Withdraw"
                                   onClick={() => handleUndepositedWithdraw(token1Address)}
                                   disabled={!balances?.undeposited1?.balance_e8s || balances.undeposited1.balance_e8s <= BigInt(0)}
-                                >↑</button>
+                                ><FiDownload /></button>
                               </div>
                             </div>
                           )}
@@ -4756,11 +4756,11 @@ const createSplitSwapDetails = async() => {
                             </div>
                             <div className="balance-actions">
                               <button 
-                                className="action-button" 
+                                className="pool-action-button" 
                                 title="Withdraw"
                                 onClick={() => handleDepositedWithdraw(token1Address)}
                                 disabled={!balances?.deposited1 || balances.deposited1 <= BigInt(0)}
-                              >↑</button>
+                              ><FiDownload /></button>
                             </div>
                           </div>
                         </div>

@@ -33,10 +33,8 @@ export const AddCustomTokenModal: React.FC<AddCustomTokenModalProps> = ({
   const [canisterId, setCanisterId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { refreshMetadata } = useTokens();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAdd = async () => {
     console.log('[AddCustomTokenModal] Starting token registration process');
     setError(null);
     setIsLoading(true);
@@ -89,52 +87,44 @@ export const AddCustomTokenModal: React.FC<AddCustomTokenModalProps> = ({
     <div className="modal-overlay" onClick={onClose}>
       <div className="add-custom-token-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Add Custom Token</h2>
+          <h3>Add Custom Token</h3>
           <button 
-            className="modal-close-button"
+            className="close-button"
             onClick={onClose}
             disabled={isLoading}
           >
             <FiX />
           </button>
         </div>
-
-        <form onSubmit={handleSubmit}>
-          <div className="modal-content">
-            <div className="input-group">
-              <label htmlFor="canisterId">Token Canister ID</label>
-              <input
-                id="canisterId"
-                type="text"
-                value={canisterId}
-                onChange={(e) => setCanisterId(e.target.value)}
-                placeholder="Enter ICRC-1 token canister ID"
-                disabled={isLoading}
-              />
+        <div className="modal-content">
+          <input
+            type="text"
+            value={canisterId}
+            onChange={(e) => setCanisterId(e.target.value)}
+            placeholder="Enter ICRC-1 token canister ID"
+            disabled={isLoading}
+            className="token-input"
+          />
+          {error && (
+            <div className="error-message">
+              {error}
             </div>
-
-            {error && (
-              <div className="error-message">
-                {error}
-              </div>
+          )}
+          <button
+            className="add-token-button"
+            onClick={handleAdd}
+            disabled={isLoading || !canisterId}
+          >
+            {isLoading ? (
+              <>
+                <FiLoader className="spinner" />
+                Registering...
+              </>
+            ) : (
+              'Add Token'
             )}
-
-            <button
-              type="submit"
-              className="submit-button"
-              disabled={isLoading || !canisterId}
-            >
-              {isLoading ? (
-                <>
-                  <FiLoader className="spinner" />
-                  Registering...
-                </>
-              ) : (
-                'Add Token'
-              )}
-            </button>
-          </div>
-        </form>
+          </button>
+        </div>
       </div>
     </div>
   );

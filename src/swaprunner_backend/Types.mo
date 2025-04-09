@@ -513,4 +513,14 @@ module {
         verified: ?Bool;
     };
 
+    //--------------------------------  
+    // Types for Sponsor Info
+    //--------------------------------
+
+    public type SponsorInfo = {
+        principal: Principal;
+        name: Text;
+        logo_url: ?Text;
+    };
+
 }

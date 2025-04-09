@@ -268,6 +268,32 @@
     gap: 12px;
 }
 
+.sponsor-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.sponsor-placeholder {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.sponsor-info {
+    color: #888;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
 .reward-icon {
     display: inline-flex;
     align-items: center;
@@ -332,6 +358,7 @@
 .reward-details {
     display: flex;
     flex-direction: column;
+    gap: 2px;
 }
 
 .reward-amount {
@@ -453,4 +480,12 @@
 
 .achievement-card:hover {
     z-index: 2;
+}
+
+.reward-item.claimed .reward-info {
+    opacity: 0.8;
+}
+
+.reward-item.claimed .sponsor-info {
+    color: #666;
 } 

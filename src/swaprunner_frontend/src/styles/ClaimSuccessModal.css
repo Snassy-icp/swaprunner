@@ -107,6 +107,22 @@
     animation: fadeInUp 0.5s 0.5s both;
 }
 
+.claim-success-sponsor-info {
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.8);
+    animation: fadeInUp 0.5s 0.7s both;
+}
+
+.claim-success-sponsor-info .sponsor-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
 .claim-success-close-button {
     background: linear-gradient(135deg, #3498db, #2980b9);
     border: none;

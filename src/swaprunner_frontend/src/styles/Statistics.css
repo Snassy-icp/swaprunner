@@ -210,7 +210,6 @@
 .usd-value {
   color: var(--text-secondary);
   opacity: 0.8;
-  margin-left: 4px;
 }
 
 .usd-value.loading {

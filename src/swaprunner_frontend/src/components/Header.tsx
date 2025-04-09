@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiPercent, FiRepeat, FiCreditCard, FiDroplet, FiList, FiBarChart2, FiUser, FiGift } from 'react-icons/fi';
+import { FiPercent, FiRepeat, FiCreditCard, FiDroplet, FiList, FiBarChart2, FiUser, FiGift, FiHeart } from 'react-icons/fi';
+import { AiFillHeart } from 'react-icons/ai';
 import { isFeatureEnabled } from '../config/featureFlags';
 import { SlippageSettings } from './SlippageSettings';
 import { useSlippage } from '../contexts/SlippageContext';
@@ -44,14 +45,6 @@ export const Header: React.FC = () => {
           {location.pathname === '/pools' && <span>Pools</span>}
         </button>
         <button 
-          className={`tab ${location.pathname === '/transactions' ? 'active' : ''}`}
-          onClick={() => navigate('/transactions')}
-          title="View transaction history"
-        >
-          <FiList />
-          {location.pathname === '/transactions' && <span>Transactions</span>}
-        </button>
-        <button 
           className={`tab ${location.pathname === '/me' ? 'active' : ''} ${availableClaims.length > 0 ? 'has-rewards' : ''}`}
           onClick={() => navigate('/me')}
         >
@@ -80,6 +73,18 @@ export const Header: React.FC = () => {
         >
           <FiBarChart2 />
           {location.pathname === '/statistics' && <span>Statistics</span>}
+        </button>
+        <button 
+          className={`tab ${location.pathname === '/sponsors' ? 'active' : ''}`}
+          onClick={() => navigate('/sponsors')}
+          title="View our sponsors"
+        >
+          {location.pathname === '/sponsors' ? (
+            <AiFillHeart className="heart-icon-active" />
+          ) : (
+            <FiHeart />
+          )}
+          {location.pathname === '/sponsors' && <span>Sponsors</span>}
         </button>
       </div>
       {isSwapTab && (

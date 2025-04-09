@@ -31,14 +31,16 @@ interface CreateUserProfileArgs {
     }>;
 }
 
+interface SocialLink {
+    platform: string;
+    url: string;
+}
+
 interface UpdateUserProfileArgs {
     name: [string] | [];
     description: [string] | [];
     logo_url: [string] | [];
-    social_links?: Array<{
-        platform: string;
-        url: string;
-    }>;
+    social_links: [SocialLink[]] | [];
     verified: [boolean] | [];
 }
 
@@ -157,7 +159,8 @@ const AdminUsersPage: React.FC = () => {
                 verified: !profile.verified ? [true] : [false],
                 name: profile.name ? [profile.name] : [],
                 description: profile.description ? [profile.description] : [],
-                logo_url: profile.logo_url
+                logo_url: profile.logo_url,
+                social_links: profile.social_links ? [profile.social_links] : []
             });
         } catch (err) {
             setError('Failed to toggle verification');
@@ -298,6 +301,29 @@ const CreateProfileForm: React.FC<CreateProfileFormProps> = ({ onSubmit, onCance
         onSubmit(formData);
     };
 
+    const addSocialLink = () => {
+        setFormData(prev => ({
+            ...prev,
+            social_links: [...prev.social_links, { platform: '', url: '' }]
+        }));
+    };
+
+    const removeSocialLink = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            social_links: prev.social_links.filter((_, i) => i !== index)
+        }));
+    };
+
+    const updateSocialLink = (index: number, field: 'platform' | 'url', value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            social_links: prev.social_links.map((link, i) => 
+                i === index ? { ...link, [field]: value } : link
+            )
+        }));
+    };
+
     return (
         <form className="profile-form" onSubmit={handleSubmit}>
             <h2>Create New Profile</h2>
@@ -340,6 +366,63 @@ const CreateProfileForm: React.FC<CreateProfileFormProps> = ({ onSubmit, onCance
                 />
             </div>
 
+            <div className="form-group">
+                <label>Social Links:</label>
+                <div className="social-links-list">
+                    <div className="token-link-item">
+                        <label>Token Canister ID:</label>
+                        <input
+                            type="text"
+                            placeholder="Enter token canister ID"
+                            value={formData.social_links.find(link => link.platform === 'token')?.url || ''}
+                            onChange={e => {
+                                const tokenLink = formData.social_links.findIndex(link => link.platform === 'token');
+                                if (tokenLink >= 0) {
+                                    updateSocialLink(tokenLink, 'url', e.target.value);
+                                } else {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        social_links: [...prev.social_links, { platform: 'token', url: e.target.value }]
+                                    }));
+                                }
+                            }}
+                        />
+                    </div>
+                    {formData.social_links.filter(link => link.platform !== 'token').map((link, index) => (
+                        <div key={index} className="social-link-item">
+                            <input
+                                type="text"
+                                placeholder="Platform (e.g., Twitter)"
+                                value={link.platform}
+                                onChange={e => updateSocialLink(index, 'platform', e.target.value)}
+                                required
+                            />
+                            <input
+                                type="url"
+                                placeholder="URL"
+                                value={link.url}
+                                onChange={e => updateSocialLink(index, 'url', e.target.value)}
+                                required
+                            />
+                            <button 
+                                type="button" 
+                                className="remove-link-button"
+                                onClick={() => removeSocialLink(index)}
+                            >
+                                <FiX />
+                            </button>
+                        </div>
+                    ))}
+                    <button 
+                        type="button" 
+                        className="add-link-button"
+                        onClick={addSocialLink}
+                    >
+                        Add Social Link
+                    </button>
+                </div>
+            </div>
+
             <div className="form-actions">
                 <button type="submit" className="submit-button">Create Profile</button>
                 <button type="button" className="cancel-button" onClick={onCancel}>Cancel</button>
@@ -359,13 +442,42 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSubmit, on
         name: profile.name ? [profile.name] : [],
         description: profile.description ? [profile.description] : [],
         logo_url: profile.logo_url,
-        social_links: profile.social_links,
+        social_links: [profile.social_links],
         verified: profile.verified ? [true] : [false]
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onSubmit(formData);
+    };
+
+    const addSocialLink = () => {
+        setFormData(prev => ({
+            ...prev,
+            social_links: [
+                [...(prev.social_links[0] || []), { platform: '', url: '' }]
+            ]
+        }));
+    };
+
+    const removeSocialLink = (index: number) => {
+        setFormData(prev => ({
+            ...prev,
+            social_links: [
+                (prev.social_links[0] || []).filter((_, i: number) => i !== index)
+            ]
+        }));
+    };
+
+    const updateSocialLink = (index: number, field: 'platform' | 'url', value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            social_links: [
+                (prev.social_links[0] || []).map((link: SocialLink, i: number) => 
+                    i === index ? { ...link, [field]: value } : link
+                )
+            ]
+        }));
     };
 
     return (
@@ -396,6 +508,65 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ profile, onSubmit, on
                     value={formData.logo_url[0] || ''}
                     onChange={e => setFormData(prev => ({ ...prev, logo_url: e.target.value ? [e.target.value] : [] }))}
                 />
+            </div>
+
+            <div className="form-group">
+                <label>Social Links:</label>
+                <div className="social-links-list">
+                    <div className="token-link-item">
+                        <label>Token Canister ID:</label>
+                        <input
+                            type="text"
+                            placeholder="Enter token canister ID"
+                            value={(formData.social_links[0] || []).find(link => link.platform === 'token')?.url || ''}
+                            onChange={e => {
+                                const tokenLink = (formData.social_links[0] || []).findIndex(link => link.platform === 'token');
+                                if (tokenLink >= 0) {
+                                    updateSocialLink(tokenLink, 'url', e.target.value);
+                                } else {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        social_links: [
+                                            [...(prev.social_links[0] || []), { platform: 'token', url: e.target.value }]
+                                        ]
+                                    }));
+                                }
+                            }}
+                        />
+                    </div>
+                    {(formData.social_links[0] || []).filter(link => link.platform !== 'token').map((link, index) => (
+                        <div key={index} className="social-link-item">
+                            <input
+                                type="text"
+                                placeholder="Platform (e.g., Twitter)"
+                                value={link.platform}
+                                onChange={e => updateSocialLink(index + (formData.social_links[0]?.some(l => l.platform === 'token') ? 1 : 0), 'platform', e.target.value)}
+                                required
+                            />
+                            <input
+                                type="url"
+                                placeholder="URL"
+                                value={link.url}
+                                onChange={e => updateSocialLink(index + (formData.social_links[0]?.some(l => l.platform === 'token') ? 1 : 0), 'url', e.target.value)}
+                                required
+                            />
+                            <button 
+                                type="button" 
+                                className="remove-link-button"
+                                onClick={() => removeSocialLink(index + (formData.social_links[0]?.some(l => l.platform === 'token') ? 1 : 0))}
+                            >
+                                <FiX />
+                            </button>
+                        </div>
+                    ))}
+                    <button 
+                        type="button" 
+                        className="add-link-button"
+                        onClick={addSocialLink}
+                    >
+                        Add Social Link
+                    </button>
+                </div>
             </div>
 
             <div className="form-group checkbox-group">

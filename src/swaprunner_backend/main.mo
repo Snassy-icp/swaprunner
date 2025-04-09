@@ -3955,6 +3955,147 @@ shared (deployer) actor class SwapRunner() = this {
         Buffer.toArray(results)
     };
 
+    // Get all available claims for the current user with sponsor information
+    public query({caller}) func get_available_claims_with_sponsors() : async [{
+        achievement_id: Text;
+        allocation_id: Text;
+        token_canister_id: Principal;
+        claimable_amount: {
+            min_e8s: Nat;
+            max_e8s: Nat;
+        };
+        sponsor: T.SponsorInfo;
+    }] {
+        if (Principal.isAnonymous(caller)) {
+            return [];
+        };
+
+        let available_claims = Allocation.get_available_claims(
+            caller,
+            allocations,
+            allocation_statuses,
+            allocation_claims,
+            userAchievements,
+        );
+
+        // Add sponsor info to each claim
+        Array.map<
+            {
+                achievement_id: Text;
+                allocation_id: Text;
+                token_canister_id: Principal;
+                claimable_amount: {
+                    min_e8s: Nat;
+                    max_e8s: Nat;
+                };
+            },
+            {
+                achievement_id: Text;
+                allocation_id: Text;
+                token_canister_id: Principal;
+                claimable_amount: {
+                    min_e8s: Nat;
+                    max_e8s: Nat;
+                };
+                sponsor: T.SponsorInfo;
+            }
+        >(available_claims, func(claim) {
+            let allocation = switch (allocations.get(claim.allocation_id)) {
+                case (?a) a;
+                case null { 
+                    // This shouldn't happen, but provide a fallback
+                    return {
+                        achievement_id = claim.achievement_id;
+                        allocation_id = claim.allocation_id;
+                        token_canister_id = claim.token_canister_id;
+                        claimable_amount = claim.claimable_amount;
+                        sponsor = {
+                            principal = Principal.fromText("");
+                            name = "Unknown";
+                            logo_url = null;
+                        };
+                    };
+                };
+            };
+
+            let sponsor_info = switch (profiles.get(allocation.creator)) {
+                case (?profile) {
+                    {
+                        principal = profile.principal;
+                        name = profile.name;
+                        logo_url = profile.logo_url;
+                    };
+                };
+                case null {
+                    {
+                        principal = allocation.creator;
+                        name = "Unknown";
+                        logo_url = null;
+                    };
+                };
+            };
+
+            {
+                achievement_id = claim.achievement_id;
+                allocation_id = claim.allocation_id;
+                token_canister_id = claim.token_canister_id;
+                claimable_amount = claim.claimable_amount;
+                sponsor = sponsor_info;
+            };
+        });
+    };
+
+    // Get all claims for the current user with sponsor information
+    public query({caller}) func get_user_claims_with_sponsors() : async [{
+        allocation: T.Allocation;
+        claim: T.AllocationClaim;
+        sponsor: T.SponsorInfo;
+    }] {
+        if (Principal.isAnonymous(caller)) {
+            return [];
+        };
+
+        let user_claims = Buffer.Buffer<{
+            allocation: T.Allocation;
+            claim: T.AllocationClaim;
+            sponsor: T.SponsorInfo;
+        }>(0);
+
+        for ((claim_key, claim) in allocation_claims.entries()) {
+            if (claim.user == caller) {
+                switch (allocations.get(claim.allocation_id)) {
+                    case (?allocation) {
+                        let sponsor_info = switch (profiles.get(allocation.creator)) {
+                            case (?profile) {
+                                {
+                                    principal = profile.principal;
+                                    name = profile.name;
+                                    logo_url = profile.logo_url;
+                                };
+                            };
+                            case null {
+                                {
+                                    principal = allocation.creator;
+                                    name = "Unknown";
+                                    logo_url = null;
+                                };
+                            };
+                        };
+
+                        user_claims.add({
+                            allocation = allocation;
+                            claim = claim;
+                            sponsor = sponsor_info;
+                        });
+                    };
+                    case null {}; // Skip if allocation not found
+                };
+            };
+        };
+
+        Buffer.toArray(user_claims)
+    };
+
     // TODO: Increaset allocation amount
 
     // Top up an allocation with additional funds
@@ -4015,5 +4156,20 @@ shared (deployer) actor class SwapRunner() = this {
             allocations,
             Principal.fromActor(this)
         );
+    };
+
+    // Transfer allocation ownership to another user
+    public shared(msg) func transfer_allocation(allocation_id: Nat, new_owner: Principal) : async Result.Result<(), Text> {
+        let caller = msg.caller;
+
+        // Call allocation module to handle transfer
+        Allocation.transfer_allocation(
+            caller,
+            allocation_id,
+            new_owner,
+            allocations,
+            allocation_statuses,
+            userLogins
+        )
     };
 }

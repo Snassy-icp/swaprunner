@@ -939,7 +939,7 @@
 
 .quotes-header .token-info {
   display: flex;
-  align-items: center;
+  align-items: left;
   gap: 8px;
   flex: 1;
 }

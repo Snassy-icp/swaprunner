@@ -40,6 +40,12 @@ class UserProfileService {
       return false;
     }
   }
+
+  async getVerifiedProfiles(): Promise<UserProfile[]> {
+    const actor = await backendService.getActor();
+    const profiles = await actor.listUserProfiles(0, 1000);
+    return profiles.filter((profile: UserProfile) => profile.verified);
+  }
 }
 
 export const userProfileService = new UserProfileService(); 

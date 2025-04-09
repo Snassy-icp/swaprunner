@@ -2175,13 +2175,6 @@ body {
   font-size: 20px;
 }
 
-.transactions-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-}
-
 .dex-button {
   display: flex;
   flex-direction: column;

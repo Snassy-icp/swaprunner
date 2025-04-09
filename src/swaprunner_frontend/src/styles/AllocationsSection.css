@@ -1925,4 +1925,58 @@
     text-align: center;
     padding: 20px;
     font-style: italic;
+}
+
+.allocation-transfer-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.allocation-transfer-form input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #fff;
+    font-size: 14px;
+}
+
+.allocation-transfer-form input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.allocation-transfer-form button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #8F96A1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.allocation-transfer-form button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.allocation-transfer-form button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.allocation-transfer-form .error {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 4px;
 } 

@@ -9,6 +9,11 @@ interface ClaimableReward {
         min_e8s: bigint;
         max_e8s: bigint;
     };
+    sponsor: {
+        principal: string;
+        name: string;
+        logo_url: string | null;
+    };
 }
 
 interface ClaimContextType {
@@ -31,7 +36,7 @@ export const ClaimProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const loadClaims = async () => {
         try {
-            const claims = await allocationService.getAvailableClaims();
+            const claims = await allocationService.getAvailableClaimsWithSponsors();
             setAvailableClaims(claims);
         } catch (error) {
             console.error('Error loading claims:', error);
