@@ -439,6 +439,99 @@ export function Statistics() {
       {/* Allocation Statistics */}
       <section className="statistics-section">
         <h2>Allocation Statistics</h2>
+        <div className="allocation-summary">
+          <div className="allocation-summary-row">
+            <span className="allocation-summary-label">Total Allocated Value</span>
+            <span className="allocation-summary-value">
+              {(() => {
+                const totalUSDAllocated = tokenAllocationStats.reduce((sum, [tokenId, stats]) => {
+                  const price = tokenUSDPrices[tokenId];
+                  if (price === undefined || loadingUSDPrices[tokenId]) return sum;
+                  
+                  const metadata = tokenMetadata[tokenId];
+                  if (!metadata) return sum;
+                  
+                  const decimals = metadata.decimals ?? 8;
+                  const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+                  const amountInWholeUnits = Number(stats.total_allocated_e8s) / Number(baseUnitMultiplier);
+                  return sum + (amountInWholeUnits * price);
+                }, 0);
+
+                if (Object.values(loadingUSDPrices).some(loading => loading)) {
+                  return (
+                    <>
+                      ${totalUSDAllocated.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <FiLoader className="spinner" />
+                    </>
+                  );
+                }
+                
+                return `$${totalUSDAllocated.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              })()}
+            </span>
+          </div>
+          <div className="allocation-summary-row">
+            <span className="allocation-summary-label">Total Claimed Value</span>
+            <span className="allocation-summary-value">
+              {(() => {
+                const totalUSDClaimed = tokenAllocationStats.reduce((sum, [tokenId, stats]) => {
+                  const price = tokenUSDPrices[tokenId];
+                  if (price === undefined || loadingUSDPrices[tokenId]) return sum;
+                  
+                  const metadata = tokenMetadata[tokenId];
+                  if (!metadata) return sum;
+                  
+                  const decimals = metadata.decimals ?? 8;
+                  const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+                  const amountInWholeUnits = Number(stats.total_claimed_e8s) / Number(baseUnitMultiplier);
+                  return sum + (amountInWholeUnits * price);
+                }, 0);
+
+                if (Object.values(loadingUSDPrices).some(loading => loading)) {
+                  return (
+                    <>
+                      ${totalUSDClaimed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <FiLoader className="spinner" />
+                    </>
+                  );
+                }
+                
+                return `$${totalUSDClaimed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              })()}
+            </span>
+          </div>
+          <div className="allocation-summary-row">
+            <span className="allocation-summary-label">Remaining Value</span>
+            <span className="allocation-summary-value">
+              {(() => {
+                const totalUSDRemaining = tokenAllocationStats.reduce((sum, [tokenId, stats]) => {
+                  const price = tokenUSDPrices[tokenId];
+                  if (price === undefined || loadingUSDPrices[tokenId]) return sum;
+                  
+                  const metadata = tokenMetadata[tokenId];
+                  if (!metadata) return sum;
+                  
+                  const decimals = metadata.decimals ?? 8;
+                  const baseUnitMultiplier = BigInt(10) ** BigInt(decimals);
+                  const remaining = stats.total_allocated_e8s - stats.total_claimed_e8s;
+                  const amountInWholeUnits = Number(remaining) / Number(baseUnitMultiplier);
+                  return sum + (amountInWholeUnits * price);
+                }, 0);
+
+                if (Object.values(loadingUSDPrices).some(loading => loading)) {
+                  return (
+                    <>
+                      ${totalUSDRemaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <FiLoader className="spinner" />
+                    </>
+                  );
+                }
+                
+                return `$${totalUSDRemaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+              })()}
+            </span>
+          </div>
+        </div>
         <div className="token-statistics-table">
           {loadingAllocationStats ? (
             <LoadingSpinner />
