@@ -385,3 +385,117 @@ button.pool-action-button:disabled {
     padding: 0 12px;
     font-size: 13px;
 }
+
+/* Add Custom Token Modal - High Specificity Styles */
+.modal-overlay[class] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-overlay[class] .add-custom-token-modal[class] {
+  background: #0d0d0d;
+  border-radius: 12px;
+  padding: 16px;
+  width: 320px;
+  position: relative;
+}
+
+.add-custom-token-modal[class] .modal-header[class] {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.add-custom-token-modal[class] .modal-header[class] h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.add-custom-token-modal[class] .modal-header[class] .close-button[class] {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  margin-top: 0px;
+  margin-right: 14px;
+  width: fit-content;
+}
+
+.add-custom-token-modal[class] .modal-header[class] .close-button[class]:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.add-custom-token-modal[class] .modal-content[class] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.add-custom-token-modal[class] .token-input[class] {
+  width: 92%;
+  background: #1a1a1a;
+  border: none;
+  border-radius: 8px;
+  color: #666;
+  font-size: 14px;
+  padding: 12px;
+}
+
+.add-custom-token-modal[class] .token-input[class]::placeholder {
+  color: #666;
+}
+
+.add-custom-token-modal[class] .token-input[class]:focus {
+  outline: none;
+  background: #202020;
+}
+
+.add-custom-token-modal[class] .error-message[class] {
+  color: #ef4444;
+  font-size: 14px;
+  text-align: left;
+}
+
+.add-custom-token-modal[class] .add-token-button[class] {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  padding: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.add-custom-token-modal[class] .add-token-button[class]:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.add-custom-token-modal[class] .add-token-button[class]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.add-custom-token-modal[class] .spinner[class] {
+  animation: spin 1s linear infinite;
+}
