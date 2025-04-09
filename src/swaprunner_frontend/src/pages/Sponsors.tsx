@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FiChevronDown, FiChevronUp, FiCheck, FiExternalLink, FiAward, FiLoader, FiGift } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp, FiCheck, FiExternalLink, FiAward, FiLoader, FiGift, FiCheckCircle } from 'react-icons/fi';
 import { userProfileService } from '../services/userProfile';
 import { allocationService } from '../services/allocation';
 import { tokenService } from '../services/token';
@@ -14,6 +14,7 @@ import { priceService } from '../services/price';
 import { useClaims } from '../contexts/ClaimContext';
 import { useAchievements } from '../contexts/AchievementContext';
 import '../styles/ClaimSuccessModal.css';
+import { ClaimSuccessModal } from '../components/AchievementsSection';
 
 interface UserProfile {
     principal: Principal;
@@ -134,7 +135,8 @@ export const Sponsors: React.FC = () => {
     const { tokens } = useTokens();
     const { isAuthenticated } = useAuth();
     const [claiming, setClaiming] = useState<string | null>(null);
-    const [claimSuccess, setClaimSuccess] = useState<{
+    const [showClaimSuccess, setShowClaimSuccess] = useState(false);
+    const [claimSuccessDetails, setClaimSuccessDetails] = useState<{
         amount: bigint;
         tokenId: string;
         achievementName: string;
@@ -442,17 +444,19 @@ export const Sponsors: React.FC = () => {
             setClaiming(allocationId);
             setClaimError(null);
             
-            const claimedAmount = await allocationService.claimAndWithdrawAllocation(allocationId);
+            const amount = await allocationService.claimAndWithdrawAllocation(allocationId);
             
-            // Show success modal
-            setClaimSuccess({
-                amount: claimedAmount,
-                tokenId: tokenId,
-                achievementName: achievementName
-            });
+            // Update user claims
+            const updatedClaims = await allocationService.getUserClaims();
+            setUserClaims(updatedClaims);
 
-            // Refresh the data
-            loadSponsors();
+            // Show success modal
+            setClaimSuccessDetails({
+                amount,
+                tokenId,
+                achievementName
+            });
+            setShowClaimSuccess(true);
         } catch (err: any) {
             setClaimError('Failed to claim reward: ' + (err.message || String(err)));
             console.error('Error claiming reward:', err);
@@ -1082,21 +1086,16 @@ export const Sponsors: React.FC = () => {
                 </div>
             </div>
 
-            {/* Add success modal */}
-            {claimSuccess && (
-                <div className="modal-overlay">
-                    <div className="claim-success-modal">
-                        <div className="success-icon">
-                            <FiCheck />
-                        </div>
-                        <h3>Claim Successful!</h3>
-                        <p>You have successfully claimed {formatTokenAmount(claimSuccess.amount, claimSuccess.tokenId)} from the achievement "{claimSuccess.achievementName}".</p>
-                        <button onClick={() => setClaimSuccess(null)}>Close</button>
-                    </div>
-                </div>
+            {showClaimSuccess && claimSuccessDetails && (
+                <ClaimSuccessModal
+                    show={showClaimSuccess}
+                    onClose={() => setShowClaimSuccess(false)}
+                    amount={claimSuccessDetails.amount}
+                    tokenId={claimSuccessDetails.tokenId}
+                    achievementName={claimSuccessDetails.achievementName}
+                />
             )}
 
-            {/* Add error display */}
             {claimError && (
                 <div className="error-message">
                     {claimError}

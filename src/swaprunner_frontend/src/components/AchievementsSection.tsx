@@ -421,7 +421,7 @@ const Fireworks: React.FC<FireworksProps> = ({ count = 8 }) => {
     );
 };
 
-const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, amount, tokenId, achievementName }) => {
+export const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, amount, tokenId, achievementName }) => {
     const { tokens } = useTokens();
     const tokenMetadata = tokens.find(t => t.canisterId === tokenId)?.metadata;
     const [isOpen, setIsOpen] = useState(false);
