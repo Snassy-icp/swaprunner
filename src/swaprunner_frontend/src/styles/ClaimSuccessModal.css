@@ -107,8 +107,7 @@
     animation: fadeInUp 0.5s 0.5s both;
 }
 
-.sponsor-info {
-    display: flex;
+.claim-success-sponsor-info {
     align-items: center;
     gap: 12px;
     margin-bottom: 24px;
@@ -117,7 +116,7 @@
     animation: fadeInUp 0.5s 0.7s both;
 }
 
-.sponsor-info .sponsor-logo {
+.claim-success-sponsor-info .sponsor-logo {
     width: 32px;
     height: 32px;
     border-radius: 50%;

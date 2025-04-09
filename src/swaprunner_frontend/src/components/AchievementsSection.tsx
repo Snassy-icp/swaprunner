@@ -629,8 +629,7 @@ export const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onCl
                         <div className="claim-success-amount">
                             You received {formatTokenAmount(amount, tokenId)} {tokenMetadata?.symbol || 'tokens'} for achieving "{achievementName}"!
                         </div>
-                        <div className="sponsor-info">
-                            <span>Sponsored by {sponsor.name}</span>
+                        <div className="claim-success-sponsor-info">
                             {sponsor.logo_url && (
                                 <img 
                                     src={sponsor.logo_url} 
@@ -642,6 +641,7 @@ export const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onCl
                                     }}
                                 />
                             )}
+                            <span>Sponsored by {sponsor.name}</span>
                         </div>
                     </div>
                     <button className="claim-success-close-button" onClick={onClose}>
