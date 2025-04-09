@@ -690,7 +690,7 @@ export const Me: React.FC = () => {
           <div className="transactions-buttons">
             <button 
               className="dex-button icpswap" 
-              onClick={() => window.open(`https://app.icpswap.com/account/${principal}/transactions`, '_blank')}
+              onClick={() => window.open(`https://app.icpswap.com/info-tools/swap-transactions?principal=${principal}`, '_blank')}
             >
               <span className="dex-name">ICPSwap Transactions</span>
               <span className="button-description">View your transaction history on ICPSwap</span>
@@ -698,7 +698,7 @@ export const Me: React.FC = () => {
             </button>
             <button 
               className="dex-button kong" 
-              onClick={() => window.open(`https://kong.dev/account/${principal}/transactions`, '_blank')}
+              onClick={() => window.open(`https://www.kongswap.io/wallets/${principal}/swaps`, '_blank')}
             >
               <span className="dex-name">Kong Transactions</span>
               <span className="button-description">View your transaction history on Kong</span>
