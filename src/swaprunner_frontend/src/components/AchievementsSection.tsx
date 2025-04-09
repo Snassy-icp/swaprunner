@@ -830,11 +830,29 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                                     const token = tokens.find(t => t.canisterId === reward.allocation.token.canister_id.toString());
                                     return (
                                         <div key={`claimed-${index}`} className="reward-item claimed">
-                                            <div className="reward-amount">
-                                                {formatTokenAmount(reward.claim.amount_e8s, token?.canisterId || '')} {token?.metadata?.symbol || 'tokens'}
-                                            </div>
-                                            <div className="reward-date">
-                                                Claimed on {formatDate(Number(reward.claim.claimed_at))}
+                                            <div className="reward-info">
+                                                {reward.sponsor.logo_url ? (
+                                                    <img 
+                                                        src={reward.sponsor.logo_url} 
+                                                        alt={reward.sponsor.name}
+                                                        className="sponsor-logo"
+                                                    />
+                                                ) : (
+                                                    <div className="sponsor-placeholder">
+                                                        {reward.sponsor.name.charAt(0)}
+                                                    </div>
+                                                )}
+                                                <div className="reward-details">
+                                                    <div className="reward-amount">
+                                                        {formatTokenAmount(reward.claim.amount_e8s, token?.canisterId || '')} {token?.metadata?.symbol || 'tokens'}
+                                                    </div>
+                                                    <div className="sponsor-info">
+                                                        Sponsored by {reward.sponsor.name}
+                                                    </div>
+                                                    <div className="reward-date">
+                                                        Claimed on {formatDate(Number(reward.claim.claimed_at))}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     );
@@ -870,6 +888,17 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                                                         >
                                                             <FiGift />
                                                         </div>
+                                                        {claim.sponsor.logo_url ? (
+                                                            <img 
+                                                                src={claim.sponsor.logo_url} 
+                                                                alt={claim.sponsor.name}
+                                                                className="sponsor-logo"
+                                                            />
+                                                        ) : (
+                                                            <div className="sponsor-placeholder">
+                                                                {claim.sponsor.name.charAt(0)}
+                                                            </div>
+                                                        )}
                                                         <div className="reward-details">
                                                             <span className="reward-amount">
                                                                 {claim.claimable_amount.min_e8s === claim.claimable_amount.max_e8s ? (
@@ -878,6 +907,9 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                                                                     `${formatTokenAmount(claim.claimable_amount.min_e8s, claim.token_canister_id.toString())} - ${formatTokenAmount(claim.claimable_amount.max_e8s, claim.token_canister_id.toString())}`
                                                                 )} {allocation?.metadata?.symbol || ' tokens'}
                                                             </span>
+                                                            <div className="sponsor-info">
+                                                                Sponsored by {claim.sponsor.name}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     <button
@@ -894,7 +926,10 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                                                                 Claiming...
                                                             </>
                                                         ) : (
-                                                            'Claim Reward'
+                                                            <>
+                                                                <FiGift />
+                                                                Claim
+                                                            </>
                                                         )}
                                                     </button>
                                                 </div>
