@@ -656,9 +656,9 @@
 
 .sponsor-token .token-metadata {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 12px;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 92%;
 }
 
 .sponsor-token .metadata-row {
@@ -884,7 +884,7 @@
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: var(--primary-color);
+    background: #4CAF50;
     color: white;
     border: none;
     border-radius: 6px;
@@ -898,6 +898,7 @@
 .buy-token-button:hover {
     background: var(--primary-color-dark);
     transform: translateY(-1px);
+    background: green;
 }
 
 .buy-token-button:active {
