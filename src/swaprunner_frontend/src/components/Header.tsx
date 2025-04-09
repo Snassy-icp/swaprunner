@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiPercent, FiRepeat, FiCreditCard, FiDroplet, FiList, FiBarChart2, FiUser, FiGift, FiHeart } from 'react-icons/fi';
+import { AiFillHeart } from 'react-icons/ai';
 import { isFeatureEnabled } from '../config/featureFlags';
 import { SlippageSettings } from './SlippageSettings';
 import { useSlippage } from '../contexts/SlippageContext';
@@ -78,7 +79,11 @@ export const Header: React.FC = () => {
           onClick={() => navigate('/sponsors')}
           title="View our sponsors"
         >
-          <FiHeart />
+          {location.pathname === '/sponsors' ? (
+            <AiFillHeart className="heart-icon-active" />
+          ) : (
+            <FiHeart />
+          )}
           {location.pathname === '/sponsors' && <span>Sponsors</span>}
         </button>
       </div>
