@@ -616,7 +616,7 @@
     margin-top: 12px;
     font-size: 14px;
     color: var(--text-secondary);
-  }
+}
 
 .sponsor-token .token-header {
     display: flex;
@@ -656,9 +656,9 @@
 
 .sponsor-token .token-metadata {
     display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    width: 92%;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
 }
 
 .sponsor-token .metadata-row {
@@ -882,17 +882,17 @@
 .buy-token-button {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    margin-top: 12px;
+    gap: 6px;
+    padding: 6px 12px;
     background: var(--primary-color);
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
     transition: all 0.2s ease;
+    white-space: nowrap;
 }
 
 .buy-token-button:hover {

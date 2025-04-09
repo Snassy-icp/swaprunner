@@ -753,28 +753,15 @@ export const Sponsors: React.FC = () => {
                                                                         </div>
                                                                         <div className="token-metadata">
                                                                             <div className="metadata-row">
-                                                                                <span className="metadata-label">Standard</span>
-                                                                                <span className="metadata-value">{token.metadata?.standard || 'Unknown'}</span>
+                                                                                <span className="metadata-label">Standard:</span>
+                                                                                <span className="metadata-value">{token.metadata?.standard}</span>
                                                                             </div>
-                                                                            <div className="metadata-row">
-                                                                                <span className="metadata-label">Decimals</span>
-                                                                                <span className="metadata-value">{token.metadata?.decimals || 0}</span>
-                                                                            </div>
-                                                                            <div className="metadata-row">
-                                                                                <span className="metadata-label">Fee</span>
-                                                                                <span className="metadata-value">
-                                                                                    {token.metadata?.fee ? formatTokenAmount(token.metadata.fee, token.canisterId) : '0'} {token.metadata?.symbol || 'tokens'}
-                                                                                </span>
-                                                                            </div>
-                                                                            <div className="metadata-row">
-                                                                                <span className="metadata-label">Canister</span>
-                                                                                <span className="metadata-value monospace">{token.canisterId}</span>
-                                                                            </div>
-                                                                            <button 
+                                                                            <button
                                                                                 className="buy-token-button"
                                                                                 onClick={() => handleBuyToken(token.canisterId)}
                                                                             >
-                                                                                <FiShoppingCart /> Buy {token.metadata?.symbol || 'Token'}
+                                                                                <FiShoppingCart />
+                                                                                Buy
                                                                             </button>
                                                                         </div>
                                                                     </div>
