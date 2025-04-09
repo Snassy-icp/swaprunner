@@ -140,6 +140,10 @@ export const Sponsors: React.FC = () => {
         amount: bigint;
         tokenId: string;
         achievementName: string;
+        sponsor: {
+            name: string;
+            logo_url: string | null;
+        };
     } | null>(null);
     const [claimError, setClaimError] = useState<string | null>(null);
 
@@ -438,7 +442,7 @@ export const Sponsors: React.FC = () => {
         setExpandedAchievements(newExpandedAchievements);
     };
 
-    const handleClaim = async (allocationId: string, tokenId: string, achievementName: string) => {
+    const handleClaim = async (allocationId: string, tokenId: string, achievementName: string, sponsor: { name: string; logo_url: string | null }) => {
         try {
             if (claiming) return; // Prevent multiple claims at once
             setClaiming(allocationId);
@@ -454,7 +458,8 @@ export const Sponsors: React.FC = () => {
             setClaimSuccessDetails({
                 amount,
                 tokenId,
-                achievementName
+                achievementName,
+                sponsor
             });
             setShowClaimSuccess(true);
         } catch (err: any) {
@@ -910,7 +915,11 @@ export const Sponsors: React.FC = () => {
                                                                                         handleClaim(
                                                                                             firstAvailableAlloc.allocation.id,
                                                                                             firstAvailableAlloc.allocation.token.canister_id.toString(),
-                                                                                            firstAvailableAlloc.achievement.name
+                                                                                            firstAvailableAlloc.achievement.name,
+                                                                                            {
+                                                                                                name: sponsor.profile.name,
+                                                                                                logo_url: sponsor.profile.logo_url?.[0] || null
+                                                                                            }
                                                                                         );
                                                                                     }
                                                                                 } : undefined}
@@ -1045,7 +1054,11 @@ export const Sponsors: React.FC = () => {
                                                                                                             () => handleClaim(
                                                                                                                 alloc.allocation.id,
                                                                                                                 alloc.allocation.token.canister_id.toString(),
-                                                                                                                allocations[0].achievement.name
+                                                                                                                allocations[0].achievement.name,
+                                                                                                                {
+                                                                                                                    name: sponsor.profile.name,
+                                                                                                                    logo_url: sponsor.profile.logo_url?.[0] || null
+                                                                                                                }
                                                                                                             ) : undefined}
                                                                                                         style={userAchievements.some(a => a.achievement_id === achievementId) && 
                                                                                                                !userClaims.some(claim => claim.allocation.id === alloc.allocation.id) ? 
@@ -1094,6 +1107,7 @@ export const Sponsors: React.FC = () => {
                     amount={claimSuccessDetails.amount}
                     tokenId={claimSuccessDetails.tokenId}
                     achievementName={claimSuccessDetails.achievementName}
+                    sponsor={claimSuccessDetails.sponsor}
                 />
             )}
 

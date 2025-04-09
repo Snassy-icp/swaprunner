@@ -55,6 +55,10 @@ interface ClaimSuccessModalProps {
     amount: bigint;
     tokenId: string;
     achievementName: string;
+    sponsor: {
+        name: string;
+        logo_url: string | null;
+    };
 }
 
 // Add this array near the top of the file, after imports
@@ -426,7 +430,7 @@ const Fireworks: React.FC<FireworksProps> = ({ count = 8 }) => {
     );
 };
 
-export const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, amount, tokenId, achievementName }) => {
+export const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onClose, amount, tokenId, achievementName, sponsor }) => {
     const { tokens } = useTokens();
     const tokenMetadata = tokens.find(t => t.canisterId === tokenId)?.metadata;
     const [isOpen, setIsOpen] = useState(false);
@@ -680,6 +684,10 @@ interface ClaimSuccess {
     amount: bigint;
     tokenId: string;
     achievementName: string;
+    sponsor: {
+        name: string;
+        logo_url: string | null;
+    };
 }
 
 const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details, formatDate, onClaimSuccess, defaultExpanded }) => {
@@ -746,19 +754,19 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
         }
     };
 
-    const handleClaim = async (allocationId: string, tokenId: string) => {
+    const handleClaim = async (allocationId: string, tokenId: string, sponsor: { name: string; logo_url: string | null }) => {
         try {
-            if (claiming) return; // Prevent multiple claims at once
+            if (claiming) return;
             setClaiming(allocationId);
             setError(null);
             
             const claimedAmount = await allocationService.claimAndWithdrawAllocation(allocationId);
             
-            // Show success modal
             setClaimSuccess({
                 amount: claimedAmount,
                 tokenId: tokenId,
-                achievementName: details.name
+                achievementName: details.name,
+                sponsor: sponsor
             });
         } catch (err: any) {
             setError('Failed to claim reward: ' + (err.message || String(err)));
@@ -794,7 +802,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     const firstClaim = availableClaims[0];
-                                    handleClaim(firstClaim.allocation_id, firstClaim.token_canister_id.toString());
+                                    handleClaim(firstClaim.allocation_id, firstClaim.token_canister_id.toString(), firstClaim.sponsor);
                                 }}
                                 role="button"
                                 title="Click to claim first available reward"
@@ -881,7 +889,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                                                             className={`reward-icon has-reward ${claiming === claim.allocation_id ? 'claiming' : ''}`}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                handleClaim(claim.allocation_id, claim.token_canister_id.toString());
+                                                                handleClaim(claim.allocation_id, claim.token_canister_id.toString(), claim.sponsor);
                                                             }}
                                                             role="button"
                                                             title="Click to claim reward"
@@ -916,7 +924,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                                                         className="claim-button"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            handleClaim(claim.allocation_id, claim.token_canister_id.toString());
+                                                            handleClaim(claim.allocation_id, claim.token_canister_id.toString(), claim.sponsor);
                                                         }}
                                                         disabled={claiming !== null}
                                                     >
@@ -956,6 +964,7 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
                     amount={claimSuccess.amount}
                     tokenId={claimSuccess.tokenId}
                     achievementName={claimSuccess.achievementName}
+                    sponsor={claimSuccess.sponsor}
                 />
             )}
         </div>
@@ -1039,8 +1048,8 @@ export const AchievementsSection: React.FC = () => {
         }
     };
 
-    const handleClaim = async (allocationId: string, tokenId: string) => {
-        if (claiming) return; // Prevent multiple claims at once
+    const handleClaim = async (allocationId: string, tokenId: string, sponsor: { name: string; logo_url: string | null }) => {
+        if (claiming) return;
         
         try {
             setClaiming(allocationId);
@@ -1132,7 +1141,7 @@ export const AchievementsSection: React.FC = () => {
                                     e.stopPropagation();
                                     if (availableClaims.length > 0) {
                                         const firstClaim = availableClaims[0];
-                                        handleClaim(firstClaim.allocation_id, firstClaim.token_canister_id.toString());
+                                        handleClaim(firstClaim.allocation_id, firstClaim.token_canister_id.toString(), firstClaim.sponsor);
                                     }
                                 }}
                                 role="button"
