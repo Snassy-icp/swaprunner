@@ -294,3 +294,56 @@
 .me-page .statistics-display .section-header svg.FiGift.claiming {
     animation: spin-claim 2s linear infinite;
 }
+
+.transactions-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.dex-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--background-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.dex-button:hover {
+  background: var(--background-hover);
+  transform: translateY(-2px);
+}
+
+.dex-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.button-description {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.external-link-icon {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.dex-button.icpswap {
+  position: relative;
+  border-color: #6366f1;
+}
+
+.dex-button.kong {
+  position: relative;
+  border-color: #22c55e;
+}
