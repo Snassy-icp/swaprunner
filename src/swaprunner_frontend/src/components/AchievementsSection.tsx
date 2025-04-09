@@ -629,6 +629,20 @@ export const ClaimSuccessModal: React.FC<ClaimSuccessModalProps> = ({ show, onCl
                         <div className="claim-success-amount">
                             You received {formatTokenAmount(amount, tokenId)} {tokenMetadata?.symbol || 'tokens'} for achieving "{achievementName}"!
                         </div>
+                        <div className="sponsor-info">
+                            <span>Sponsored by {sponsor.name}</span>
+                            {sponsor.logo_url && (
+                                <img 
+                                    src={sponsor.logo_url} 
+                                    alt={sponsor.name} 
+                                    className="sponsor-logo"
+                                    onError={(e) => {
+                                        const img = e.target as HTMLImageElement;
+                                        img.src = '/generic_token.svg';
+                                    }}
+                                />
+                            )}
+                        </div>
                     </div>
                     <button className="claim-success-close-button" onClick={onClose}>
                         {celebrationWord}!
