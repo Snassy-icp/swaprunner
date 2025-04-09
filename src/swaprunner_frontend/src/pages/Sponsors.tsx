@@ -519,7 +519,7 @@ export const Sponsors: React.FC = () => {
                                             return <div className="sponsor-logo" />;
                                         })()}
                                     </div>
-                                    <div className="sponsor-info">
+                                    <div className="sponsor-main-info">
                                         <div className="sponsor-name">
                                             <div className="name-with-badge">
                                                 <h3>{sponsor.profile.name}</h3>
