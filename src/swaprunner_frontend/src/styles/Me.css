@@ -176,18 +176,84 @@
 }
 
 .me-page .statistics-display .total-volume .spinner {
-  animation: spin 1s linear infinite;
+  display: inline-block;
+  position: relative;
+  width: 16px;
+  height: 16px;
   margin-left: 8px;
+  transform-origin: center center;
+  animation: spin-in-place 1s linear infinite;
 }
 
-@keyframes spin {
-  100% {
+@keyframes spin-in-place {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
     transform: rotate(360deg);
   }
 }
 
 .me-page .statistics-display .token-statistics-table {
   margin-bottom: 24px;
+}
+
+.allocation-summary {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.allocation-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.allocation-summary-row:last-child {
+  border-bottom: none;
+}
+
+.allocation-summary-label {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.allocation-summary-value {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.allocation-summary-value.positive {
+  color: #22c55e;
+}
+
+.allocation-summary-value .spinner {
+  display: inline-block;
+  position: relative;
+  width: 16px;
+  height: 16px;
+  margin-left: 8px;
+  transform-origin: center center;
+  animation: spin-in-place 1s linear infinite;
+}
+
+.allocation-summary-count {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
 }
 
 .me-page .statistics-display .activity-grid {
