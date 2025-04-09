@@ -34,6 +34,11 @@ interface ClaimableReward {
         min_e8s: bigint;
         max_e8s: bigint;
     };
+    sponsor: {
+        principal: string;
+        name: string;
+        logo_url: string | null;
+    };
 }
 
 interface AchievementCardProps {
@@ -688,6 +693,11 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
             amount_e8s: bigint;
             claimed_at: bigint;
         };
+        sponsor: {
+            principal: string;
+            name: string;
+            logo_url: string | null;
+        };
     }[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -712,10 +722,10 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
             setLoading(true);
             console.log('Loading rewards for achievement:', achievement.achievement_id);
             
-            // Load both available and claimed rewards in parallel
+            // Load both available and claimed rewards in parallel with sponsor information
             const [claims, userClaims] = await Promise.all([
-                allocationService.getAvailableClaims(),
-                allocationService.getUserClaims()
+                allocationService.getAvailableClaimsWithSponsors(),
+                allocationService.getUserClaimsWithSponsors()
             ]);
             
             // Filter available claims for this achievement
@@ -726,8 +736,8 @@ const AchievementCard: React.FC<AchievementCardProps> = ({ achievement, details,
             const filteredClaimedRewards = userClaims.filter(claim => claim.allocation.achievement_id === achievement.achievement_id);
             setClaimedRewards(filteredClaimedRewards);
             
-            console.log('Filtered available claims:', filteredClaims);
-            console.log('Filtered claimed rewards:', filteredClaimedRewards);
+            console.log('Filtered available claims with sponsors:', filteredClaims);
+            console.log('Filtered claimed rewards with sponsors:', filteredClaimedRewards);
         } catch (err: any) {
             console.error('Error in loadRewards:', err);
             setError('Failed to load rewards: ' + (err.message || String(err)));
