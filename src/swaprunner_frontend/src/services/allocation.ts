@@ -61,6 +61,34 @@ interface AllocationClaim {
     claimed_at: bigint;
 }
 
+export interface SponsorInfo {
+    principal: string;
+    name: string;
+    logo_url: string | null;
+}
+
+export interface ClaimWithSponsor {
+    achievement_id: string;
+    allocation_id: string;
+    token_canister_id: string;
+    claimable_amount: {
+        min_e8s: bigint;
+        max_e8s: bigint;
+    };
+    sponsor: SponsorInfo;
+}
+
+export interface UserClaimWithSponsor {
+    allocation: Allocation;
+    claim: {
+        allocation_id: string;
+        user: string;
+        amount_e8s: bigint;
+        claimed_at: bigint;
+    };
+    sponsor: SponsorInfo;
+}
+
 class AllocationService {
     private icrc1Service = new ICRC1Service();
 
@@ -499,6 +527,25 @@ class AllocationService {
         const actor = await backendService.getActor();
         const allAllocations = await actor.get_all_user_allocations();
         return allAllocations.filter((a: { allocation: Allocation }) => a.allocation.creator.toString() === sponsorId);
+    }
+
+    /**
+     * Get all available claims with sponsor information for the current user
+     */
+    async getAvailableClaimsWithSponsors(): Promise<ClaimWithSponsor[]> {
+        const actor = await backendService.getActor();
+        console.log('Getting available claims with sponsors...');
+        const claims = await actor.get_available_claims_with_sponsors();
+        console.log('Available claims with sponsors:', claims);
+        return claims;
+    }
+
+    /**
+     * Get all claims with sponsor information for the current user
+     */
+    async getUserClaimsWithSponsors(): Promise<UserClaimWithSponsor[]> {
+        const actor = await backendService.getActor();
+        return actor.get_user_claims_with_sponsors();
     }
 }
 
