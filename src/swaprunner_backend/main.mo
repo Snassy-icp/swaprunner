@@ -3523,9 +3523,7 @@ shared (deployer) actor class SwapRunner() = this {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous principal not allowed");
         };
-        if (not Principal.isAnonymous(caller)) {
-            return #ok(1234567);
-        };
+
         // Try to claim the allocation, and if successfull withdraw everything in the user's balance
         switch(await claim_allocation_impl(caller, allocation_id)) {
             case (#ok(claim_amount)) {
