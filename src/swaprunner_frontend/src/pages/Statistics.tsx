@@ -531,6 +531,18 @@ export function Statistics() {
               })()}
             </span>
           </div>
+          <div className="allocation-summary-row">
+            <span className="allocation-summary-label">Total Allocations</span>
+            <span className="allocation-summary-count">
+              {tokenAllocationStats.reduce((sum, [_, stats]) => sum + Number(stats.allocation_count), 0).toLocaleString()}
+            </span>
+          </div>
+          <div className="allocation-summary-row">
+            <span className="allocation-summary-label">Total Claims</span>
+            <span className="allocation-summary-count">
+              {tokenAllocationStats.reduce((sum, [_, stats]) => sum + Number(stats.claim_count), 0).toLocaleString()}
+            </span>
+          </div>
         </div>
         <div className="token-statistics-table">
           {loadingAllocationStats ? (
