@@ -377,6 +377,10 @@ export const PoolsPage: React.FC = () => {
                       </div>
                       {expandedPools.has(pool.canisterId) && (
                         <>
+                          <div className="pool-canister-id">
+                            <span className="label">Pool Canister ID:</span>
+                            <span className="value">{pool.canisterId}</span>
+                          </div>
                           {/* Token 0 */}
                           <div className="token-row">
                             <div className="token-info-group">
