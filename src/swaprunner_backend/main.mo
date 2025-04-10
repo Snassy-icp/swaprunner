@@ -54,6 +54,10 @@ shared (deployer) actor class SwapRunner() = this {
     // Stable storage for admin list
     private stable var admins : [Principal] = [];
 
+    // Add stable variables for admin features
+    private stable var isPanicStopped : Bool = false;
+    private stable var psaMessage : Text = "";
+
     // Stable storage for token whitelist
     private stable var tokenMetadataEntries : [(Principal, T.TokenMetadata)] = [];
     private stable var tokenLogoEntries : [(Principal, Text)] = [];
@@ -3598,6 +3602,11 @@ shared (deployer) actor class SwapRunner() = this {
                         case (?a) a;
                     };
 
+                    if (allocation.token.canister_id == Principal.fromText("bd6ig-tiaaa-aaaap-akp7a-cai")) {
+                        currently_claiming.delete(claim_key);
+                        return #err("Snoge rewards temporarily disabled, please check back soon!");
+                    };
+
                     let token_index = getOrCreateUserIndex(allocation.token.canister_id);
 
                     // Verify allocation has enough balance
@@ -4172,4 +4181,32 @@ shared (deployer) actor class SwapRunner() = this {
             userLogins
         )
     };
+
+    // Query methods for admin features
+    public query func isPanicMode() : async Bool {
+        isPanicStopped
+    };
+
+    public query func getPsaMessage() : async Text {
+        psaMessage
+    };
+
+    // Admin-only methods for managing admin features
+    public shared({ caller }) func setPanicMode(enabled: Bool) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        isPanicStopped := enabled;
+        #ok()
+    };
+
+    public shared({ caller }) func setPsaMessage(message: Text) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        psaMessage := message;
+        #ok()
+    };
+
+    // System upgrade hooks
 }
