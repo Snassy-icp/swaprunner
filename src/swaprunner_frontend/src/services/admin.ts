@@ -137,7 +137,10 @@ class AdminService {
   async suspendPrincipal(principal: Principal, status: SuspendedStatus): Promise<void> {
     try {
       const actor = await backendService.getActor();
-      const result = await actor.suspend_principal(principal, status);
+      console.log("suspendPrincipal", principal, status);
+      const backend_status = status.temporary ? { '#Temporary': status.reason } : { '#Permanent': status.reason };
+      console.log("backend_status", backend_status);
+      const result = await actor.suspend_principal(principal, backend_status);
       if ('err' in result) {
         throw new Error(result.err);
       }
