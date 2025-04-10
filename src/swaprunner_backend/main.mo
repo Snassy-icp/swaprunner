@@ -3612,9 +3612,16 @@ shared (deployer) actor class SwapRunner() = this {
                         case (?a) a;
                     };
 
-                    if (allocation.token.canister_id == Principal.fromText("bd6ig-tiaaa-aaaap-akp7a-cai")) {
-                        currently_claiming.delete(claim_key);
-                        return #err("Snoge rewards temporarily disabled, please check back soon!");
+                    // Check if token is suspended
+                    switch (suspendedPrincipals.get(allocation.token.canister_id)) {
+                        case (?status) {
+                            currently_claiming.delete(claim_key);
+                            switch (status) {
+                                case (#Temporary(reason)) return #err("Token rewards temporarily disabled: " # reason);
+                                case (#Permanent(reason)) return #err("Token rewards permanently disabled: " # reason);
+                            };
+                        };
+                        case null {};
                     };
 
                     let token_index = getOrCreateUserIndex(allocation.token.canister_id);
