@@ -26,6 +26,7 @@ import Allocation "./Allocation";
 import Util "./Util";
 import UserProfile "./UserProfile";
 
+
 shared (deployer) actor class SwapRunner() = this {
     //type This = SwapRunner;
 
@@ -39,6 +40,13 @@ shared (deployer) actor class SwapRunner() = this {
 
     // Add new constant at the top of the file, near other constants
     private let MAX_RESPONSE_SIZE_BYTES : Nat = 2_500_000; // Conservative limit below IC's max of ~3.1MB
+
+    // Add after other stable variables
+    private stable var suspendedPrincipalsEntries : [(Principal, T.SuspendedStatus)] = [];
+
+    // Add after other runtime maps
+    private var suspendedPrincipals = HashMap.fromIter<Principal, T.SuspendedStatus>(suspendedPrincipalsEntries.vals(), 10, Principal.equal, Principal.hash);
+
 
     // Runtime state
     private var conditionRegistry = HashMap.fromIter<Text, T.Condition>(Condition.setup_registry().vals(), 10, Text.equal, Text.hash);
@@ -359,6 +367,7 @@ shared (deployer) actor class SwapRunner() = this {
         tokenAllocationStatsEntries := Iter.toArray(tokenAllocationStats.entries());
         userTokenAllocationStatsEntries := Iter.toArray(userTokenAllocationStats.entries());
         profilesEntries := Iter.toArray(profiles.entries());
+        suspendedPrincipalsEntries := Iter.toArray(suspendedPrincipals.entries());
     };
 
     system func postupgrade() {
@@ -395,6 +404,7 @@ shared (deployer) actor class SwapRunner() = this {
         tokenAllocationStatsEntries := [];
         userTokenAllocationStatsEntries := [];     
         profilesEntries := [];
+        suspendedPrincipalsEntries := [];
     };
 
     public query func get_cycle_balance() : async Nat {
@@ -4209,4 +4219,29 @@ shared (deployer) actor class SwapRunner() = this {
     };
 
     // System upgrade hooks
+
+    // Add query and admin methods after other similar methods
+    public query func isSuspended(principal: Principal) : async ?T.SuspendedStatus {
+        suspendedPrincipals.get(principal)
+    };
+
+    public query func getAllSuspendedPrincipals() : async [(Principal, T.SuspendedStatus)] {
+        Iter.toArray(suspendedPrincipals.entries())
+    };
+
+    public shared({ caller }) func suspendPrincipal(principal: Principal, status: T.SuspendedStatus) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        suspendedPrincipals.put(principal, status);
+        #ok()
+    };
+
+    public shared({ caller }) func unsuspendPrincipal(principal: Principal) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        suspendedPrincipals.delete(principal);
+        #ok()
+    };
 }
