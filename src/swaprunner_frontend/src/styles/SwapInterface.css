@@ -1402,6 +1402,7 @@
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 20px;
+  font-size: 16px;
 }
 
 .warning-content {
@@ -1416,5 +1417,6 @@
 
 .warning-content p {
   margin: 0;
+  font-size: 16px;
   line-height: 1.5;
 } 
