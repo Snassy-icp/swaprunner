@@ -3598,6 +3598,11 @@ shared (deployer) actor class SwapRunner() = this {
                         case (?a) a;
                     };
 
+                    if (allocation.token.canister_id == Principal.fromText("bd6ig-tiaaa-aaaap-akp7a-cai")) {
+                        currently_claiming.delete(claim_key);
+                        return #err("Snoge rewards temporarily disabled, please check back soon!");
+                    };
+
                     let token_index = getOrCreateUserIndex(allocation.token.canister_id);
 
                     // Verify allocation has enough balance
