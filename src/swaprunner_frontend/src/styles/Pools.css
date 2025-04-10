@@ -509,4 +509,25 @@
 
 .expanded-action-button .action-text {
   white-space: nowrap;
+}
+
+.pool-canister-id {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  margin: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: monospace;
+}
+
+.pool-canister-id .label {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.pool-canister-id .value {
+  color: var(--text-primary);
+  font-size: 14px;
 } 
