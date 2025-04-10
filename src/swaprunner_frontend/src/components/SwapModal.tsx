@@ -296,18 +296,6 @@ export const SwapModal: React.FC<SwapModalProps> = ({
 
     return (
       <div className="swap-confirmation">
-        {(fromTokenSuspended || toTokenSuspended) && (
-          <div className="warning-item suspended">
-            <div className="warning-message">
-              {fromTokenSuspended && (
-                <p>Warning: The input token is currently {fromTokenDetails?.status.toLowerCase()} suspended. Reason: {fromTokenDetails?.reason}</p>
-              )}
-              {toTokenSuspended && (
-                <p>Warning: The output token is currently {toTokenDetails?.status.toLowerCase()} suspended. Reason: {toTokenDetails?.reason}</p>
-              )}
-            </div>
-          </div>
-        )}
         <SwapWarnings 
           warnings={checkIcpSwapWarnings({
             fromToken: {
