@@ -779,4 +779,29 @@
   letter-spacing: 1px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.confirm-swap-button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  background: var(--primary-color);
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.confirm-swap-button:hover:not(:disabled) {
+  background: var(--primary-color-hover);
+}
+
+.confirm-swap-button:disabled {
+  background: var(--bg-darker);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  opacity: 0.7;
+  border: 1px solid var(--border-color);
 } 

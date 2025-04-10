@@ -290,30 +290,30 @@ export const SwapModal: React.FC<SwapModalProps> = ({
     const fromTokenSuspended = isTokenSuspended(details.fromToken.canisterId);
     const toTokenSuspended = isTokenSuspended(details.toToken.canisterId);
     
-    // Get suspension details if needed
-    const fromTokenDetails = fromTokenSuspended ? getTokenSuspensionDetails(details.fromToken.canisterId) : null;
-    const toTokenDetails = toTokenSuspended ? getTokenSuspensionDetails(details.toToken.canisterId) : null;
+    // Get all warnings
+    const warnings = checkIcpSwapWarnings({
+      fromToken: {
+        canisterId: details.fromToken.canisterId,
+        metadata: fromToken?.metadata
+      },
+      toToken: {
+        canisterId: details.toToken.canisterId,
+        metadata: toToken?.metadata
+      },
+      slippageTolerance: details.slippageTolerance,
+      depositNeeds: details.depositNeeds,
+      tokenSecurity: {
+        isTokenSuspended,
+        getTokenSuspensionDetails
+      }
+    });
+
+    // Check if there are any suspension warnings
+    const hasSuspendedWarning = warnings.some(warning => warning.type === 'suspended');
 
     return (
       <div className="swap-confirmation">
-        <SwapWarnings 
-          warnings={checkIcpSwapWarnings({
-            fromToken: {
-              canisterId: details.fromToken.canisterId,
-              metadata: fromToken?.metadata
-            },
-            toToken: {
-              canisterId: details.toToken.canisterId,
-              metadata: toToken?.metadata
-            },
-            slippageTolerance: details.slippageTolerance,
-            depositNeeds: details.depositNeeds,
-            tokenSecurity: {
-              isTokenSuspended,
-              getTokenSuspensionDetails
-            }
-          })}
-        />
+        <SwapWarnings warnings={warnings} />
         <div className="swap-amounts">
           <div className="amount-row">
             <div className="amount-label">You pay</div>
@@ -400,8 +400,9 @@ export const SwapModal: React.FC<SwapModalProps> = ({
             setView('execute');
             onConfirm();
           }}
+          disabled={hasSuspendedWarning}
         >
-          Confirm {details.dex === 'kong' ? 'Kong' : 'ICPSwap'} Swap
+          {hasSuspendedWarning ? 'Swap Disabled - Token Suspended' : `Confirm ${details.dex === 'kong' ? 'Kong' : 'ICPSwap'} Swap`}
         </button>
       </div>
     );
