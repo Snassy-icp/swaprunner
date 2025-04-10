@@ -3836,6 +3836,12 @@ const createSplitSwapDetails = async() => {
         </div>
       )}
       <div className="swap-box">
+        <div className="psa-warning">
+          <div className="warning-content">
+            <strong>⚠️ Important Notice:</strong>
+            <p>$SNOGE token is currently experiencing issues with its ledger! Please refrain from swapping, depositing, withdrawing or doing any actions with $SNOGE tokens until this issue has been resolved. Thank you!</p>
+          </div>
+        </div>        
         <div className="token-input-panel">
           <div className="input-details">
             <span className="usd-value">
