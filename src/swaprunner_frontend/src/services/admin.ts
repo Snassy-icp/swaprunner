@@ -102,6 +102,32 @@ class AdminService {
       throw error;
     }
   }
+
+  async setPanicMode(enabled: boolean): Promise<void> {
+    try {
+      const actor = await backendService.getActor();
+      const result = await actor.set_panic_mode(enabled);
+      if ('err' in result) {
+        throw new Error(result.err);
+      }
+    } catch (error) {
+      console.error('Error setting panic mode:', error);
+      throw error;
+    }
+  }
+
+  async updatePSA(text: string): Promise<void> {
+    try {
+      const actor = await backendService.getActor();
+      const result = await actor.set_psa_message(text);
+      if ('err' in result) {
+        throw new Error(result.err);
+      }
+    } catch (error) {
+      console.error('Error updating PSA:', error);
+      throw error;
+    }
+  }
 }
 
 export const adminService = new AdminService(); 

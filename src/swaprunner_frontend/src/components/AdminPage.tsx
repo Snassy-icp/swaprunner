@@ -34,6 +34,10 @@ export const AdminPage: React.FC = () => {
   const [accountsError, setAccountsError] = useState<string | null>(null);
   const [newPaymentAccount, setNewPaymentAccount] = useState('');
   const [newCutAccount, setNewCutAccount] = useState('');
+  const [isPanicMode, setIsPanicMode] = useState(false);
+  const [securityLoading, setSecurityLoading] = useState(false);
+  const [psaText, setPsaText] = useState('');
+  const [currentPsaText, setCurrentPsaText] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,6 +54,16 @@ export const AdminPage: React.FC = () => {
           setAdmins(adminList);
           await loadFeeConfig();
           await loadAccounts();
+          
+          // Load security settings
+          const actor = await backendService.getActor();
+          const [panicMode, psa] = await Promise.all([
+            actor.get_panic_mode(),
+            actor.get_psa_message()
+          ]);
+          setIsPanicMode(panicMode);
+          setPsaText(psa);
+          setCurrentPsaText(psa);
         }
       } catch (err) {
         console.error('Error initializing admin page:', err);
@@ -229,6 +243,32 @@ export const AdminPage: React.FC = () => {
       console.error('Failed to update cut account:', err);
     } finally {
       setAccountsLoading(false);
+    }
+  };
+
+  const handlePanicModeChange = async (checked: boolean) => {
+    try {
+      setSecurityLoading(true);
+      await adminService.setPanicMode(checked);
+      setIsPanicMode(checked);
+    } catch (err) {
+      setError('Failed to update panic mode');
+      console.error('Failed to update panic mode:', err);
+    } finally {
+      setSecurityLoading(false);
+    }
+  };
+
+  const handleUpdatePSA = async () => {
+    try {
+      setSecurityLoading(true);
+      await adminService.updatePSA(psaText);
+      setCurrentPsaText(psaText);
+    } catch (err) {
+      setError('Failed to update PSA');
+      console.error('Failed to update PSA:', err);
+    } finally {
+      setSecurityLoading(false);
     }
   };
 
@@ -426,6 +466,52 @@ export const AdminPage: React.FC = () => {
             </button>
           </form>
         )}
+      </div>
+
+      <div className="security-section">
+        <h2>Security Controls</h2>
+        <div className="security-controls">
+          <div className="control-group">
+            <label className="control-label">
+              <input
+                type="checkbox"
+                checked={isPanicMode}
+                onChange={(e) => handlePanicModeChange(e.target.checked)}
+                disabled={securityLoading}
+              />
+              Enable Panic Mode
+            </label>
+            <p className="control-description">
+              When enabled, all trading functionality will be disabled.
+            </p>
+          </div>
+
+          <div className="control-group">
+            <label className="control-label">Public Service Announcement</label>
+            <textarea
+              value={psaText}
+              onChange={(e) => setPsaText(e.target.value)}
+              placeholder="Enter PSA text to display above the swap interface..."
+              disabled={securityLoading}
+              className="psa-input"
+              rows={3}
+            />
+            <button 
+              onClick={handleUpdatePSA}
+              disabled={securityLoading || psaText === currentPsaText}
+              className="update-button"
+            >
+              {securityLoading ? (
+                <>
+                  <FiLoader className="spinning" />
+                  Updating...
+                </>
+              ) : (
+                'Update PSA'
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="price-test-section">

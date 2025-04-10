@@ -4193,16 +4193,16 @@ shared (deployer) actor class SwapRunner() = this {
     };
 
     // Query methods for admin features
-    public query func isPanicMode() : async Bool {
+    public query func get_panic_mode() : async Bool {
         isPanicStopped
     };
 
-    public query func getPsaMessage() : async Text {
+    public query func get_psa_message() : async Text {
         psaMessage
     };
 
     // Admin-only methods for managing admin features
-    public shared({ caller }) func setPanicMode(enabled: Bool) : async Result.Result<(), Text> {
+    public shared({ caller }) func set_panic_mode(enabled: Bool) : async Result.Result<(), Text> {
         if (not isAdmin(caller)) {
             return #err("Unauthorized: Caller is not an admin");
         };
@@ -4210,7 +4210,7 @@ shared (deployer) actor class SwapRunner() = this {
         #ok()
     };
 
-    public shared({ caller }) func setPsaMessage(message: Text) : async Result.Result<(), Text> {
+    public shared({ caller }) func set_psa_message(message: Text) : async Result.Result<(), Text> {
         if (not isAdmin(caller)) {
             return #err("Unauthorized: Caller is not an admin");
         };
@@ -4221,15 +4221,15 @@ shared (deployer) actor class SwapRunner() = this {
     // System upgrade hooks
 
     // Add query and admin methods after other similar methods
-    public query func isSuspended(principal: Principal) : async ?T.SuspendedStatus {
+    public query func is_suspended(principal: Principal) : async ?T.SuspendedStatus {
         suspendedPrincipals.get(principal)
     };
 
-    public query func getAllSuspendedPrincipals() : async [(Principal, T.SuspendedStatus)] {
+    public query func get_all_suspended_principals() : async [(Principal, T.SuspendedStatus)] {
         Iter.toArray(suspendedPrincipals.entries())
     };
 
-    public shared({ caller }) func suspendPrincipal(principal: Principal, status: T.SuspendedStatus) : async Result.Result<(), Text> {
+    public shared({ caller }) func suspend_principal(principal: Principal, status: T.SuspendedStatus) : async Result.Result<(), Text> {
         if (not isAdmin(caller)) {
             return #err("Unauthorized: Caller is not an admin");
         };
@@ -4237,7 +4237,7 @@ shared (deployer) actor class SwapRunner() = this {
         #ok()
     };
 
-    public shared({ caller }) func unsuspendPrincipal(principal: Principal) : async Result.Result<(), Text> {
+    public shared({ caller }) func unsuspend_principal(principal: Principal) : async Result.Result<(), Text> {
         if (not isAdmin(caller)) {
             return #err("Unauthorized: Caller is not an admin");
         };
