@@ -561,14 +561,12 @@ export const SplitSwapModal: React.FC<SplitSwapModalProps> = ({
         </div>
       </div>
 
-      <button 
+      <button
+        onClick={onConfirm}
+        disabled={isTokenSuspended(details?.fromToken?.canisterId) || isTokenSuspended(details?.toToken?.canisterId)}
         className="confirm-swap-button"
-        onClick={() => {
-          setView('execute');
-          onConfirm();
-        }}
       >
-        Confirm Split Swap
+        {isTokenSuspended(details?.fromToken?.canisterId) || isTokenSuspended(details?.toToken?.canisterId) ? 'Swap Disabled - Suspended Token' : 'Confirm Split Swap'}
       </button>
     </div>
   );
