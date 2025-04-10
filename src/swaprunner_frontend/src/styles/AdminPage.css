@@ -421,4 +421,103 @@
 .psa-input:disabled {
   background-color: #f5f5f5;
   cursor: not-allowed;
+}
+
+.suspend-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.suspend-form input[type="text"] {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.suspend-form .principal-input {
+  flex: 2;
+  min-width: 200px;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.suspend-form .reason-input {
+  flex: 3;
+  min-width: 200px;
+}
+
+.suspend-form label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+}
+
+.suspend-button {
+  padding: 8px 16px;
+  background: var(--error-red);
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.suspend-button:hover {
+  opacity: 0.9;
+}
+
+.suspended-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.suspended-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: var(--bg-lighter);
+  border-radius: 4px;
+  gap: 12px;
+}
+
+.suspended-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.suspended-principal {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.suspended-type {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.suspended-type.temporary {
+  background: var(--warning-light);
+  color: var(--warning-text);
+}
+
+.suspended-type.permanent {
+  background: var(--error-light);
+  color: var(--error-red);
+}
+
+.suspended-reason {
+  font-size: 14px;
+  color: var(--text-secondary);
 } 
