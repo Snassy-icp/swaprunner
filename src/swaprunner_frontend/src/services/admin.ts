@@ -138,7 +138,7 @@ class AdminService {
     try {
       const actor = await backendService.getActor();
       console.log("suspendPrincipal", principal, status);
-      const backend_status = status.temporary ? { '#Temporary': status.reason } : { '#Permanent': status.reason };
+      const backend_status = status.temporary ? { Temporary: status.reason } : { Permanent: status.reason };
       console.log("backend_status", backend_status);
       const result = await actor.suspend_principal(principal, backend_status);
       if ('err' in result) {
