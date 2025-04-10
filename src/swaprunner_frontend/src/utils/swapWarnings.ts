@@ -5,6 +5,10 @@ interface SwapWarningParams {
     canisterId: string;
     metadata?: TokenMetadata;
   };
+  toToken: {
+    canisterId: string;
+    metadata?: TokenMetadata;
+  };
   slippageTolerance: number;
   depositNeeds?: {
     fromDeposited: bigint;
@@ -13,15 +17,40 @@ interface SwapWarningParams {
     adjustedAmount: bigint;
     originalAmount: bigint;
   };
+  tokenSecurity: {
+    isTokenSuspended: (tokenId: string) => boolean;
+    getTokenSuspensionDetails: (tokenId: string) => { status: 'Temporary' | 'Permanent'; reason: string; } | null;
+  };
 }
 
 export interface SwapWarning {
-  type: 'frontrun' | 'browserCrash';
+  type: 'frontrun' | 'browserCrash' | 'suspended';
   message: string;
 }
 
 export function checkIcpSwapWarnings(params: SwapWarningParams): SwapWarning[] {
   const warnings: SwapWarning[] = [];
+
+  // Check for suspended tokens
+  if (params.tokenSecurity.isTokenSuspended(params.fromToken.canisterId)) {
+    const details = params.tokenSecurity.getTokenSuspensionDetails(params.fromToken.canisterId);
+    if (details) {
+      warnings.push({
+        type: 'suspended',
+        message: `Warning: The input token is currently ${details.status === 'Temporary' ? 'temporarily' : 'permanently'} suspended. Reason: ${details.reason}`
+      });
+    }
+  }
+
+  if (params.tokenSecurity.isTokenSuspended(params.toToken.canisterId)) {
+    const details = params.tokenSecurity.getTokenSuspensionDetails(params.toToken.canisterId);
+    if (details) {
+      warnings.push({
+        type: 'suspended',
+        message: `Warning: The output token is currently ${details.status === 'Temporary' ? 'temporarily' : 'permanently'} suspended. Reason: ${details.reason}`
+      });
+    }
+  }
 
   // Check for front-running risk when using undeposited funds with high slippage
   if (params.depositNeeds) {
@@ -41,6 +70,27 @@ export function checkIcpSwapWarnings(params: SwapWarningParams): SwapWarning[] {
 
 export function checkKongWarnings(params: SwapWarningParams): SwapWarning[] {
   const warnings: SwapWarning[] = [];
+
+  // Check for suspended tokens
+  if (params.tokenSecurity.isTokenSuspended(params.fromToken.canisterId)) {
+    const details = params.tokenSecurity.getTokenSuspensionDetails(params.fromToken.canisterId);
+    if (details) {
+      warnings.push({
+        type: 'suspended',
+        message: `Warning: The input token is currently ${details.status === 'Temporary' ? 'temporarily' : 'permanently'} suspended. Reason: ${details.reason}`
+      });
+    }
+  }
+
+  if (params.tokenSecurity.isTokenSuspended(params.toToken.canisterId)) {
+    const details = params.tokenSecurity.getTokenSuspensionDetails(params.toToken.canisterId);
+    if (details) {
+      warnings.push({
+        type: 'suspended',
+        message: `Warning: The output token is currently ${details.status === 'Temporary' ? 'temporarily' : 'permanently'} suspended. Reason: ${details.reason}`
+      });
+    }
+  }
 
   // Check for ICRC1 token browser crash risk
   const isICRC1 = params.fromToken.metadata?.standard?.toLowerCase().includes('icrc1');

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiCheck, FiLoader, FiChevronDown } from 'react-icons/fi';
+import { FiX, FiCheck, FiLoader, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { Principal } from '@dfinity/principal';
 import { TokenMetadata } from '../types/token';
 import { useTokens } from '../contexts/TokenContext';
+import { useTokenSecurity } from '../contexts/TokenSecurityContext';
 import { formatTokenAmount } from '../utils/format';
 import '../styles/SwapModal.css';
 import { SwapStep } from '../types/swap';
@@ -151,6 +152,7 @@ export const KongSwapModal: React.FC<KongSwapModalProps> = ({
   const [isExecuting, setIsExecuting] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
   const { tokens } = useTokens();
+  const { isTokenSuspended, getTokenSuspensionDetails } = useTokenSecurity();
   const [loadedLogos, setLoadedLogos] = useState<Record<string, string>>({});
   
   // Use a single timer instance for overall duration
@@ -297,7 +299,15 @@ export const KongSwapModal: React.FC<KongSwapModalProps> = ({
             canisterId: details.fromToken.canisterId,
             metadata: fromToken?.metadata
           },
-          slippageTolerance: details.slippageTolerance
+          toToken: {
+            canisterId: details.toToken.canisterId,
+            metadata: toToken?.metadata
+          },
+          slippageTolerance: details.slippageTolerance,
+          tokenSecurity: {
+            isTokenSuspended,
+            getTokenSuspensionDetails
+          }
         })}
       />
       <div className="swap-amounts">
