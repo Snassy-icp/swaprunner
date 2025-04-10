@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiCheck, FiLoader } from 'react-icons/fi';
 import { formatTokenAmount, parseTokenAmount } from '../utils/format';
+import { useTokenSecurity } from '../contexts/TokenSecurityContext';
 import '../styles/TokenActionModal.css';
 
 export interface TokenActionModalProps {
@@ -36,6 +37,7 @@ export const TokenActionModal: React.FC<TokenActionModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [internalError, setInternalError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const { isTokenSuspended, getTokenSuspensionDetails } = useTokenSecurity();
 
   useEffect(() => {
     if (isOpen) {
@@ -108,6 +110,10 @@ export const TokenActionModal: React.FC<TokenActionModalProps> = ({
   // Use external error if provided, otherwise use internal error
   const displayError = externalError || internalError;
 
+  // Check if token is suspended
+  const isSuspended = isTokenSuspended(tokenId);
+  const suspensionDetails = isSuspended ? getTokenSuspensionDetails(tokenId) : null;
+
   return (
     <div className="modal-overlay">
       <div className="token-action-modal">
@@ -137,13 +143,13 @@ export const TokenActionModal: React.FC<TokenActionModalProps> = ({
                 value={amount}
                 onChange={(e) => handleAmountChange(e.target.value)}
                 placeholder="0.0"
-                disabled={isProcessing || isSuccess || externalError !== null}
+                disabled={isProcessing || isSuccess || externalError !== null || isSuspended}
               />
               <div className="amount-input-right">
                 <button 
                   className="max-button"
                   onClick={handleSetMax}
-                  disabled={isProcessing || isSuccess || externalError !== null}
+                  disabled={isProcessing || isSuccess || externalError !== null || isSuspended}
                 >
                   MAX
                 </button>
@@ -166,7 +172,7 @@ export const TokenActionModal: React.FC<TokenActionModalProps> = ({
           <button
             className={`confirm-button ${isSuccess ? 'success' : ''}`}
             onClick={handleConfirm}
-            disabled={!amount || isProcessing || isSuccess || externalError !== null}
+            disabled={!amount || isProcessing || isSuccess || externalError !== null || isSuspended}
           >
             {isProcessing ? (
               <>
@@ -178,6 +184,8 @@ export const TokenActionModal: React.FC<TokenActionModalProps> = ({
                 <FiCheck />
                 Success!
               </>
+            ) : isSuspended ? (
+              'Action Disabled - Token Suspended'
             ) : (
               action
             )}

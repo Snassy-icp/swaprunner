@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TokenActionModal } from './TokenActionModal';
 import { ICPSwapExecutionService } from '../services/icpswap_execution';
 import { useTokens } from '../contexts/TokenContext';
+import { useTokenSecurity } from '../contexts/TokenSecurityContext';
 import { authService } from '../services/auth';
 import { Principal } from '@dfinity/principal';
 import { statsService } from '../services/stats';
@@ -29,12 +30,14 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
   isToken0,
   refreshBalances
 }) => {
+  const { tokens } = useTokens();
+  const { isTokenSuspended, getTokenSuspensionDetails } = useTokenSecurity();
   const [maxAmount_e8s, setMaxAmount_e8s] = useState<bigint>(BigInt(0));
   const [depositedBalance_e8s, setDepositedBalance_e8s] = useState<bigint>(BigInt(0));
   const [undepositedBalance_e8s, setUndepositedBalance_e8s] = useState<bigint>(BigInt(0));
   const [fee_e8s, setFee_e8s] = useState<bigint>(BigInt(10000)); // Default fee
   const [isDIP20, setIsDIP20] = useState<boolean>(false);
-  const { tokens } = useTokens();
+  const [error, setError] = useState<string | null>(null);
   const executionService = new ICPSwapExecutionService();
 
   useEffect(() => {
@@ -98,6 +101,13 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
       loadBalanceAndFee();
     }
   }, [isOpen, tokenId, poolId, source, tokens, executionService, isToken0]);
+
+  // Check if token is suspended
+  const isSuspended = isTokenSuspended(tokenId);
+  const suspensionDetails = isSuspended ? getTokenSuspensionDetails(tokenId) : null;
+  const suspensionError = isSuspended && suspensionDetails ? 
+    `Token is currently ${suspensionDetails.status === 'Temporary' ? 'temporarily' : 'permanently'} suspended. Reason: ${suspensionDetails.reason}` : 
+    null;
 
   const handleWithdraw = async (amount_e8s: bigint) => {
     // For DIP20 tokens, skip the transfer step and only allow withdrawing deposited balance
@@ -256,6 +266,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
       action="Withdraw"
       balanceLabel={`${source === 'deposited' ? 'Deposited' : source === 'pool' ? 'Total Pool' : source === 'wallet' ? 'Wallet' : 'Undeposited'} Balance`}
       subtractFees={0n}
+      error={suspensionError || error}
     />
   );
 }; 
