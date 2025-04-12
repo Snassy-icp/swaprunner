@@ -153,7 +153,7 @@ class AdminService {
   async removeSuspension(principal: Principal): Promise<void> {
     try {
       const actor = await backendService.getActor();
-      const result = await actor.remove_suspension(principal);
+      const result = await actor.unsuspend_principal(principal);
       if ('err' in result) {
         throw new Error(result.err);
       }
