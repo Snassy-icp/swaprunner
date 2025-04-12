@@ -562,7 +562,10 @@ export const SplitSwapModal: React.FC<SplitSwapModalProps> = ({
       </div>
 
       <button
-        onClick={onConfirm}
+        onClick={() => {
+          setView('execute');
+          onConfirm();
+        }}
         disabled={isTokenSuspended(details?.fromToken?.canisterId) || isTokenSuspended(details?.toToken?.canisterId)}
         className="confirm-swap-button"
       >
