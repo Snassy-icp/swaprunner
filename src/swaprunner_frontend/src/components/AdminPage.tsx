@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Principal } from '@dfinity/principal';
-import { adminService } from '../services/admin';
+import { adminService, SuspendedStatus } from '../services/admin';
 import { authService } from '../services/auth';
 import { priceService } from '../services/price';
 import { backendService } from '../services/backend';
@@ -34,6 +34,16 @@ export const AdminPage: React.FC = () => {
   const [accountsError, setAccountsError] = useState<string | null>(null);
   const [newPaymentAccount, setNewPaymentAccount] = useState('');
   const [newCutAccount, setNewCutAccount] = useState('');
+  const [isPanicMode, setIsPanicMode] = useState(false);
+  const [securityLoading, setSecurityLoading] = useState(false);
+  const [psaText, setPsaText] = useState('');
+  const [currentPsaText, setCurrentPsaText] = useState('');
+  const [suspendedPrincipals, setSuspendedPrincipals] = useState<Map<string, SuspendedStatus>>(new Map());
+  const [newSuspension, setNewSuspension] = useState({
+    principal: '',
+    reason: '',
+    temporary: true
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,10 +56,24 @@ export const AdminPage: React.FC = () => {
         setIsAdmin(adminStatus);
         
         if (adminStatus) {
-          const adminList = await adminService.getAdmins();
+          const [adminList, suspended] = await Promise.all([
+            adminService.getAdmins(),
+            adminService.getSuspendedPrincipals()
+          ]);
           setAdmins(adminList);
+          setSuspendedPrincipals(suspended);
           await loadFeeConfig();
           await loadAccounts();
+          
+          // Load security settings
+          const actor = await backendService.getActor();
+          const [panicMode, psa] = await Promise.all([
+            actor.get_panic_mode(),
+            actor.get_psa_message()
+          ]);
+          setIsPanicMode(panicMode);
+          setPsaText(psa);
+          setCurrentPsaText(psa);
         }
       } catch (err) {
         console.error('Error initializing admin page:', err);
@@ -229,6 +253,73 @@ export const AdminPage: React.FC = () => {
       console.error('Failed to update cut account:', err);
     } finally {
       setAccountsLoading(false);
+    }
+  };
+
+  const handlePanicModeChange = async (checked: boolean) => {
+    try {
+      setSecurityLoading(true);
+      await adminService.setPanicMode(checked);
+      setIsPanicMode(checked);
+    } catch (err) {
+      setError('Failed to update panic mode');
+      console.error('Failed to update panic mode:', err);
+    } finally {
+      setSecurityLoading(false);
+    }
+  };
+
+  const handleUpdatePSA = async () => {
+    try {
+      setSecurityLoading(true);
+      await adminService.updatePSA(psaText);
+      setCurrentPsaText(psaText);
+    } catch (err) {
+      setError('Failed to update PSA');
+      console.error('Failed to update PSA:', err);
+    } finally {
+      setSecurityLoading(false);
+    }
+  };
+
+  const handleSuspendPrincipal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSuspension.principal.trim() || !newSuspension.reason.trim()) return;
+
+    try {
+      const principal = Principal.fromText(newSuspension.principal.trim());
+      await adminService.suspendPrincipal(principal, {
+        temporary: newSuspension.temporary,
+        reason: newSuspension.reason.trim()
+      });
+      
+      // Refresh the list
+      const suspended = await adminService.getSuspendedPrincipals();
+      setSuspendedPrincipals(suspended);
+      
+      // Clear the form
+      setNewSuspension({
+        principal: '',
+        reason: '',
+        temporary: true
+      });
+    } catch (err) {
+      setError('Failed to suspend principal');
+      console.error('Failed to suspend principal:', err);
+    }
+  };
+
+  const handleRemoveSuspension = async (principalId: string) => {
+    try {
+      const principal = Principal.fromText(principalId);
+      await adminService.removeSuspension(principal);
+      
+      // Refresh the list
+      const suspended = await adminService.getSuspendedPrincipals();
+      setSuspendedPrincipals(suspended);
+    } catch (err) {
+      setError('Failed to remove suspension');
+      console.error('Failed to remove suspension:', err);
     }
   };
 
@@ -426,6 +517,102 @@ export const AdminPage: React.FC = () => {
             </button>
           </form>
         )}
+      </div>
+
+      <div className="security-section">
+        <h2>Security Controls</h2>
+        <div className="security-controls">
+          <div className="control-group">
+            <label className="control-label">
+              <input
+                type="checkbox"
+                checked={isPanicMode}
+                onChange={(e) => handlePanicModeChange(e.target.checked)}
+                disabled={securityLoading}
+              />
+              Enable Panic Mode
+            </label>
+            <p className="control-description">
+              Enable to put the system in maintenance mode and prevent all operations.
+            </p>
+          </div>
+
+          <div className="control-group">
+            <label className="control-label">Public Service Announcement</label>
+            <textarea
+              className="psa-input"
+              value={psaText}
+              onChange={(e) => setPsaText(e.target.value)}
+              disabled={securityLoading}
+              placeholder="Enter PSA message to display to users..."
+            />
+            <button
+              className="update-button"
+              onClick={handleUpdatePSA}
+              disabled={securityLoading || psaText === currentPsaText}
+            >
+              {securityLoading ? (
+                <>
+                  <FiLoader className="spinning" />
+                  Updating...
+                </>
+              ) : (
+                'Update PSA'
+              )}
+            </button>
+          </div>
+
+          <div className="control-group">
+            <h3>Suspended Principals</h3>
+            <form onSubmit={handleSuspendPrincipal} className="suspend-form">
+              <input
+                type="text"
+                className="principal-input"
+                value={newSuspension.principal}
+                onChange={(e) => setNewSuspension(prev => ({ ...prev, principal: e.target.value }))}
+                placeholder="Enter Principal ID"
+              />
+              <input
+                type="text"
+                className="reason-input"
+                value={newSuspension.reason}
+                onChange={(e) => setNewSuspension(prev => ({ ...prev, reason: e.target.value }))}
+                placeholder="Reason for suspension"
+              />
+              <label>
+                <input
+                  type="checkbox"
+                  checked={newSuspension.temporary}
+                  onChange={(e) => setNewSuspension(prev => ({ ...prev, temporary: e.target.checked }))}
+                />
+                Temporary
+              </label>
+              <button type="submit" className="suspend-button">
+                Suspend Principal
+              </button>
+            </form>
+            
+            <div className="suspended-list">
+              {Array.from(suspendedPrincipals.entries()).map(([principal, status]) => (
+                <div key={principal} className="suspended-item">
+                  <div className="suspended-info">
+                    <span className="suspended-principal">{principal}</span>
+                    <span className={`suspended-type ${status.temporary ? 'temporary' : 'permanent'}`}>
+                      {status.temporary ? 'Temporary' : 'Permanent'}
+                    </span>
+                    <span className="suspended-reason">{status.reason}</span>
+                  </div>
+                  <button
+                    className="remove-button"
+                    onClick={() => handleRemoveSuspension(principal)}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="price-test-section">

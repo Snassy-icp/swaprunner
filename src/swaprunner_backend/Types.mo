@@ -14,6 +14,11 @@ module {
     //--------------------------------
 
     // Types
+    public type SuspendedStatus = {
+        #Temporary: Text;  // Reason/fix needed
+        #Permanent: Text;  // Ban reason
+    };
+
     public type TokenMetadata = {
         name: ?Text;
         symbol: ?Text;

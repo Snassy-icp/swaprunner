@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { TokenActionModal } from './TokenActionModal';
 import { ICPSwapExecutionService } from '../services/icpswap_execution';
 import { useTokens } from '../contexts/TokenContext';
+import { useTokenSecurity } from '../contexts/TokenSecurityContext';
 import { cacheTokenMetadata } from '../utils/format';
 import { principalToSubAccount } from "@dfinity/utils";
 import { authService } from '../services/auth';
@@ -37,6 +38,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [needsApproval, setNeedsApproval] = useState<boolean>(false);
   const { tokens, isLoadingMetadata } = useTokens();
+  const { isTokenSuspended, getTokenSuspensionDetails } = useTokenSecurity();
   
   // Memoize the execution service
   const executionService = useMemo(() => new ICPSwapExecutionService(), []);
@@ -248,6 +250,13 @@ export const DepositModal: React.FC<DepositModalProps> = ({
     }
   };
 
+  // Check if token is suspended
+  const isSuspended = isTokenSuspended(tokenId);
+  const suspensionDetails = isSuspended ? getTokenSuspensionDetails(tokenId) : null;
+  const suspensionError = isSuspended && suspensionDetails ? 
+    `Token is currently ${suspensionDetails.status === 'Temporary' ? 'temporarily' : 'permanently'} suspended. Reason: ${suspensionDetails.reason}` : 
+    null;
+
   // Only render the TokenActionModal when metadata is loaded
   if (!isMetadataLoaded) {
     return null;
@@ -266,7 +275,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
       action="Deposit"
       balanceLabel={source === 'undeposited' ? "Undeposited Balance" : "Available Balance"}
       subtractFees={source === 'wallet' ? (needsApproval ? fee_e8s * 2n : fee_e8s) : 0n}
-      error={error}
+      error={suspensionError || error}
     />
   );
 }; 

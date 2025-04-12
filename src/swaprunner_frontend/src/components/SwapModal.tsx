@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiCheck, FiLoader, FiChevronDown } from 'react-icons/fi';
+import { FiX, FiCheck, FiLoader, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { Principal } from '@dfinity/principal';
 import { tokenService } from '../services/token';
 import { TokenMetadata } from '../types/token';
@@ -11,6 +11,7 @@ import { useSwapTimer } from '../hooks/useSwapTimer';
 import { TimerDisplay } from './TimerDisplay';
 import { checkIcpSwapWarnings } from '../utils/swapWarnings';
 import { SwapWarnings } from './SwapWarnings';
+import { useTokenSecurity } from '../contexts/TokenSecurityContext';
 
 interface SwapDetails {
   fromToken: {
@@ -178,6 +179,7 @@ export const SwapModal: React.FC<SwapModalProps> = ({
   const [isSuccess, setIsSuccess] = useState(false);
   const { tokens } = useTokens();
   const [loadedLogos, setLoadedLogos] = useState<Record<string, string>>({});
+  const { isTokenSuspended, getTokenSuspensionDetails } = useTokenSecurity();
   
   // Auto-expand steps with details
   useEffect(() => {
@@ -283,109 +285,128 @@ export const SwapModal: React.FC<SwapModalProps> = ({
 
   if (!isOpen) return null;
 
-  const renderConfirmationView = () => (
-    <div className="swap-confirmation">
-      <SwapWarnings 
-        warnings={checkIcpSwapWarnings({
-          fromToken: {
-            canisterId: details.fromToken.canisterId,
-            metadata: fromToken?.metadata
-          },
-          slippageTolerance: details.slippageTolerance,
-          depositNeeds: details.depositNeeds
-        })}
-      />
-      <div className="swap-amounts">
-        <div className="amount-row">
-          <div className="amount-label">You pay</div>
-          <div className="amount-content">
-            <div className="main-amount">
-              {fromTokenInfo.metadata && (
-                <img 
-                  src={loadedLogos[details.fromToken.canisterId] || '/generic_token.svg'}
-                  alt={typeof fromTokenInfo.metadata.symbol === 'string' ? fromTokenInfo.metadata.symbol : Array.isArray(fromTokenInfo.metadata.symbol) ? fromTokenInfo.metadata.symbol[0] : 'Unknown'}
-                  className="token-logo"
-                  onError={(e) => {
-                    const img = e.target as HTMLImageElement;
-                    img.src = fromTokenInfo.metadata?.symbol === 'ICP' ? '/icp_symbol.svg' : '/generic_token.svg';
-                  }}
-                />
-              )}
-              <div className="amount-value">
-                {formatTokenAmount(BigInt(details.fromToken.original_amount_e8s), details.fromToken.canisterId)} {fromTokenInfo.metadata?.symbol || details.fromToken.symbol}
+  const renderConfirmationView = () => {
+    // Check if either token is suspended
+    const fromTokenSuspended = isTokenSuspended(details.fromToken.canisterId);
+    const toTokenSuspended = isTokenSuspended(details.toToken.canisterId);
+    
+    // Get all warnings
+    const warnings = checkIcpSwapWarnings({
+      fromToken: {
+        canisterId: details.fromToken.canisterId,
+        metadata: fromToken?.metadata
+      },
+      toToken: {
+        canisterId: details.toToken.canisterId,
+        metadata: toToken?.metadata
+      },
+      slippageTolerance: details.slippageTolerance,
+      depositNeeds: details.depositNeeds,
+      tokenSecurity: {
+        isTokenSuspended,
+        getTokenSuspensionDetails
+      }
+    });
+
+    // Check if there are any suspension warnings
+    const hasSuspendedWarning = warnings.some(warning => warning.type === 'suspended');
+
+    return (
+      <div className="swap-confirmation">
+        <SwapWarnings warnings={warnings} />
+        <div className="swap-amounts">
+          <div className="amount-row">
+            <div className="amount-label">You pay</div>
+            <div className="amount-content">
+              <div className="main-amount">
+                {fromTokenInfo.metadata && (
+                  <img 
+                    src={loadedLogos[details.fromToken.canisterId] || '/generic_token.svg'}
+                    alt={typeof fromTokenInfo.metadata.symbol === 'string' ? fromTokenInfo.metadata.symbol : Array.isArray(fromTokenInfo.metadata.symbol) ? fromTokenInfo.metadata.symbol[0] : 'Unknown'}
+                    className="token-logo"
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      img.src = fromTokenInfo.metadata?.symbol === 'ICP' ? '/icp_symbol.svg' : '/generic_token.svg';
+                    }}
+                  />
+                )}
+                <div className="amount-value">
+                  {formatTokenAmount(BigInt(details.fromToken.original_amount_e8s), details.fromToken.canisterId)} {fromTokenInfo.metadata?.symbol || details.fromToken.symbol}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="amount-row">
+            <div className="amount-label">You get</div>
+            <div className="amount-content">
+              <div className="main-amount">
+                {toTokenInfo.metadata && (
+                  <img 
+                    src={loadedLogos[details.toToken.canisterId] || '/generic_token.svg'}
+                    alt={typeof toTokenInfo.metadata.symbol === 'string' ? toTokenInfo.metadata.symbol : Array.isArray(toTokenInfo.metadata.symbol) ? toTokenInfo.metadata.symbol[0] : 'Unknown'}
+                    className="token-logo"
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      img.src = toTokenInfo.metadata?.symbol === 'ICP' ? '/icp_symbol.svg' : '/generic_token.svg';
+                    }}
+                  />
+                )}
+                <div className="amount-value">
+                  {formatTokenAmount(BigInt(details.toToken.amount_e8s), details.toToken.canisterId)} {toTokenInfo.metadata?.symbol || details.toToken.symbol}
+                </div>
               </div>
             </div>
           </div>
         </div>
-        <div className="amount-row">
-          <div className="amount-label">You get</div>
-          <div className="amount-content">
-            <div className="main-amount">
-              {toTokenInfo.metadata && (
-                <img 
-                  src={loadedLogos[details.toToken.canisterId] || '/generic_token.svg'}
-                  alt={typeof toTokenInfo.metadata.symbol === 'string' ? toTokenInfo.metadata.symbol : Array.isArray(toTokenInfo.metadata.symbol) ? toTokenInfo.metadata.symbol[0] : 'Unknown'}
-                  className="token-logo"
-                  onError={(e) => {
-                    const img = e.target as HTMLImageElement;
-                    img.src = toTokenInfo.metadata?.symbol === 'ICP' ? '/icp_symbol.svg' : '/generic_token.svg';
-                  }}
-                />
-              )}
-              <div className="amount-value">
-                {formatTokenAmount(BigInt(details.toToken.amount_e8s), details.toToken.canisterId)} {toTokenInfo.metadata?.symbol || details.toToken.symbol}
-              </div>
+
+        <div className="swap-details">
+          <div className="detail-row">
+            <span>Price</span>
+            <span>
+              1 {fromTokenInfo.metadata?.symbol || details.fromToken.symbol} = {details.price} {toTokenInfo.metadata?.symbol || details.toToken.symbol}
+              {details.priceUSD > 0 && ` ($${details.priceUSD.toFixed(2)})`}
+            </span>
+          </div>
+          <div className="detail-row">
+            <span>Liquidity Provider Fee</span>
+            <span>{details.lpFee}</span>
+          </div>
+          <div className="detail-row">
+            <span>Price Impact</span>
+            <span className={details.priceImpact > 2 ? 'warning' : ''}>{details.priceImpact.toFixed(2)}%</span>
+          </div>
+          <div className="detail-row">
+            <span>Slippage tolerance</span>
+            <span>{details.slippageTolerance}%</span>
+          </div>
+          <div className="detail-row">
+            <span>Minimum received</span>
+            <span>
+              {formatTokenAmount(BigInt(details.minimumReceived_e8s), details.toToken.canisterId)} {toTokenInfo.metadata?.symbol || details.toToken.symbol}
+            </span>
+          </div>
+          <div className="detail-row">
+            <span>Transfer fees</span>
+            <div className="fee-details">
+              <span>{details.estimatedFees.from} {fromTokenInfo.metadata?.symbol || details.fromToken.symbol}</span>
+              <span>{details.estimatedFees.to} {toTokenInfo.metadata?.symbol || details.toToken.symbol}</span>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="swap-details">
-        <div className="detail-row">
-          <span>Price</span>
-          <span>
-            1 {fromTokenInfo.metadata?.symbol || details.fromToken.symbol} = {details.price} {toTokenInfo.metadata?.symbol || details.toToken.symbol}
-            {details.priceUSD > 0 && ` ($${details.priceUSD.toFixed(2)})`}
-          </span>
-        </div>
-        <div className="detail-row">
-          <span>Liquidity Provider Fee</span>
-          <span>{details.lpFee}</span>
-        </div>
-        <div className="detail-row">
-          <span>Price Impact</span>
-          <span className={details.priceImpact > 2 ? 'warning' : ''}>{details.priceImpact.toFixed(2)}%</span>
-        </div>
-        <div className="detail-row">
-          <span>Slippage tolerance</span>
-          <span>{details.slippageTolerance}%</span>
-        </div>
-        <div className="detail-row">
-          <span>Minimum received</span>
-          <span>
-            {formatTokenAmount(BigInt(details.minimumReceived_e8s), details.toToken.canisterId)} {toTokenInfo.metadata?.symbol || details.toToken.symbol}
-          </span>
-        </div>
-        <div className="detail-row">
-          <span>Transfer fees</span>
-          <div className="fee-details">
-            <span>{details.estimatedFees.from} {fromTokenInfo.metadata?.symbol || details.fromToken.symbol}</span>
-            <span>{details.estimatedFees.to} {toTokenInfo.metadata?.symbol || details.toToken.symbol}</span>
-          </div>
-        </div>
+        <button 
+          className="confirm-swap-button"
+          onClick={() => {
+            setView('execute');
+            onConfirm();
+          }}
+          disabled={hasSuspendedWarning}
+        >
+          {hasSuspendedWarning ? 'Swap Disabled - Token Suspended' : `Confirm ${details.dex === 'kong' ? 'Kong' : 'ICPSwap'} Swap`}
+        </button>
       </div>
-
-      <button 
-        className="confirm-swap-button"
-        onClick={() => {
-          setView('execute');
-          onConfirm();
-        }}
-      >
-        Confirm {details.dex === 'kong' ? 'Kong' : 'ICPSwap'} Swap
-      </button>
-    </div>
-  );
+    );
+  };
 
   const renderExecutionView = () => {
     // Calculate progress

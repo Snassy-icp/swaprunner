@@ -4,6 +4,11 @@ import { authService } from './auth';
 import { idlFactory } from '../../../declarations/swaprunner_backend/swaprunner_backend.did.js';
 import { backendService } from './backend';
 
+export interface SuspendedStatus {
+  temporary: boolean;
+  reason: string;
+}
+
 class AdminService {
   private agent: HttpAgent | null = null;
   private actor: any = null;
@@ -99,6 +104,72 @@ class AdminService {
       }
     } catch (error) {
       console.error('Error setting token logo:', error);
+      throw error;
+    }
+  }
+
+  async setPanicMode(enabled: boolean): Promise<void> {
+    try {
+      const actor = await backendService.getActor();
+      const result = await actor.set_panic_mode(enabled);
+      if ('err' in result) {
+        throw new Error(result.err);
+      }
+    } catch (error) {
+      console.error('Error setting panic mode:', error);
+      throw error;
+    }
+  }
+
+  async updatePSA(text: string): Promise<void> {
+    try {
+      const actor = await backendService.getActor();
+      const result = await actor.set_psa_message(text);
+      if ('err' in result) {
+        throw new Error(result.err);
+      }
+    } catch (error) {
+      console.error('Error updating PSA:', error);
+      throw error;
+    }
+  }
+
+  async suspendPrincipal(principal: Principal, status: SuspendedStatus): Promise<void> {
+    try {
+      const actor = await backendService.getActor();
+      console.log("suspendPrincipal", principal, status);
+      const backend_status = status.temporary ? { Temporary: status.reason } : { Permanent: status.reason };
+      console.log("backend_status", backend_status);
+      const result = await actor.suspend_principal(principal, backend_status);
+      if ('err' in result) {
+        throw new Error(result.err);
+      }
+    } catch (error) {
+      console.error('Error suspending principal:', error);
+      throw error;
+    }
+  }
+
+  async removeSuspension(principal: Principal): Promise<void> {
+    try {
+      const actor = await backendService.getActor();
+      const result = await actor.remove_suspension(principal);
+      if ('err' in result) {
+        throw new Error(result.err);
+      }
+    } catch (error) {
+      console.error('Error removing suspension:', error);
+      throw error;
+    }
+  }
+
+  async getSuspendedPrincipals(): Promise<Map<string, SuspendedStatus>> {
+    try {
+      const actor = await backendService.getActor();
+      const result = await actor.get_all_suspended_principals();
+      return new Map(result.map(([principal, status]: [Principal, SuspendedStatus]) => [principal.toString(), status]));
+    } catch (error) {
+      console.error('Error getting suspended principals:', error);
       throw error;
     }
   }

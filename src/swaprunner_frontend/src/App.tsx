@@ -6,6 +6,7 @@ import { LogoLoadingProvider } from './contexts/LogoLoadingContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { PoolProvider } from './contexts/PoolContext';
 import { ClaimProvider } from './contexts/ClaimContext';
+import { TokenSecurityProvider } from './contexts/TokenSecurityContext';
 import { AppRoutes } from './routes';
 import { Header } from './components/Header';
 import { analyticsService } from './services/analytics';
@@ -306,18 +307,20 @@ const App: React.FC = () => {
             <LogoLoadingProvider>
               <PoolProvider>
                 <ClaimProvider>
-                  <AchievementProvider>
-                    <RouteTracker />
-                    <AuthStateListener />
-                    <FixedHeader />
-                    <div className="app">
-                      <Header />
-                      <main>
-                        <AppRoutes />
-                      </main>
-                    </div>
-                    <AchievementNotification />
-                  </AchievementProvider>
+                  <TokenSecurityProvider>
+                    <AchievementProvider>
+                      <RouteTracker />
+                      <AuthStateListener />
+                      <FixedHeader />
+                      <div className="app">
+                        <Header />
+                        <main>
+                          <AppRoutes />
+                        </main>
+                      </div>
+                      <AchievementNotification />
+                    </AchievementProvider>
+                  </TokenSecurityProvider>
                 </ClaimProvider>
               </PoolProvider>
             </LogoLoadingProvider>

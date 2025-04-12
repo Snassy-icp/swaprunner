@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TokenActionModal } from './TokenActionModal';
 import { ICPSwapExecutionService } from '../services/icpswap_execution';
 import { useTokens } from '../contexts/TokenContext';
+import { useTokenSecurity } from '../contexts/TokenSecurityContext';
 import { principalToSubAccount } from "@dfinity/utils";
 import { authService } from '../services/auth';
 import { Principal } from '@dfinity/principal';
@@ -28,10 +29,11 @@ export const TransferModal: React.FC<TransferModalProps> = ({
   isToken0,
   refreshBalances
 }) => {
+  const { tokens } = useTokens();
+  const { isTokenSuspended, getTokenSuspensionDetails } = useTokenSecurity();
   const [maxAmount_e8s, setMaxAmount_e8s] = useState<bigint>(BigInt(0));
   const [fee_e8s, setFee_e8s] = useState<bigint>(BigInt(10000)); // Default fee
   const [error, setError] = useState<string | null>(null);
-  const { tokens } = useTokens();
   const executionService = new ICPSwapExecutionService();
 
   useEffect(() => {
@@ -108,6 +110,13 @@ export const TransferModal: React.FC<TransferModalProps> = ({
     }
   };
 
+  // Check if token is suspended
+  const isSuspended = isTokenSuspended(tokenId);
+  const suspensionDetails = isSuspended ? getTokenSuspensionDetails(tokenId) : null;
+  const suspensionError = isSuspended && suspensionDetails ? 
+    `Token is currently ${suspensionDetails.status === 'Temporary' ? 'temporarily' : 'permanently'} suspended. Reason: ${suspensionDetails.reason}` : 
+    null;
+
   return (
     <TokenActionModal
       isOpen={isOpen}
@@ -119,9 +128,9 @@ export const TransferModal: React.FC<TransferModalProps> = ({
       fee_e8s={fee_e8s}
       title="Transfer to Pool"
       action="Transfer"
-      balanceLabel="Available Balance"
-      subtractFees={fee_e8s}
-      error={error}
+      balanceLabel="Undeposited Balance"
+      subtractFees={0n}
+      error={suspensionError || error}
     />
   );
 }; 

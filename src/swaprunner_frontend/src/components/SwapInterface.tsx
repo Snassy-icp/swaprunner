@@ -210,6 +210,7 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
   const [isLoadingToToken, setIsLoadingToToken] = useState(true);
   const { keepTokensInPool, setKeepTokensInPool } = usePool();
   const { setNeedsScan } = useAchievements();
+  const [psaMessage, setPsaMessage] = useState('');
   
   // Set ICP as default fromToken on mount ONLY if no URL parameter
   useEffect(() => {
@@ -232,6 +233,19 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
     });
 
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const loadPsaMessage = async () => {
+      try {
+        const actor = await backendService.getActor();
+        const message = await actor.get_psa_message();
+        setPsaMessage(message);
+      } catch (error) {
+        console.error('Error loading PSA message:', error);
+      }
+    };
+    loadPsaMessage();
   }, []);
 
   // Show time split section automatically when there's an active run
@@ -3836,12 +3850,14 @@ const createSplitSwapDetails = async() => {
         </div>
       )}
       <div className="swap-box">
-        <div className="psa-warning">
-          <div className="warning-content">
-            <strong>⚠️ Important Notice:</strong>
-            <p>$SNOGE token is currently experiencing issues with its ledger! Please refrain from swapping, depositing, withdrawing or doing any actions with $SNOGE tokens until this issue has been resolved. Thank you!</p>
+        {psaMessage.trim() && (
+          <div className="psa-warning">
+            <div className="warning-content">
+              <strong>⚠️ Important Notice:</strong>
+              <p>{psaMessage}</p>
+            </div>
           </div>
-        </div>        
+        )}
         <div className="token-input-panel">
           <div className="input-details">
             <span className="usd-value">

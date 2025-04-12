@@ -26,6 +26,7 @@ import Allocation "./Allocation";
 import Util "./Util";
 import UserProfile "./UserProfile";
 
+
 shared (deployer) actor class SwapRunner() = this {
     //type This = SwapRunner;
 
@@ -40,6 +41,13 @@ shared (deployer) actor class SwapRunner() = this {
     // Add new constant at the top of the file, near other constants
     private let MAX_RESPONSE_SIZE_BYTES : Nat = 2_500_000; // Conservative limit below IC's max of ~3.1MB
 
+    // Add after other stable variables
+    private stable var suspendedPrincipalsEntries : [(Principal, T.SuspendedStatus)] = [];
+
+    // Add after other runtime maps
+    private var suspendedPrincipals = HashMap.fromIter<Principal, T.SuspendedStatus>(suspendedPrincipalsEntries.vals(), 10, Principal.equal, Principal.hash);
+
+
     // Runtime state
     private var conditionRegistry = HashMap.fromIter<Text, T.Condition>(Condition.setup_registry().vals(), 10, Text.equal, Text.hash);
 
@@ -53,6 +61,10 @@ shared (deployer) actor class SwapRunner() = this {
 
     // Stable storage for admin list
     private stable var admins : [Principal] = [];
+
+    // Add stable variables for admin features
+    private stable var isPanicStopped : Bool = false;
+    private stable var psaMessage : Text = "";
 
     // Stable storage for token whitelist
     private stable var tokenMetadataEntries : [(Principal, T.TokenMetadata)] = [];
@@ -355,6 +367,7 @@ shared (deployer) actor class SwapRunner() = this {
         tokenAllocationStatsEntries := Iter.toArray(tokenAllocationStats.entries());
         userTokenAllocationStatsEntries := Iter.toArray(userTokenAllocationStats.entries());
         profilesEntries := Iter.toArray(profiles.entries());
+        suspendedPrincipalsEntries := Iter.toArray(suspendedPrincipals.entries());
     };
 
     system func postupgrade() {
@@ -391,6 +404,7 @@ shared (deployer) actor class SwapRunner() = this {
         tokenAllocationStatsEntries := [];
         userTokenAllocationStatsEntries := [];     
         profilesEntries := [];
+        suspendedPrincipalsEntries := [];
     };
 
     public query func get_cycle_balance() : async Nat {
@@ -3598,9 +3612,16 @@ shared (deployer) actor class SwapRunner() = this {
                         case (?a) a;
                     };
 
-                    if (allocation.token.canister_id == Principal.fromText("bd6ig-tiaaa-aaaap-akp7a-cai")) {
-                        currently_claiming.delete(claim_key);
-                        return #err("Snoge rewards temporarily disabled, please check back soon!");
+                    // Check if token is suspended
+                    switch (suspendedPrincipals.get(allocation.token.canister_id)) {
+                        case (?status) {
+                            currently_claiming.delete(claim_key);
+                            switch (status) {
+                                case (#Temporary(reason)) return #err("Token rewards temporarily disabled: " # reason);
+                                case (#Permanent(reason)) return #err("Token rewards permanently disabled: " # reason);
+                            };
+                        };
+                        case null {};
                     };
 
                     let token_index = getOrCreateUserIndex(allocation.token.canister_id);
@@ -4176,5 +4197,58 @@ shared (deployer) actor class SwapRunner() = this {
             allocation_statuses,
             userLogins
         )
+    };
+
+    // Query methods for admin features
+    public query func get_panic_mode() : async Bool {
+        isPanicStopped
+    };
+
+    public query func get_psa_message() : async Text {
+        psaMessage
+    };
+
+    // Admin-only methods for managing admin features
+    public shared({ caller }) func set_panic_mode(enabled: Bool) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        isPanicStopped := enabled;
+        #ok()
+    };
+
+    public shared({ caller }) func set_psa_message(message: Text) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        psaMessage := message;
+        #ok()
+    };
+
+    // System upgrade hooks
+
+    // Add query and admin methods after other similar methods
+    public query func is_suspended(principal: Principal) : async ?T.SuspendedStatus {
+        suspendedPrincipals.get(principal)
+    };
+
+    public query func get_all_suspended_principals() : async [(Principal, T.SuspendedStatus)] {
+        Iter.toArray(suspendedPrincipals.entries())
+    };
+
+    public shared({ caller }) func suspend_principal(principal: Principal, status: T.SuspendedStatus) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        suspendedPrincipals.put(principal, status);
+        #ok()
+    };
+
+    public shared({ caller }) func unsuspend_principal(principal: Principal) : async Result.Result<(), Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+        suspendedPrincipals.delete(principal);
+        #ok()
     };
 }
