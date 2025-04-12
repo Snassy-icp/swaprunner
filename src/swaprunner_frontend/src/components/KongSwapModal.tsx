@@ -396,7 +396,10 @@ export const KongSwapModal: React.FC<KongSwapModalProps> = ({
       </div>
 
       <button
-        onClick={onConfirm}
+        onClick={() => {
+          setView('execute');
+          onConfirm();
+        }}
         disabled={isTokenSuspended(details.fromToken.canisterId) || isTokenSuspended(details.toToken.canisterId)}
         className="confirm-swap-button"
       >
