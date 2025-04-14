@@ -675,4 +675,14 @@ module {
         error_message: ?Text;
     };
 
+    public type Event = {
+        id: Nat;
+        event_type: EventType;
+        timestamp: Int;
+        user: Principal;
+        details: EventDetails;
+        parent_event: ?Nat;
+        child_events: [Nat];
+    };
+
 }
