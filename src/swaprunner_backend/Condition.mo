@@ -115,33 +115,33 @@ module {
         Debug.print("Evaluating trades_above_amount condition");
         let min_amount = switch (parameters[0]) {
             case (#Nat(amount)) {
-                Debug.print("Min amount parameter: " # Nat.toText(amount));
+                //Debug.print("Min amount parameter: " # Nat.toText(amount));
                 ?amount;
             };
             case _ {
-                Debug.print("Invalid min_amount parameter type");
+                //Debug.print("Invalid min_amount parameter type");
                 null;
             };
         };
         
         switch (min_amount) {
             case null {
-                Debug.print("No valid min_amount parameter");
+                //Debug.print("No valid min_amount parameter");
                 return false;
             };
             case (?min) {
                 let stats = switch (context.user_stats.get(Principal.toText(user))) {
                     case null {
-                        Debug.print("No user stats found");
+                        //Debug.print("No user stats found");
                         return false;
                     };
                     case (?s) {
-                        Debug.print("Found user stats");
+                        //Debug.print("Found user stats");
                         s;
                     };
                 };
                 // TODO: Implement largest trade check when we add that stat
-                Debug.print("trades_above_amount not yet implemented");
+                //Debug.print("trades_above_amount not yet implemented");
                 return false;
             };
         };
@@ -157,11 +157,11 @@ module {
         // Get min_trades parameter
         let min_trades = switch (parameters[0]) {
             case (#Nat(trades)) {
-                Debug.print("Min trades parameter: " # Nat.toText(trades));
+                //Debug.print("Min trades parameter: " # Nat.toText(trades));
                 ?trades;
             };
             case _ {
-                Debug.print("Invalid min_trades parameter type");
+                //Debug.print("Invalid min_trades parameter type");
                 null;
             };
         };
@@ -170,21 +170,21 @@ module {
         let swap_type = if (parameters.size() > 1) {
             switch (parameters[1]) {
                 case (#Text(type_)) {
-                    Debug.print("Swap type parameter: " # type_);
+                    //Debug.print("Swap type parameter: " # type_);
                     if (type_ == "icpswap" or type_ == "kong" or type_ == "split") {
                         ?type_;
                     } else {
-                        Debug.print("Non-specific swap type, using any");
+                        //Debug.print("Non-specific swap type, using any");
                         null;
                     };
                 };
                 case _ {
-                    Debug.print("Invalid swap_type parameter type");
+                    //Debug.print("Invalid swap_type parameter type");
                     null;
                 };
             };
         } else {
-            Debug.print("No swap_type specified, using any");
+            //Debug.print("No swap_type specified, using any");
             null;
         };
 
@@ -192,21 +192,21 @@ module {
         let swap_direction = if (parameters.size() > 2) {
             switch (parameters[2]) {
                 case (#Text(direction)) {
-                    Debug.print("Swap direction parameter: " # direction);
+                    //Debug.print("Swap direction parameter: " # direction);
                     if (direction == "buy" or direction == "sell") {
                         ?direction;
                     } else {
-                        Debug.print("Non-specific direction, using any");
+                        //Debug.print("Non-specific direction, using any");
                         null;
                     };
                 };
                 case _ {
-                    Debug.print("Invalid swap_direction parameter type");
+                    //Debug.print("Invalid swap_direction parameter type");
                     null;
                 };
             };
         } else {
-            Debug.print("No swap_direction specified, using any");
+            //Debug.print("No swap_direction specified, using any");
             null;
         };
 
@@ -214,27 +214,27 @@ module {
         let token_id = if (parameters.size() > 3) {
             switch (parameters[3]) {
                 case (#Text(id)) {
-                    Debug.print("Token ID parameter: " # id);
+                    //Debug.print("Token ID parameter: " # id);
                     if (id != "") {
                         ?id;
                     } else {
-                        Debug.print("Empty token ID, using any");
+                        //Debug.print("Empty token ID, using any");
                         null;
                     };
                 };
                 case _ {
-                    Debug.print("Invalid token_id parameter type");
+                    //Debug.print("Invalid token_id parameter type");
                     null;
                 };
             };
         } else {
-            Debug.print("No token_id specified, using any");
+            //Debug.print("No token_id specified, using any");
             null;
         };
         
         switch (min_trades) {
             case null {
-                Debug.print("No valid min_trades parameter");
+                //Debug.print("No valid min_trades parameter");
                 return false;
             };
             case (?min) {
@@ -244,11 +244,11 @@ module {
                         // Need to use token-specific stats with direction
                         let token_stats = switch (context.user_token_stats.get(getUserTokenStatsKey(user, tid))) {
                             case null {
-                                Debug.print("No token stats found for token: " # tid);
+                                //Debug.print("No token stats found for token: " # tid);
                                 return false;
                             };
                             case (?stats) {
-                                Debug.print("Found token stats");
+                                //Debug.print("Found token stats");
                                 stats;
                             };
                         };
@@ -288,23 +288,23 @@ module {
                             };
                         };
                         let result = trade_count >= min;
-                        Debug.print("Token-specific trade count condition result: " # Bool.toText(result) # 
-                                  " (required: " # Nat.toText(min) # 
-                                  ", actual: " # Nat.toText(trade_count) # 
-                                  ", token: " # tid # 
-                                  ", direction: " # (switch(swap_direction) { case(?d) d; case null "any"; }) #
-                                  ", type: " # (switch(swap_type) { case(?t) t; case null "any"; }));
+//                        Debug.print("Token-specific trade count condition result: " # Bool.toText(result) # 
+//                                  " (required: " # Nat.toText(min) # 
+//                                  ", actual: " # Nat.toText(trade_count) # 
+//                                  ", token: " # tid # 
+//                                  ", direction: " # (switch(swap_direction) { case(?d) d; case null "any"; }) #
+//                                  ", type: " # (switch(swap_type) { case(?t) t; case null "any"; }));
                         return result;
                     };
                     case (?tid, null) {
                         // Need to use token-specific stats without direction
                         let token_stats = switch (context.user_token_stats.get(getUserTokenStatsKey(user, tid))) {
                             case null {
-                                Debug.print("No token stats found for token: " # tid);
+                                //Debug.print("No token stats found for token: " # tid);
                                 return false;
                             };
                             case (?stats) {
-                                Debug.print("Found token stats");
+                                //Debug.print("Found token stats");
                                 stats;
                             };
                         };
@@ -327,22 +327,22 @@ module {
                             };
                         };
                         let result = trade_count >= min;
-                        Debug.print("Token-specific trade count condition result: " # Bool.toText(result) # 
-                                  " (required: " # Nat.toText(min) # 
-                                  ", actual: " # Nat.toText(trade_count) # 
-                                  ", token: " # tid # 
-                                  ", type: " # (switch(swap_type) { case(?t) t; case null "any"; }));
+                        //Debug.print("Token-specific trade count condition result: " # Bool.toText(result) # 
+                        //          " (required: " # Nat.toText(min) # 
+                        //          ", actual: " # Nat.toText(trade_count) # 
+                        //          ", token: " # tid # 
+                        //          ", type: " # (switch(swap_type) { case(?t) t; case null "any"; }));
                         return result;
                     };
                     case (_, _) {
                         // Use global user stats
                         let stats = switch (context.user_stats.get(Principal.toText(user))) {
                             case null {
-                                Debug.print("No user stats found");
+                                //Debug.print("No user stats found");
                                 return false;
                             };
                             case (?s) {
-                                Debug.print("Found user stats");
+                                //Debug.print("Found user stats");
                                 s;
                             };
                         };
@@ -352,34 +352,34 @@ module {
                             case (?type_) {
                                 switch (type_) {
                                     case "icpswap" {
-                                        Debug.print("Checking ICPSwap trades: " # Nat.toText(stats.icpswap_swaps));
+                                        //Debug.print("Checking ICPSwap trades: " # Nat.toText(stats.icpswap_swaps));
                                         stats.icpswap_swaps;
                                     };
                                     case "kong" {
-                                        Debug.print("Checking Kong trades: " # Nat.toText(stats.kong_swaps));
+                                        //Debug.print("Checking Kong trades: " # Nat.toText(stats.kong_swaps));
                                         stats.kong_swaps;
                                     };
                                     case "split" {
-                                        Debug.print("Checking split trades: " # Nat.toText(stats.split_swaps));
+                                        //Debug.print("Checking split trades: " # Nat.toText(stats.split_swaps));
                                         stats.split_swaps;
                                     };
                                     case _ {
-                                        Debug.print("Invalid swap type: " # type_ # ", using total trades");
+                                        //Debug.print("Invalid swap type: " # type_ # ", using total trades");
                                         stats.total_swaps;
                                     };
                                 };
                             };
                             case null {
-                                Debug.print("No swap type specified, using total trades: " # Nat.toText(stats.total_swaps));
+                                //Debug.print("No swap type specified, using total trades: " # Nat.toText(stats.total_swaps));
                                 stats.total_swaps;
                             };
                         };
 
                         let result = trade_count >= min;
-                        Debug.print("Global trade count condition result: " # Bool.toText(result) # 
-                                  " (required: " # Nat.toText(min) # 
-                                  ", actual: " # Nat.toText(trade_count) # 
-                                  ", type: " # (switch(swap_type) { case(?t) t; case null "any"; }));
+                        //Debug.print("Global trade count condition result: " # Bool.toText(result) # 
+                        //          " (required: " # Nat.toText(min) # 
+                        //          ", actual: " # Nat.toText(trade_count) # 
+                        //          ", type: " # (switch(swap_type) { case(?t) t; case null "any"; }));
                         return result;
                     };
                 };
@@ -392,25 +392,25 @@ module {
         user: Principal,
         parameters: [{#Principal: Principal; #Nat: Nat; #Text: Text}]
     ) : async Bool {
-        Debug.print("Evaluating token_trade_volume condition");
+        //ebug.print("Evaluating token_trade_volume condition");
         let token_id = switch (parameters[0]) {
             case (#Text(id)) {
-                Debug.print("Token ID parameter: " # id);
+                //Debug.print("Token ID parameter: " # id);
                 ?id;
             };
             case _ {
-                Debug.print("Invalid token_id parameter type");
+                //Debug.print("Invalid token_id parameter type");
                 null;
             };
         };
         
         let min_volume = switch (parameters[1]) {
             case (#Nat(volume)) {
-                Debug.print("Min volume parameter: " # Nat.toText(volume));
+                //Debug.print("Min volume parameter: " # Nat.toText(volume));
                 ?volume;
             };
             case _ {
-                Debug.print("Invalid min_volume parameter type");
+                //Debug.print("Invalid min_volume parameter type");
                 null;
             };
         };
@@ -419,21 +419,21 @@ module {
         let swap_type = if (parameters.size() > 2) {
             switch (parameters[2]) {
                 case (#Text(type_)) {
-                    Debug.print("Swap type parameter: " # type_);
+                    //Debug.print("Swap type parameter: " # type_);
                     if (type_ == "icpswap" or type_ == "kong" or type_ == "split") {
                         ?type_;
                     } else {
-                        Debug.print("Non-specific swap type, using any");
+                        //Debug.print("Non-specific swap type, using any");
                         null;
                     };
                 };
                 case _ {
-                    Debug.print("Invalid swap_type parameter type");
+                    //Debug.print("Invalid swap_type parameter type");
                     null;
                 };
             };
         } else {
-            Debug.print("No swap_type specified, using any");
+            //Debug.print("No swap_type specified, using any");
             null;
         };
 
@@ -441,21 +441,21 @@ module {
         let swap_direction = if (parameters.size() > 3) {
             switch (parameters[3]) {
                 case (#Text(direction)) {
-                    Debug.print("Swap direction parameter: " # direction);
+                    //Debug.print("Swap direction parameter: " # direction);
                     if (direction == "buy" or direction == "sell") {
                         ?direction;
                     } else {
-                        Debug.print("Non-specific direction, using any");
+                        //Debug.print("Non-specific direction, using any");
                         null;
                     };
                 };
                 case _ {
-                    Debug.print("Invalid swap_direction parameter type");
+                    //Debug.print("Invalid swap_direction parameter type");
                     null;
                 };
             };
         } else {
-            Debug.print("No swap_direction specified, using any");
+            //Debug.print("No swap_direction specified, using any");
             null;
         };
         
@@ -463,11 +463,11 @@ module {
             case (?id, ?min) {
                 let stats = switch (context.user_token_stats.get(getUserTokenStatsKey(user, id))) {
                     case null {
-                        Debug.print("No token stats found for token: " # id);
+                        //Debug.print("No token stats found for token: " # id);
                         return false;
                     };
                     case (?stats) {
-                        Debug.print("Found token stats");
+                        //Debug.print("Found token stats");
                         stats;
                     };
                 };
@@ -517,16 +517,16 @@ module {
                 };
 
                 let result = total_volume >= min;
-                Debug.print("Token volume condition result: " # Bool.toText(result) # 
-                          " (required: " # Nat.toText(min) # 
-                          ", actual: " # Nat.toText(total_volume) # 
-                          ", token: " # id # 
-                          ", direction: " # (switch(swap_direction) { case(?d) d; case null "any"; }) #
-                          ", type: " # (switch(swap_type) { case(?t) t; case null "any"; }));
+                //Debug.print("Token volume condition result: " # Bool.toText(result) # 
+                //          " (required: " # Nat.toText(min) # 
+                //          ", actual: " # Nat.toText(total_volume) # 
+                //          ", token: " # id # 
+                //          ", direction: " # (switch(swap_direction) { case(?d) d; case null "any"; }) #
+                //          ", type: " # (switch(swap_type) { case(?t) t; case null "any"; }));
                 return result;
             };
             case _ {
-                Debug.print("Missing token_id or min_volume parameter");
+                //Debug.print("Missing token_id or min_volume parameter");
                 return false;
             };
         };
@@ -537,38 +537,38 @@ module {
         user: Principal,
         parameters: [{#Principal: Principal; #Nat: Nat; #Text: Text}]
     ) : async Bool {
-        Debug.print("Evaluating login_count condition");
+        //Debug.print("Evaluating login_count condition");
         let min_logins = switch (parameters[0]) {
             case (#Nat(logins)) {
-                Debug.print("Min logins parameter: " # Nat.toText(logins));
+                //Debug.print("Min logins parameter: " # Nat.toText(logins));
                 ?logins;
             };
             case _ {
-                Debug.print("Invalid min_logins parameter type");
+                //Debug.print("Invalid min_logins parameter type");
                 null;
             };
         };
         
         switch (min_logins) {
             case null {
-                Debug.print("No valid min_logins parameter");
+                //Debug.print("No valid min_logins parameter");
                 return false;
             };
             case (?min) {
                 let login_count = switch (context.user_logins.get(Principal.toText(user))) {
                     case null {
-                        Debug.print("No login count found");
+                        //Debug.print("No login count found");
                         return false;
                     };
                     case (?count) {
-                        Debug.print("Found login count: " # Nat.toText(count));
+                        //Debug.print("Found login count: " # Nat.toText(count));
                         count;
                     };
                 };
                 let result = login_count >= min;
-                Debug.print("Login count condition result: " # Bool.toText(result) # 
-                          " (required: " # Nat.toText(min) # 
-                          ", actual: " # Nat.toText(login_count) # ")");
+                //Debug.print("Login count condition result: " # Bool.toText(result) # 
+                //          " (required: " # Nat.toText(min) # 
+                //          ", actual: " # Nat.toText(login_count) # ")");
                 return result;
             };
         };
@@ -581,18 +581,18 @@ module {
         usage: T.ConditionUsage,
         registry: HashMap.HashMap<Text, T.Condition>
     ) : async Bool {
-        Debug.print("Evaluating condition: " # usage.condition_key # " for user: " # Principal.toText(user));
+        //Debug.print("Evaluating condition: " # usage.condition_key # " for user: " # Principal.toText(user));
         
         let condition = switch (registry.get(usage.condition_key)) {
             case null {
-                Debug.print("Invalid condition key: " # usage.condition_key);
+                //Debug.print("Invalid condition key: " # usage.condition_key);
                 return false; // Invalid condition key
             };
             case (?c) c;
         };
 
-        Debug.print("Found condition in registry: " # condition.name);
-        Debug.print("Parameters received: " # debug_show(usage.parameters));
+        //Debug.print("Found condition in registry: " # condition.name);
+        //Debug.print("Parameters received: " # debug_show(usage.parameters));
 
         switch (usage.condition_key) {
             case "trades_above_amount" {
@@ -608,7 +608,7 @@ module {
                 await evaluate_login_count(context, user, usage.parameters);
             };
             case _ {
-                Debug.print("Unknown condition type: " # usage.condition_key);
+                //Debug.print("Unknown condition type: " # usage.condition_key);
                 return false; // Unknown condition
             };
         };

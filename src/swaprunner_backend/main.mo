@@ -1330,7 +1330,7 @@ shared (deployer) actor class SwapRunner() = this {
         tokenMetadataEntries := [];
         tokenLogoEntries := [];
 
-        Debug.print("Whitelist cleared");
+        //Debug.print("Whitelist cleared");
         #ok()
     };
 
@@ -1342,11 +1342,11 @@ shared (deployer) actor class SwapRunner() = this {
     // Add a system timer callback function
     // The proper syntax for this is private func processNextBatch<system>() : async ()
     private func processNextBatch<system>() : async () {
-        Debug.print("Starting batch processing...");
+        //Debug.print("Starting batch processing...");
         let nextBatchSize = 10;
         
         if (not importProgress.is_running) {
-            Debug.print("Import not running, exiting");
+            //Debug.print("Import not running, exiting");
             return;
         };
 
@@ -1356,7 +1356,7 @@ shared (deployer) actor class SwapRunner() = this {
             
             switch (tokenListResult) {
                 case (#ok(tokenList)) {
-                    Debug.print("Fetched token list of size: " # debug_show(tokenList.size()));
+                    //Debug.print("Fetched token list of size: " # debug_show(tokenList.size()));
                     
                     // Only update total_tokens if it's not already set
                     if (importProgress.total_tokens == 0) {
@@ -1390,11 +1390,11 @@ shared (deployer) actor class SwapRunner() = this {
                     let batchSize = Nat.min(nextBatchSize, remainingTokens);
                     let batch = Array.subArray<T.ICPSwapToken>(tokenList, startIndex, batchSize);
                     
-                    Debug.print("Processing " # debug_show(batchSize) # " tokens starting from index " # debug_show(startIndex));
+                    //Debug.print("Processing " # debug_show(batchSize) # " tokens starting from index " # debug_show(startIndex));
                     
                     // If no more tokens to process, mark import as complete
                     if (batchSize == 0) {
-                        Debug.print("No more tokens to process, marking import as complete");
+                        //Debug.print("No more tokens to process, marking import as complete");
                         importProgress := {
                             last_processed = importProgress.last_processed;
                             total_tokens = importProgress.total_tokens;
@@ -1410,12 +1410,12 @@ shared (deployer) actor class SwapRunner() = this {
                     var batchProcessed = false;
                     
                     for (token in batch.vals()) {
-                        Debug.print("Processing token: " # debug_show(token.canisterId));
+                        //Debug.print("Processing token: " # debug_show(token.canisterId));
                         batchProcessed := true;
                         
                         try {
                             if (not isSupportedStandard(token.standard)) {
-                                Debug.print("Skipping token with unsupported standard: " # token.canisterId # " (standard: " # token.standard # ")");
+                                //Debug.print("Skipping token with unsupported standard: " # token.canisterId # " (standard: " # token.standard # ")");
                                 importProgress := {
                                     last_processed = ?token.canisterId;
                                     total_tokens = importProgress.total_tokens;
@@ -1426,7 +1426,7 @@ shared (deployer) actor class SwapRunner() = this {
                                     is_running = true;
                                 }
                             } else if (isWhitelisted(Principal.fromText(token.canisterId))) {
-                                Debug.print("Token already whitelisted, skipping: " # token.canisterId);
+                                //Debug.print("Token already whitelisted, skipping: " # token.canisterId);
                                 importProgress := {
                                     last_processed = ?token.canisterId;
                                     total_tokens = importProgress.total_tokens;
@@ -1452,7 +1452,7 @@ shared (deployer) actor class SwapRunner() = this {
                                         case (#err(_)) { };
                                     };
                                 } catch (e) {
-                                    Debug.print("Failed to fetch logo for token: " # token.canisterId);
+                                    //Debug.print("Failed to fetch logo for token: " # token.canisterId);
                                 };
 
                                 // Add token to whitelist with complete metadata from ICPSwap
@@ -1482,7 +1482,7 @@ shared (deployer) actor class SwapRunner() = this {
                                         };
                                     };
                                     case (#err(e)) {
-                                        Debug.print("Failed to add token: " # token.canisterId # " Error: " # e);
+                                        //Debug.print("Failed to add token: " # token.canisterId # " Error: " # e);
                                         importProgress := {
                                             last_processed = ?token.canisterId;
                                             total_tokens = importProgress.total_tokens;
@@ -1496,7 +1496,7 @@ shared (deployer) actor class SwapRunner() = this {
                                 };
                             };
                         } catch (e) {
-                            Debug.print("Error processing token: " # token.canisterId # " Error: " # Error.message(e));
+                            //Debug.print("Error processing token: " # token.canisterId # " Error: " # Error.message(e));
                             importProgress := {
                                 last_processed = ?token.canisterId;
                                 total_tokens = importProgress.total_tokens;
@@ -1511,11 +1511,11 @@ shared (deployer) actor class SwapRunner() = this {
 
                     // Schedule next batch if there are more tokens to process
                     if (importProgress.processed_count < importProgress.total_tokens and batchProcessed) {
-                        Debug.print("Scheduling next batch...");
+                        //Debug.print("Scheduling next batch...");
                         // The proper syntax for this is ignore Timer.setTimer<system>(#seconds 1, processNextBatch);
                         ignore Timer.setTimer<system>(#seconds 1, processNextBatch);
                     } else {
-                        Debug.print("Import completed!");
+                        //Debug.print("Import completed!");
                         importProgress := {
                             last_processed = importProgress.last_processed;
                             total_tokens = importProgress.total_tokens;
@@ -1528,7 +1528,7 @@ shared (deployer) actor class SwapRunner() = this {
                     };
                 };
                 case (#err(error)) {
-                    Debug.print("Error fetching token list: " # error);
+                    //Debug.print("Error fetching token list: " # error);
                     importProgress := {
                         last_processed = importProgress.last_processed;
                         total_tokens = importProgress.total_tokens;
@@ -1541,7 +1541,7 @@ shared (deployer) actor class SwapRunner() = this {
                 };
             };
         } catch (e) {
-            Debug.print("Error in processNextBatch: " # Error.message(e));
+            //Debug.print("Error in processNextBatch: " # Error.message(e));
             importProgress := {
                 last_processed = importProgress.last_processed;
                 total_tokens = importProgress.total_tokens;
@@ -1947,7 +1947,7 @@ shared (deployer) actor class SwapRunner() = this {
                         is_running = currentProgress.is_running;
                         last_processed = currentProgress.last_processed;
                     };
-                    Debug.print("Error updating logo for token " # Principal.toText(canisterId) # ": " # Error.message(e));
+                    //Debug.print("Error updating logo for token " # Principal.toText(canisterId) # ": " # Error.message(e));
                 };
 
                 processed += 1;
@@ -1995,7 +1995,7 @@ shared (deployer) actor class SwapRunner() = this {
             };
 
         } catch (e) {
-            Debug.print("Error in processNextLogoBatch: " # Error.message(e));
+            //Debug.print("Error in processNextLogoBatch: " # Error.message(e));
             logoUpdateProgress := {
                 total_tokens = logoUpdateProgress.total_tokens;
                 processed_count = logoUpdateProgress.processed_count;
@@ -2102,7 +2102,7 @@ shared (deployer) actor class SwapRunner() = this {
         // Reset stable storage entries
         tokenMetadataEntriesICPSwap := [];
 
-        Debug.print("ICPSwap token list cleared");
+        //Debug.print("ICPSwap token list cleared");
         #ok()
     };
 
@@ -2142,13 +2142,13 @@ shared (deployer) actor class SwapRunner() = this {
             });
         };
 
-        Debug.print("Logo cache cleared");
+        //Debug.print("Logo cache cleared");
         #ok()
     };
 
     // Refresh token metadata for a given token
     public shared({caller}) func refresh_token_metadata(ledger_id: Principal) : async Result.Result<T.TokenMetadata, Text> {
-        Debug.print("Refreshing token metadata for " # Principal.toText(ledger_id));
+        //Debug.print("Refreshing token metadata for " # Principal.toText(ledger_id));
         if (not isAdmin(caller)) {
             return #err("Unauthorized: Caller is not an admin");
         };
@@ -2157,7 +2157,7 @@ shared (deployer) actor class SwapRunner() = this {
     };
 
     private func do_refresh_token_metadata(ledger_id: Principal) : async Result.Result<T.TokenMetadata, Text> {
-        Debug.print("Actually refreshing token metadata for " # Principal.toText(ledger_id));
+        //Debug.print("Actually refreshing token metadata for " # Principal.toText(ledger_id));
         // First determine which map contains this token and get existing metadata
         let (sourceMap, existingMetadata) = switch (tokenMetadata.get(ledger_id)) {
             case (?metadata) { (#Whitelist, metadata) };
@@ -2523,7 +2523,7 @@ shared (deployer) actor class SwapRunner() = this {
                             };
                         };
                         case (#err(errorMsg)) {
-                            Debug.print("Failed to refresh token " # Principal.toText(canisterId) # ": " # errorMsg);
+                            //Debug.print("Failed to refresh token " # Principal.toText(canisterId) # ": " # errorMsg);
                             currentProgress := {
                                 total_tokens = currentProgress.total_tokens;
                                 processed_count = currentProgress.processed_count;
@@ -2536,7 +2536,7 @@ shared (deployer) actor class SwapRunner() = this {
                         };
                     };
                 } catch (e) {
-                    Debug.print("Error refreshing token " # Principal.toText(canisterId) # ": " # Error.message(e));
+                    //Debug.print("Error refreshing token " # Principal.toText(canisterId) # ": " # Error.message(e));
                     currentProgress := {
                         total_tokens = currentProgress.total_tokens;
                         processed_count = currentProgress.processed_count;
@@ -2580,7 +2580,7 @@ shared (deployer) actor class SwapRunner() = this {
                 metadataRefreshProgress := currentProgress;
             };
         } catch (e) {
-            Debug.print("Error in processNextMetadataBatch: " # Error.message(e));
+            //Debug.print("Error in processNextMetadataBatch: " # Error.message(e));
             metadataRefreshProgress := {
                 total_tokens = metadataRefreshProgress.total_tokens;
                 processed_count = metadataRefreshProgress.processed_count;
@@ -3319,7 +3319,7 @@ shared (deployer) actor class SwapRunner() = this {
 
             return result;
         } catch (e) {
-            Debug.print("Error in scan_for_new_achievements: " # Error.message(e));
+            //Debug.print("Error in scan_for_new_achievements: " # Error.message(e));
             return {
                 new_achievements = [];
                 available_claims = [];
@@ -3560,7 +3560,7 @@ shared (deployer) actor class SwapRunner() = this {
 
                 // Add token to user's wallet
                 ignore add_wallet_token_impl(caller, Principal.toText(allocation.token.canister_id));
-                Debug.print("Added token " # Principal.toText(allocation.token.canister_id) # " to user's wallet");
+                //Debug.print("Added token " # Principal.toText(allocation.token.canister_id) # " to user's wallet");
 
                 // Continue with withdrawal
                 await withdraw_from_balance_impl(caller, allocation.token.canister_id, claim_amount)
