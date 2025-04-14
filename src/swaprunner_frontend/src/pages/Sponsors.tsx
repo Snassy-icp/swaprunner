@@ -490,6 +490,9 @@ export const Sponsors: React.FC = () => {
         <div className="sponsors-page">
             <div className="swap-box">
                 <h1>Sponsors</h1>
+                <div className="sponsors-message">
+                    <p>We are incredibly grateful to our amazing sponsors who make these rewards possible. Their generous contributions help create an engaging and rewarding experience for our community. Through their support, we can offer valuable incentives that recognize and celebrate your achievements.</p>
+                </div>
                 {!isInitialLoading && (
                     <div className="sponsors-totals">
                         <div className="total-usd">
