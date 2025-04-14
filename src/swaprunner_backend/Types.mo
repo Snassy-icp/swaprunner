@@ -527,5 +527,93 @@ module {
         name: Text;
         logo_url: ?Text;
     };
+    
+    //--------------------------------  
+    // Types for Archive
+    //--------------------------------
+
+    public type EventType = {
+        #SwapStarted;
+        #SwapCompleted;
+        #SwapFailed;
+        #TransferStarted;
+        #TransferCompleted;
+        #TransferFailed;
+        #ApprovalStarted;
+        #ApprovalCompleted;
+        #ApprovalFailed;
+        #DepositStarted;
+        #DepositCompleted;
+        #DepositFailed;
+        #WithdrawStarted;
+        #WithdrawCompleted;
+        #WithdrawFailed;
+    };
+
+    public type TokenValue = {
+        token_canister: Principal;
+        amount_e8s: Nat;
+        icp_value_e8s: Nat;  // Value in ICP at time of event
+        usd_value_e8s: Nat;  // Value in USD (e8s) at time of event
+    };
+
+    public type SwapDetails = {
+        dex: Text;  // "ICPSwap" or "Kong"
+        token_in: TokenValue;
+        token_out: TokenValue;
+        error_message: ?Text;
+    };
+
+    public type TransferDetails = {
+        token: TokenValue;
+        from: Principal;
+        to: Principal;
+        error_message: ?Text;
+    };
+
+    public type ApprovalDetails = {
+        token: TokenValue;
+        from: Principal;
+        spender: Principal;
+        error_message: ?Text;
+    };
+
+    public type DepositDetails = {
+        token: TokenValue;
+        user: Principal;
+        error_message: ?Text;
+    };
+
+    public type WithdrawDetails = {
+        token: TokenValue;
+        user: Principal;
+        error_message: ?Text;
+    };
+
+    public type EventDetails = {
+        #Swap: SwapDetails;
+        #Transfer: TransferDetails;
+        #Approval: ApprovalDetails;
+        #Deposit: DepositDetails;
+        #Withdraw: WithdrawDetails;
+    };
+
+    public type Event = {
+        id: Nat;
+        event_type: EventType;
+        timestamp: Int;  // Nanoseconds since 1970-01-01
+        user: Principal;
+        details: EventDetails;
+        related_events: [Nat];  // IDs of related events (e.g. SwapStarted -> SwapCompleted)
+    };
+
+    // For events that are still in progress or failed
+    public type InflightEvent = {
+        event: Event;
+        status: {
+            #InProgress;
+            #Failed: Text;  // Error message
+        };
+    };
 
 }
