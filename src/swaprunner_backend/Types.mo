@@ -533,9 +533,17 @@ module {
     //--------------------------------
 
     public type EventType = {
+        // High level operations
+        #SplitSwapStarted;
+        #SplitSwapCompleted;
+        #SplitSwapFailed;
+
+        // Individual DEX operations
         #SwapStarted;
         #SwapCompleted;
         #SwapFailed;
+
+        // Component operations
         #TransferStarted;
         #TransferCompleted;
         #TransferFailed;
@@ -555,6 +563,14 @@ module {
         amount_e8s: Nat;
         icp_value_e8s: Nat;  // Value in ICP at time of event
         usd_value_e8s: Nat;  // Value in USD (e8s) at time of event
+    };
+
+    public type SplitSwapDetails = {
+        token_in: TokenValue;
+        token_out: TokenValue;
+        icpswap_ratio: Nat;  // Percentage going to ICPSwap (0-100)
+        kong_ratio: Nat;     // Percentage going to Kong (0-100)
+        error_message: ?Text;
     };
 
     public type SwapDetails = {
@@ -591,6 +607,7 @@ module {
     };
 
     public type EventDetails = {
+        #SplitSwap: SplitSwapDetails;
         #Swap: SwapDetails;
         #Transfer: TransferDetails;
         #Approval: ApprovalDetails;
@@ -604,7 +621,9 @@ module {
         timestamp: Int;  // Nanoseconds since 1970-01-01
         user: Principal;
         details: EventDetails;
-        related_events: [Nat];  // IDs of related events (e.g. SwapStarted -> SwapCompleted)
+        parent_event: ?Nat;  // ID of parent event (e.g. Transfer points to Swap, Swap points to SplitSwap)
+        child_events: [Nat]; // IDs of child events
+        related_events: [Nat];  // IDs of related events (e.g. Started -> Completed/Failed)
     };
 
     // For events that are still in progress or failed

@@ -51,11 +51,113 @@ actor class Archive() = this {
         Time.now()
     };
 
-    // Public methods for logging events
+    // Helper to add a child event to a parent event
+    private func linkChildToParent(child_id: Nat, parent_id: Nat) {
+        switch (eventStore.get(parent_id)) {
+            case (?parent) {
+                let updated_parent: T.Event = {
+                    parent with
+                    child_events = Array.append(parent.child_events, [child_id]);
+                };
+                eventStore.put(parent_id, updated_parent);
+            };
+            case (null) {
+                // Parent might be in inflight events
+                switch (inflightEvents.get(parent_id)) {
+                    case (?parent_inflight) {
+                        let updated_event: T.Event = {
+                            parent_inflight.event with
+                            child_events = Array.append(parent_inflight.event.child_events, [child_id]);
+                        };
+                        inflightEvents.put(parent_id, {
+                            event = updated_event;
+                            status = parent_inflight.status;
+                        });
+                    };
+                    case (null) {};
+                };
+            };
+        };
+    };
+
+    // Split Swap methods
+    public shared(msg) func logSplitSwapStarted(
+        token_in: T.TokenValue,
+        token_out: T.TokenValue,
+        icpswap_ratio: Nat,
+        kong_ratio: Nat,
+    ) : async Nat {
+        let id = generateEventId();
+        let event: T.Event = {
+            id;
+            event_type = #SplitSwapStarted;
+            timestamp = getCurrentTime();
+            user = msg.caller;
+            details = #SplitSwap({
+                token_in;
+                token_out;
+                icpswap_ratio;
+                kong_ratio;
+                error_message = null;
+            });
+            parent_event = null;
+            child_events = [];
+            related_events = [];
+        };
+        
+        inflightEvents.put(id, {
+            event;
+            status = #InProgress;
+        });
+        
+        id
+    };
+
+    public shared(msg) func logSplitSwapCompleted(
+        original_event_id: Nat,
+        token_out: T.TokenValue,
+    ) : async () {
+        switch (inflightEvents.get(original_event_id)) {
+            case (?inflight) {
+                switch (inflight.event.details) {
+                    case (#SplitSwap(details)) {
+                        let completed_event: T.Event = {
+                            id = generateEventId();
+                            event_type = #SplitSwapCompleted;
+                            timestamp = getCurrentTime();
+                            user = msg.caller;
+                            details = #SplitSwap({
+                                token_in = details.token_in;
+                                token_out;
+                                icpswap_ratio = details.icpswap_ratio;
+                                kong_ratio = details.kong_ratio;
+                                error_message = null;
+                            });
+                            parent_event = null;
+                            child_events = inflight.event.child_events;
+                            related_events = [original_event_id];
+                        };
+                        
+                        eventStore.put(completed_event.id, completed_event);
+                        inflightEvents.delete(original_event_id);
+                    };
+                    case (_) {
+                        throw Error.reject("Original event is not a split swap");
+                    };
+                };
+            };
+            case (null) {
+                throw Error.reject("Original event not found");
+            };
+        };
+    };
+
+    // Regular Swap methods with parent linking
     public shared(msg) func logSwapStarted(
         dex: Text,
         token_in: T.TokenValue,
         token_out: T.TokenValue,
+        parent_id: ?Nat,  // Optional ID of parent split swap
     ) : async Nat {
         let id = generateEventId();
         let event: T.Event = {
@@ -69,6 +171,8 @@ actor class Archive() = this {
                 token_out;
                 error_message = null;
             });
+            parent_event = parent_id;
+            child_events = [];
             related_events = [];
         };
         
@@ -76,6 +180,12 @@ actor class Archive() = this {
             event;
             status = #InProgress;
         });
+
+        // Link to parent if provided
+        switch (parent_id) {
+            case (?pid) { linkChildToParent(id, pid); };
+            case (null) {};
+        };
         
         id
     };
@@ -99,10 +209,11 @@ actor class Archive() = this {
                                 token_out = token_out_amount;
                                 error_message = null;
                             });
+                            parent_event = inflight.event.parent_event;
+                            child_events = inflight.event.child_events;
                             related_events = [original_event_id];
                         };
                         
-                        // Store completed event and remove from inflight
                         eventStore.put(completed_event.id, completed_event);
                         inflightEvents.delete(original_event_id);
                     };
@@ -141,12 +252,11 @@ actor class Archive() = this {
         };
     };
 
-    // Similar patterns for Transfer, Approval, Deposit, and Withdraw events...
-    // For brevity, I'll implement one more as an example:
-
+    // Component operation methods (Transfer, Approval, etc.) with parent linking
     public shared(msg) func logTransferStarted(
         token: T.TokenValue,
         to: Principal,
+        parent_id: ?Nat,  // Optional ID of parent swap
     ) : async Nat {
         let id = generateEventId();
         let event: T.Event = {
@@ -160,6 +270,8 @@ actor class Archive() = this {
                 to;
                 error_message = null;
             });
+            parent_event = parent_id;
+            child_events = [];
             related_events = [];
         };
         
@@ -167,17 +279,55 @@ actor class Archive() = this {
             event;
             status = #InProgress;
         });
+
+        // Link to parent if provided
+        switch (parent_id) {
+            case (?pid) { linkChildToParent(id, pid); };
+            case (null) {};
+        };
         
         id
     };
 
-    // Query methods
-    public query func getEvent(id: Nat) : async ?T.Event {
-        eventStore.get(id)
-    };
+    // Enhanced query methods
+    public query func getEventHierarchy(event_id: Nat) : async ?{
+        event: T.Event;
+        parent: ?T.Event;
+        children: [T.Event];
+        related: [T.Event];
+    } {
+        switch (eventStore.get(event_id)) {
+            case (?event) {
+                let parent = switch (event.parent_event) {
+                    case (?pid) { eventStore.get(pid) };
+                    case (null) { null };
+                };
 
-    public query func getInflightEvent(id: Nat) : async ?T.InflightEvent {
-        inflightEvents.get(id)
+                let children = Buffer.Buffer<T.Event>(0);
+                for (child_id in event.child_events.vals()) {
+                    switch (eventStore.get(child_id)) {
+                        case (?child) { children.add(child); };
+                        case (null) {};
+                    };
+                };
+
+                let related = Buffer.Buffer<T.Event>(0);
+                for (related_id in event.related_events.vals()) {
+                    switch (eventStore.get(related_id)) {
+                        case (?rel) { related.add(rel); };
+                        case (null) {};
+                    };
+                };
+
+                ?{
+                    event;
+                    parent;
+                    children = Buffer.toArray(children);
+                    related = Buffer.toArray(related);
+                }
+            };
+            case (null) { null };
+        }
     };
 
     public query func getUserEvents(user: Principal) : async [T.Event] {
@@ -242,6 +392,14 @@ actor class Archive() = this {
             ("timestamp", #Int(event.timestamp)),
             ("user", #Text(Principal.toText(event.user))),
             ("details", eventDetailsToValue(event.details)),
+            ("parent_event", switch (event.parent_event) {
+                case (?pid) #Nat(pid);
+                case (null) #Text("");
+            }),
+            ("child_events", #Array(Array.map<Nat, ICRC3.Value>(
+                event.child_events,
+                func (id: Nat) : ICRC3.Value = #Nat(id)
+            ))),
             ("related_events", #Array(Array.map<Nat, ICRC3.Value>(
                 event.related_events,
                 func (id: Nat) : ICRC3.Value = #Nat(id)
@@ -251,6 +409,9 @@ actor class Archive() = this {
 
     private func eventTypeToText(event_type: T.EventType) : Text {
         switch (event_type) {
+            case (#SplitSwapStarted) "split_swap_started";
+            case (#SplitSwapCompleted) "split_swap_completed";
+            case (#SplitSwapFailed) "split_swap_failed";
             case (#SwapStarted) "swap_started";
             case (#SwapCompleted) "swap_completed";
             case (#SwapFailed) "swap_failed";
@@ -271,6 +432,19 @@ actor class Archive() = this {
 
     private func eventDetailsToValue(details: T.EventDetails) : ICRC3.Value {
         switch (details) {
+            case (#SplitSwap(split)) {
+                #Map([
+                    ("type", #Text("split_swap")),
+                    ("token_in", tokenValueToValue(split.token_in)),
+                    ("token_out", tokenValueToValue(split.token_out)),
+                    ("icpswap_ratio", #Nat(split.icpswap_ratio)),
+                    ("kong_ratio", #Nat(split.kong_ratio)),
+                    ("error_message", switch (split.error_message) {
+                        case (?msg) #Text(msg);
+                        case (null) #Text("");
+                    })
+                ])
+            };
             case (#Swap(swap)) {
                 #Map([
                     ("type", #Text("swap")),
@@ -295,7 +469,6 @@ actor class Archive() = this {
                     })
                 ])
             };
-            // Similar patterns for other event types...
             case (_) #Text("unsupported_event_type")
         }
     };
