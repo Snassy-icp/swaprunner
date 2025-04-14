@@ -539,9 +539,9 @@ module {
         #SplitSwapFailed;
 
         // Individual DEX operations
-        #SwapStarted;
-        #SwapCompleted;
-        #SwapFailed;
+        #DEXSwapStarted;
+        #DEXSwapCompleted;
+        #DEXSwapFailed;
 
         // Component operations
         #TransferStarted;
@@ -553,6 +553,9 @@ module {
         #DepositStarted;
         #DepositCompleted;
         #DepositFailed;
+        #SwapStarted;
+        #SwapCompleted;
+        #SwapFailed;
         #WithdrawStarted;
         #WithdrawCompleted;
         #WithdrawFailed;
@@ -573,8 +576,13 @@ module {
         error_message: ?Text;
     };
 
-    public type SwapDetails = {
-        dex: Text;  // "ICPSwap" or "Kong"
+    public type EventStatus = {
+        #InProgress;
+        #Failed : Text;
+    };
+
+    public type DEXSwapDetails = {
+        dex: Text;
         token_in: TokenValue;
         token_out: TokenValue;
         error_message: ?Text;
@@ -600,6 +608,13 @@ module {
         error_message: ?Text;
     };
 
+    public type SwapDetails = {
+        token_in: TokenValue;
+        token_out: TokenValue;
+        dex: Text;
+        error_message: ?Text;
+    };
+
     public type WithdrawDetails = {
         token: TokenValue;
         user: Principal;
@@ -608,31 +623,28 @@ module {
 
     public type EventDetails = {
         #SplitSwap: SplitSwapDetails;
-        #Swap: SwapDetails;
+        #DEXSwap: DEXSwapDetails;
         #Transfer: TransferDetails;
         #Approval: ApprovalDetails;
         #Deposit: DepositDetails;
+        #Swap: SwapDetails;
         #Withdraw: WithdrawDetails;
     };
 
     public type Event = {
         id: Nat;
         event_type: EventType;
-        timestamp: Int;  // Nanoseconds since 1970-01-01
-        user: Principal;
+        timestamp: Int;
         details: EventDetails;
-        parent_event: ?Nat;  // ID of parent event (e.g. Transfer points to Swap, Swap points to SplitSwap)
-        child_events: [Nat]; // IDs of child events
-        related_events: [Nat];  // IDs of related events (e.g. Started -> Completed/Failed)
+        user: Principal;
+        parent_event: ?Nat;
+        child_events: [Nat];
+        related_events: [Nat];
     };
 
-    // For events that are still in progress or failed
     public type InflightEvent = {
         event: Event;
-        status: {
-            #InProgress;
-            #Failed: Text;  // Error message
-        };
+        status: EventStatus;
     };
 
 }
