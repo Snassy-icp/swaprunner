@@ -533,17 +533,12 @@ module {
     //--------------------------------
 
     public type EventType = {
-        // High level operations
+        #SwapStarted;
+        #SwapCompleted;
+        #SwapFailed;
         #SplitSwapStarted;
         #SplitSwapCompleted;
         #SplitSwapFailed;
-
-        // Individual DEX operations
-        #DEXSwapStarted;
-        #DEXSwapCompleted;
-        #DEXSwapFailed;
-
-        // Component operations
         #TransferStarted;
         #TransferCompleted;
         #TransferFailed;
@@ -553,38 +548,100 @@ module {
         #DepositStarted;
         #DepositCompleted;
         #DepositFailed;
-        #SwapStarted;
-        #SwapCompleted;
-        #SwapFailed;
         #WithdrawStarted;
         #WithdrawCompleted;
         #WithdrawFailed;
+        #AllocationStarted;
+        #AllocationCompleted;
+        #AllocationFailed;
+        #AllocationClaimStarted;
+        #AllocationClaimCompleted;
+        #AllocationClaimFailed;
+        #AllocationTopUpStarted;
+        #AllocationTopUpCompleted;
+        #AllocationTopUpFailed;
+        #AllocationCancelStarted;
+        #AllocationCancelCompleted;
+        #AllocationCancelFailed;
+        #AllocationTransferStarted;
+        #AllocationTransferCompleted;
+        #AllocationTransferFailed;
     };
 
-    public type TokenValue = {
-        token_canister: Principal;
-        amount_e8s: Nat;
-        icp_value_e8s: Nat;  // Value in ICP at time of event
-        usd_value_e8s: Nat;  // Value in USD (e8s) at time of event
-    };
-
-    public type SplitSwapDetails = {
-        token_in: TokenValue;
-        token_out: TokenValue;
-        icpswap_ratio: Nat;  // Percentage going to ICPSwap (0-100)
-        kong_ratio: Nat;     // Percentage going to Kong (0-100)
+    public type AllocationEventDetails = {
+        allocation_id: Text;
+        achievement_id: Text;
+        token: TokenValue;
+        per_user_min_e8s: Nat;
+        per_user_max_e8s: Nat;
+        fee_e8s: Nat;
+        cut_e8s: Nat;
         error_message: ?Text;
     };
 
-    public type EventStatus = {
-        #InProgress;
-        #Failed : Text;
+    public type AllocationClaimEventDetails = {
+        allocation_id: Text;
+        achievement_id: Text;
+        token: TokenValue;
+        claim_amount_e8s: Nat;
+        error_message: ?Text;
     };
 
-    public type DEXSwapDetails = {
+    public type AllocationTopUpEventDetails = {
+        allocation_id: Text;
+        token: TokenValue;
+        top_up_amount_e8s: Nat;
+        cut_e8s: Nat;
+        error_message: ?Text;
+    };
+
+    public type AllocationCancelEventDetails = {
+        allocation_id: Text;
+        token: TokenValue;
+        refund_amount_e8s: Nat;
+        error_message: ?Text;
+    };
+
+    public type AllocationTransferEventDetails = {
+        allocation_id: Text;
+        new_owner: Principal;
+        error_message: ?Text;
+    };
+
+    public type EventDetails = {
+        #Swap: SwapDetails;
+        #SplitSwap: SplitSwapDetails;
+        #Transfer: TransferDetails;
+        #Approval: ApprovalDetails;
+        #Deposit: DepositDetails;
+        #Withdraw: WithdrawDetails;
+        #Allocation: AllocationEventDetails;
+        #AllocationClaim: AllocationClaimEventDetails;
+        #AllocationTopUp: AllocationTopUpEventDetails;
+        #AllocationCancel: AllocationCancelEventDetails;
+        #AllocationTransfer: AllocationTransferEventDetails;
+    };
+
+    public type TokenValue = {
+        canister: Principal;
+        amount_e8s: Nat;
+        icp_value_e8s: Nat;
+        usd_value: Float;
+    };
+
+    public type SwapDetails = {
+        input_token: TokenValue;
+        output_token: TokenValue;
         dex: Text;
-        token_in: TokenValue;
-        token_out: TokenValue;
+        error_message: ?Text;
+    };
+
+    public type SplitSwapDetails = {
+        input_token: TokenValue;
+        icpswap_output_token: TokenValue;
+        kong_output_token: TokenValue;
+        icpswap_ratio: Float;
+        kong_ratio: Float;
         error_message: ?Text;
     };
 
@@ -592,59 +649,30 @@ module {
         token: TokenValue;
         from: Principal;
         to: Principal;
+        amount_e8s: Nat;
         error_message: ?Text;
     };
 
     public type ApprovalDetails = {
         token: TokenValue;
-        from: Principal;
+        owner: Principal;
         spender: Principal;
+        amount_e8s: Nat;
         error_message: ?Text;
     };
 
     public type DepositDetails = {
         token: TokenValue;
-        user: Principal;
-        error_message: ?Text;
-    };
-
-    public type SwapDetails = {
-        token_in: TokenValue;
-        token_out: TokenValue;
-        dex: Text;
+        to: Principal;
+        amount_e8s: Nat;
         error_message: ?Text;
     };
 
     public type WithdrawDetails = {
         token: TokenValue;
-        user: Principal;
+        from: Principal;
+        amount_e8s: Nat;
         error_message: ?Text;
-    };
-
-    public type EventDetails = {
-        #SplitSwap: SplitSwapDetails;
-        #DEXSwap: DEXSwapDetails;
-        #Transfer: TransferDetails;
-        #Approval: ApprovalDetails;
-        #Deposit: DepositDetails;
-        #Swap: SwapDetails;
-        #Withdraw: WithdrawDetails;
-    };
-
-    public type Event = {
-        id: Nat;
-        event_type: EventType;
-        timestamp: Int;
-        details: EventDetails;
-        user: Principal;
-        parent_event: ?Nat;
-        child_events: [Nat];
-        related_events: [Nat];
-    };
-
-    public type InflightEvent = {
-        event: Event;
-        status: EventStatus;
     };
 
 }
