@@ -27,3 +27,5 @@ spec/ref/
 
 # environment variables
 .env
+
+.mops
