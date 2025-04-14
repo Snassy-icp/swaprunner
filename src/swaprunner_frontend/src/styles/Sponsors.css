@@ -903,4 +903,25 @@
 
 .buy-token-button:active {
     transform: translateY(0);
+}
+
+.sponsors-totals {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+}
+
+.total-usd span,
+.total-usd-remaining span {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.total-usd-remaining span {
+    color: var(--success-color);
 } 

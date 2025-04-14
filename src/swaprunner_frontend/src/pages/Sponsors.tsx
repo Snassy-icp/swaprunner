@@ -490,6 +490,28 @@ export const Sponsors: React.FC = () => {
         <div className="sponsors-page">
             <div className="swap-box">
                 <h1>Sponsors</h1>
+                {!isInitialLoading && (
+                    <div className="sponsors-totals">
+                        <div className="total-usd">
+                            <span>Total USD Value: ${sponsors.reduce((sum, sponsor) => {
+                                if (sponsor.isLoading || !sponsor.data) return sum;
+                                return sum + sponsor.data.allocations.reduce((allocSum, allocation) => {
+                                    const usdValue = calculateUSDValue(allocation.totalAllocated, allocation.token);
+                                    return allocSum + (usdValue === '-' ? 0 : parseFloat(usdValue.replace('$', '')));
+                                }, 0);
+                            }, 0).toFixed(2)}</span>
+                        </div>
+                        <div className="total-usd-remaining">
+                            <span>Remaining USD Value: ${sponsors.reduce((sum, sponsor) => {
+                                if (sponsor.isLoading || !sponsor.data) return sum;
+                                return sum + sponsor.data.allocations.reduce((allocSum, allocation) => {
+                                    const usdValue = calculateUSDValue(allocation.totalAllocated - allocation.totalClaimed, allocation.token);
+                                    return allocSum + (usdValue === '-' ? 0 : parseFloat(usdValue.replace('$', '')));
+                                }, 0);
+                            }, 0).toFixed(2)}</span>
+                        </div>
+                    </div>
+                )}
                 <div className="sponsors-list">
                     {sponsors.map((sponsor) => (
                         <div className="sponsor-card" key={sponsor.profile.principal.toString()}>
