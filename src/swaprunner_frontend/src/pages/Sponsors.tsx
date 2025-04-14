@@ -501,6 +501,15 @@ export const Sponsors: React.FC = () => {
                                 }, 0);
                             }, 0).toFixed(2)}</span>
                         </div>
+                        <div className="total-usd-claimed">
+                            <span>Claimed USD Value: ${sponsors.reduce((sum, sponsor) => {
+                                if (sponsor.isLoading || !sponsor.data) return sum;
+                                return sum + sponsor.data.allocations.reduce((allocSum, allocation) => {
+                                    const usdValue = calculateUSDValue(allocation.totalClaimed, allocation.token);
+                                    return allocSum + (usdValue === '-' ? 0 : parseFloat(usdValue.replace('$', '')));
+                                }, 0);
+                            }, 0).toFixed(2)}</span>
+                        </div>
                         <div className="total-usd-remaining">
                             <span>Remaining USD Value: ${sponsors.reduce((sum, sponsor) => {
                                 if (sponsor.isLoading || !sponsor.data) return sum;

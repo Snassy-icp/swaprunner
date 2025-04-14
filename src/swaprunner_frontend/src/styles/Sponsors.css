@@ -915,13 +915,18 @@
     border-radius: 12px;
 }
 
-.total-usd span,
-.total-usd-remaining span {
+.sponsors-totals .total-usd span,
+.sponsors-totals .total-usd-claimed span,
+.sponsors-totals .total-usd-remaining span {
     font-size: 16px;
     font-weight: 500;
     color: var(--text-primary);
 }
 
-.total-usd-remaining span {
-    color: var(--success-color);
+.sponsors-totals .total-usd-claimed span {
+    color: #ffd700;
+}
+
+.sponsors-totals .total-usd-remaining span {
+    color: #4CAF50;
 } 
