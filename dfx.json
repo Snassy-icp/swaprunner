@@ -15,9 +15,14 @@
       "main": "src/swaprunner_backend/main.mo",
       "type": "motoko"
     },
+    "swaprunner_archive": {
+      "main": "src/swaprunner_backend/Archive.mo",
+      "type": "motoko"
+    },
     "swaprunner_frontend": {
       "dependencies": [
-        "swaprunner_backend"
+        "swaprunner_backend",
+        "swaprunner_archive"
       ],
       "source": [
         "src/swaprunner_frontend/dist"

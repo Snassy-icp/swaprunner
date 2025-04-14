@@ -849,17 +849,34 @@ public query func get_all_token_stats(): async [(Text, {
     - Update UI availability indicators
 
 ### Backend Architecture
-swaprunner uses a single backend canister (`swaprunner_backend`) to handle all server-side functionality, including:
-- Token metadata caching
-- User preferences and settings
-- Transaction history
-- System configuration
+swaprunner uses two backend canisters:
 
-This single-canister approach is chosen to:
-- Minimize deployment and maintenance complexity
-- Reduce cross-canister call overhead
-- Simplify state management and updates
-- Optimize cycles consumption
+1. Main Backend (`swaprunner_backend`):
+   - Token metadata caching
+   - User preferences and settings
+   - System configuration
+   - Core business logic
+   - Active state management
+
+2. Archive Canister (`swaprunner_archive`):
+   - Event logging and archival
+   - Transaction history
+   - Swap logging (including failed swaps)
+   - Component-level logging (transfers, approvals, etc.)
+   - Non-blocking logging operations
+
+This two-canister approach is chosen to:
+- Separate concerns between active state and historical data
+- Allow independent scaling of logging/archival storage
+- Keep the main backend lean and focused
+- Enable non-blocking logging operations
+- Preserve detailed audit trail without impacting performance
+
+The Archive canister is designed to be:
+- Non-blocking: All logging calls are fire-and-forget
+- Comprehensive: Logs all user events and component operations
+- Independent: Failures don't affect main backend operation
+- Queryable: Provides rich historical data access
 
 ### External Integrations
 1. DEX Integrations:
