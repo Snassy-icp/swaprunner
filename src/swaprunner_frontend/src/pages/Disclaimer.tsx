@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
-import '../styles/Help.css'; // We'll reuse the Help page styles
+import '../styles/Help.css';
 
 export const Disclaimer: React.FC = () => {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export const Disclaimer: React.FC = () => {
         <h1>Disclaimer</h1>
       </div>
 
-      <div className="help-content">
+      <div className="disclaimer-help-content">
         <section>
           <h2>Risk Disclosure</h2>
           <p>
@@ -54,4 +54,4 @@ export const Disclaimer: React.FC = () => {
   );
 };
 
-export default Disclaimer; 
+export default Disclaimer;
