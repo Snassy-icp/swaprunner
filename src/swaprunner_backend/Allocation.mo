@@ -306,16 +306,16 @@ module {
 
         // Verify user has the achievement
         let user_key = Principal.toText(caller);
-        Debug.print("Looking up achievements with key: " # user_key);
+        //Debug.print("Looking up achievements with key: " # user_key);
         
         let user_achievements_arr = switch (user_achievements.get(user_key)) {
             case null {
-                Debug.print("No achievements found for key: " # user_key);
-                Debug.print("Available achievement keys: " # debug_show(Iter.toArray(user_achievements.keys())));
+                //Debug.print("No achievements found for key: " # user_key);
+                //Debug.print("Available achievement keys: " # debug_show(Iter.toArray(user_achievements.keys())));
                 return #err("No achievements found for user");
             };
             case (?ua) {
-                Debug.print("Found " # Nat.toText(ua.size()) # " achievements for user");
+                //Debug.print("Found " # Nat.toText(ua.size()) # " achievements for user");
                 ua;
             };
         };
@@ -328,8 +328,8 @@ module {
         };
 
         if (has_achievement.size() == 0) {
-            Debug.print("User does not have achievement: " # allocation.achievement_id);
-            Debug.print("User's achievements: " # debug_show(user_achievements_arr));
+            //Debug.print("User does not have achievement: " # allocation.achievement_id);
+            //Debug.print("User's achievements: " # debug_show(user_achievements_arr));
             return #err("User does not have the required achievement");
         };
 
@@ -852,10 +852,10 @@ module {
         };
 
         // Verify new owner exists in user_logins
-        switch (user_logins.get(Principal.toText(new_owner))) {
-            case null return #err("New owner must be an existing user");
-            case (?_) {};
-        };
+        //switch (user_logins.get(Principal.toText(new_owner))) {
+        //    case null return #err("New owner must be an existing user");
+        //    case (?_) {};
+        //};
 
         // Verify current status allows transfer (Draft, Active, or Depleted)
         switch (allocation_statuses.get(Nat.toText(allocation_id))) {

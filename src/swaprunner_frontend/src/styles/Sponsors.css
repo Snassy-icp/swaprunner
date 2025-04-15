@@ -26,6 +26,19 @@
     color: var(--text-primary);
 }
 
+.sponsors-message {
+    margin-bottom: 24px;
+    padding: 0 8px;
+}
+
+.sponsors-message p {
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0;
+    text-align: left;
+}
+
 .sponsors-list {
     display: flex;
     flex-direction: column;
@@ -903,4 +916,30 @@
 
 .buy-token-button:active {
     transform: translateY(0);
+}
+
+.sponsors-totals {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+}
+
+.sponsors-totals .total-usd span,
+.sponsors-totals .total-usd-claimed span,
+.sponsors-totals .total-usd-remaining span {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.sponsors-totals .total-usd-claimed span {
+    color: #ffd700;
+}
+
+.sponsors-totals .total-usd-remaining span {
+    color: #4CAF50;
 } 
