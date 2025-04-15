@@ -18,6 +18,7 @@ import { Sponsors } from './pages/Sponsors';
 import Maintenance from './pages/Maintenance';
 import AdminAchievementsPage from './components/AdminAchievementsPage';
 import AdminUsersPage from './components/AdminUsersPage';
+import { Disclaimer } from './pages/Disclaimer';
 import { backendService } from './services/backend';
 
 // Wrapper component to handle URL parameters and maintenance mode
@@ -100,6 +101,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/me" element={<MaintenanceWrapper component={Me} />} />
             <Route path="/statistics" element={<MaintenanceWrapper component={Statistics} />} />
             <Route path="/sponsors" element={<MaintenanceWrapper component={Sponsors} />} />
+            <Route path="/disclaimer" element={<MaintenanceWrapper component={Disclaimer} />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/admin/tokens" element={<AdminTokensPage />} />
             <Route path="/admin/prices" element={<AdminPricesPage />} />

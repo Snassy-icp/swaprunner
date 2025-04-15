@@ -209,6 +209,18 @@ const FixedHeader: React.FC = () => {
               <FiHelpCircle />
               Help
             </a>
+            <a 
+              href="/disclaimer"
+              className={`hamburger-item ${location.pathname === '/disclaimer' ? 'active' : ''}`}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/disclaimer');
+                setShowHamburgerMenu(false);
+              }}
+            >
+              <FiHelpCircle />
+              Disclaimer
+            </a>
             <button 
               className="hamburger-item"
               onClick={() => {
