@@ -173,6 +173,13 @@ export const Help: React.FC = () => {
           </p>
         </section>
 
+        <section>
+          <h2>Legal</h2>
+          <p>
+            Please review our <Link to="/disclaimer">Disclaimer and Risk Disclosure</Link> for important information about using SwapRunner.
+          </p>
+        </section>
+
         <div className="help-note">
           <FiHelpCircle className="note-icon" />
           <p>
