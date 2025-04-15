@@ -21,6 +21,20 @@ export const Disclaimer: React.FC = () => {
           <p>
             SwapRunner is a decentralized exchange (DEX) aggregator platform. By using our services, you acknowledge and agree to the following:
           </p>
+
+          <h3>Non-Liability Statement</h3>
+          <p style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>
+            SWAPRUNNER, ITS DEVELOPERS, OWNERS, OPERATORS, CONTRIBUTORS, AND ANY PARTIES INVOLVED WITH SWAPRUNNER ARE NOT RESPONSIBLE OR LIABLE FOR ANY LOSS OF TOKENS OR FUNDS UNDER ANY CIRCUMSTANCES. THIS INCLUDES BUT IS NOT LIMITED TO:
+          </p>
+          <ul>
+            <li>Loss of tokens due to user error or mistakes</li>
+            <li>Loss of tokens due to smart contract bugs or technical issues</li>
+            <li>Loss of tokens due to network issues or congestion</li>
+            <li>Loss of tokens due to hacks, exploits, or security breaches</li>
+            <li>Loss of tokens due to market volatility or price movements</li>
+            <li>Loss of tokens due to regulatory changes or compliance issues</li>
+            <li>Any other circumstances resulting in loss of tokens or funds</li>
+          </ul>
           
           <h3>Trading Risks</h3>
           <ul>
@@ -46,7 +60,7 @@ export const Disclaimer: React.FC = () => {
           </ul>
 
           <p className="disclaimer-footer">
-            By using SwapRunner, you acknowledge that you have read, understood, and agree to these terms. If you do not agree, please do not use our services.
+            By using SwapRunner, you explicitly acknowledge that you understand and accept all risks involved, including the potential for complete loss of funds. You agree that you are using this platform entirely at your own risk, and that no party associated with SwapRunner bears any responsibility for any losses you may incur. If you do not agree to these terms, please do not use our services.
           </p>
         </section>
       </div>
