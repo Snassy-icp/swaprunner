@@ -3,7 +3,9 @@ import { FiX, FiCoffee } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { backendService } from '../services/backend';
 import { priceService } from '../services/price';
+import { icrc1Service } from '../services/icrc1_service';
 import '../styles/DonateModal.css';
+import { Principal } from '@dfinity/principal';
 
 interface DonateModalProps {
   isOpen: boolean;
@@ -11,6 +13,7 @@ interface DonateModalProps {
 }
 
 const ICP_LEDGER_ID = 'ryjl3-tyaaa-aaaaa-aaaba-cai';
+const DEVELOPER_WALLET = 'z44up-tm4i5-mn2fi-arq5o-ko7et-mkaec-e6raf-qc6i4-hpjwv-ribyz-hae';
 
 export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => {
   const { isAuthenticated, login } = useAuth();
@@ -44,11 +47,25 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
     try {
       setError(null);
       setLoading(true);
+
+      // Transfer the donation to the SwapRunner developer wallet
+      const transferResult = await icrc1Service.transfer({
+        tokenId: ICP_LEDGER_ID,
+        to: DEVELOPER_WALLET,
+        amount_e8s: selectedAmount.toString(),
+      });
+
+      console.log('Transfer result:', transferResult);
+      if (!transferResult.success) {
+        throw new Error(transferResult.error || 'Transfer failed');
+      }
       
+      // Record the donation
       // Get current ICP price
-      const icpPrice = await priceService.getICPUSDPrice();
+      let icpPrice = await priceService.getICPUSDPrice();
       if (!icpPrice) {
-        throw new Error('Failed to fetch ICP price');
+        //throw new Error('Failed to fetch ICP price');
+        icpPrice = 0;
       }
 
       // Calculate USD value
@@ -56,11 +73,12 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
       const usdValue = icpAmount * icpPrice;
 
       const actor = await backendService.getActor();
-      await actor.record_donation({
-        token_ledger_id: ICP_LEDGER_ID,
-        amount_e8s: selectedAmount,
-        usd_value: usdValue,
-      });
+      await actor.record_donation(
+        selectedAmount,
+        Principal.fromText(ICP_LEDGER_ID),
+        usdValue,
+        transferResult.txId
+      );
       onClose();
     } catch (error) {
       console.error('Failed to record donation:', error);

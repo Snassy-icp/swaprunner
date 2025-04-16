@@ -88,6 +88,7 @@ module {
         donor: Principal;
         token_ledger_id: Principal;  // The token's canister ID
         amount_e8s: Nat;
+        tx_id: Text;
         usd_value: Float;  // USD value at the time of donation
         timestamp: Int;
     };
