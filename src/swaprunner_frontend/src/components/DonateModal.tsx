@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiX, FiCoffee } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { backendService } from '../services/backend';
@@ -15,11 +15,99 @@ interface DonateModalProps {
 const ICP_LEDGER_ID = 'ryjl3-tyaaa-aaaaa-aaaba-cai';
 const DEVELOPER_WALLET = 'z44up-tm4i5-mn2fi-arq5o-ko7et-mkaec-e6raf-qc6i4-hpjwv-ribyz-hae';
 
+// Heart confetti colors
+const HEART_COLORS = [
+  '#ff6b6b', // Light red
+  '#ff4757', // Strong red
+  '#ff7f8c', // Pink red
+  '#ff8fa3', // Light pink
+  '#ff69b4', // Hot pink
+];
+
+const HeartConfetti: React.FC<{ show: boolean }> = ({ show }) => {
+  const [hearts, setHearts] = useState<Array<{
+    id: number;
+    color: string;
+    x: number;
+    fallDuration: number;
+    shakeDistance: number;
+    delay: number;
+  }>>([]);
+
+  useEffect(() => {
+    if (!show) {
+      setHearts([]);
+      return;
+    }
+
+    let batchCount = 0;
+    const maxBatches = 15;
+    const batchInterval = 300;
+    const heartsPerBatch = 5;
+
+    const createHeartBatch = (batchId: number) => {
+      const pieces = Array.from({ length: heartsPerBatch }, (_, i) => ({
+        id: batchId * heartsPerBatch + i,
+        color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)],
+        x: Math.random() * 100,
+        fallDuration: 2 + Math.random() * 2,
+        shakeDistance: 15 + Math.random() * 30,
+        delay: Math.random() * 0.5,
+      }));
+
+      setHearts(prev => [...prev, ...pieces]);
+    };
+
+    createHeartBatch(0);
+
+    const intervalId = setInterval(() => {
+      batchCount++;
+      if (batchCount < maxBatches) {
+        createHeartBatch(batchCount);
+      } else {
+        clearInterval(intervalId);
+      }
+    }, batchInterval);
+
+    const cleanupTimer = setTimeout(() => {
+      setHearts([]);
+    }, (maxBatches * batchInterval) + 4000);
+
+    return () => {
+      clearInterval(intervalId);
+      clearTimeout(cleanupTimer);
+    };
+  }, [show]);
+
+  if (!show) return null;
+
+  return (
+    <div className="confetti-container">
+      {hearts.map((heart) => (
+        <div
+          key={heart.id}
+          className="confetti heart"
+          style={{
+            left: `${heart.x}%`,
+            '--fall-duration': `${heart.fallDuration}s`,
+            '--shake-distance': `${heart.shakeDistance}px`,
+            '--heart-color': heart.color,
+            animationDelay: `${heart.delay}s`
+          } as React.CSSProperties}
+        >
+          ❤
+        </div>
+      ))}
+    </div>
+  );
+};
+
 export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => {
   const { isAuthenticated, login } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [selectedAmount, setSelectedAmount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
+  const [showHearts, setShowHearts] = useState(false);
 
   if (!isOpen) return null;
 
@@ -48,6 +136,7 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
       setError(null);
       setLoading(true);
 
+      /*
       // Transfer the donation to the SwapRunner developer wallet
       const transferResult = await icrc1Service.transfer({
         tokenId: ICP_LEDGER_ID,
@@ -55,17 +144,15 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
         amount_e8s: selectedAmount.toString(),
       });
 
-      console.log('Transfer result:', transferResult);
       if (!transferResult.success) {
         throw new Error(transferResult.error || 'Transfer failed');
       }
-      
+      */
       // Record the donation
       // Get current ICP price
-      let icpPrice = await priceService.getICPUSDPrice();
+      const icpPrice = await priceService.getICPUSDPrice();
       if (!icpPrice) {
-        //throw new Error('Failed to fetch ICP price');
-        icpPrice = 0;
+        throw new Error('Failed to fetch ICP price');
       }
 
       // Calculate USD value
@@ -77,9 +164,18 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
         selectedAmount,
         Principal.fromText(ICP_LEDGER_ID),
         usdValue,
-        transferResult.txId
+        "123" //transferResult.txId
       );
-      onClose();
+
+      // Show heart confetti
+      setShowHearts(true);
+      
+      // Close modal after a delay to show the hearts
+      setTimeout(() => {
+        setShowHearts(false);
+        onClose();
+      }, 2000);
+
     } catch (error) {
       console.error('Failed to record donation:', error);
       setError('Failed to process donation. Please try again.');
@@ -94,6 +190,7 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
 
   return (
     <div className="modal-overlay">
+      <HeartConfetti show={showHearts} />
       <div className="modal-content">
         <div className="modal-header">
           <h3><FiCoffee /> Support SwapRunner</h3>

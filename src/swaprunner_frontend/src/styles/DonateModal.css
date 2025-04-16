@@ -171,4 +171,50 @@
   font-size: 14px;
   text-align: center;
   margin-top: 16px;
+}
+
+.confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1001;
+  overflow: hidden;
+}
+
+.confetti.heart {
+  position: absolute;
+  font-size: 24px;
+  color: var(--heart-color);
+  opacity: 0;
+  animation: heart-fall var(--fall-duration, 3s) linear forwards;
+  animation-delay: var(--delay, 0s);
+  transform-origin: center;
+  will-change: transform, opacity;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes heart-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(-20px) scale(0.3) rotate(0deg);
+  }
+  25% {
+    opacity: 1;
+    transform: translateY(25vh) translateX(var(--shake-distance, 15px)) scale(1) rotate(90deg);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(50vh) translateX(calc(var(--shake-distance, 15px) * -1)) scale(0.8) rotate(180deg);
+  }
+  75% {
+    opacity: 0.8;
+    transform: translateY(75vh) translateX(var(--shake-distance, 15px)) scale(1.2) rotate(270deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(105vh) translateX(0) scale(0.5) rotate(360deg);
+  }
 } 
