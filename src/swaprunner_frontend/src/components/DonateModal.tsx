@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiX, FiHeart } from 'react-icons/fi';
+import { FiX, FiCoffee } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { backendService } from '../services/backend';
 import { priceService } from '../services/price';
@@ -78,7 +78,7 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h3><FiHeart /> Support SwapRunner</h3>
+          <h3><FiCoffee /> Support SwapRunner</h3>
           <button className="close-button" onClick={onClose}>
             <FiX />
           </button>

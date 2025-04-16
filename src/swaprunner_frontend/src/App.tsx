@@ -10,7 +10,7 @@ import { TokenSecurityProvider } from './contexts/TokenSecurityContext';
 import { AppRoutes } from './routes';
 import { Header } from './components/Header';
 import { analyticsService } from './services/analytics';
-import { FiHelpCircle, FiRefreshCw, FiUser, FiLogIn, FiCheck, FiCopy, FiMenu, FiRepeat, FiCreditCard, FiList, FiDroplet, FiBarChart2, FiHeart } from 'react-icons/fi';
+import { FiHelpCircle, FiRefreshCw, FiUser, FiLogIn, FiCheck, FiCopy, FiMenu, FiRepeat, FiCreditCard, FiList, FiDroplet, FiBarChart2, FiHeart, FiCoffee } from 'react-icons/fi';
 import { isFeatureEnabled } from './config/featureFlags';
 import { useAuth } from './contexts/AuthContext';
 import './App.css';
@@ -246,7 +246,7 @@ const FixedHeader: React.FC = () => {
           onClick={() => setShowDonateModal(true)}
           title="Support SwapRunner"
         >
-          <FiHeart />
+          <FiCoffee />
         </button>
         <button
           className="control-button"
