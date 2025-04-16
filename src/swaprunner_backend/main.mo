@@ -188,6 +188,10 @@ shared (deployer) actor class SwapRunner() = this {
     private stable var userBalanceEntries : [(Text, Nat)] = [];  // Format: "{principal}:{token_index}" -> amount
     private var userBalances = HashMap.fromIter<Text, Nat>(userBalanceEntries.vals(), 0, Text.equal, Text.hash);
 
+    // Stable storage for donations
+    private stable var donationEvents : [T.DonationEvent] = [];
+    private var donationBuffer = Buffer.fromArray<T.DonationEvent>(donationEvents);
+
     // Stable storage for allocation balances
     private stable var allocationBalanceEntries : [(Text, Nat)] = [];  // Format: "{alloc_id}:{token_index}" -> amount
     private var allocationBalances = HashMap.fromIter<Text, Nat>(allocationBalanceEntries.vals(), 0, Text.equal, Text.hash);
@@ -368,6 +372,7 @@ shared (deployer) actor class SwapRunner() = this {
         userTokenAllocationStatsEntries := Iter.toArray(userTokenAllocationStats.entries());
         profilesEntries := Iter.toArray(profiles.entries());
         suspendedPrincipalsEntries := Iter.toArray(suspendedPrincipals.entries());
+        donationEvents := Buffer.toArray(donationBuffer);
     };
 
     system func postupgrade() {
@@ -405,6 +410,7 @@ shared (deployer) actor class SwapRunner() = this {
         userTokenAllocationStatsEntries := [];     
         profilesEntries := [];
         suspendedPrincipalsEntries := [];
+        donationEvents := [];
     };
 
     public query func get_cycle_balance() : async Nat {
@@ -4250,5 +4256,37 @@ shared (deployer) actor class SwapRunner() = this {
         };
         suspendedPrincipals.delete(principal);
         #ok()
+    };
+
+    // Record a donation from a user
+    public shared({caller}) func record_donation(amount_e8s: Nat) : async Result.Result<(), Text> {
+        if (Principal.isAnonymous(caller)) {
+            return #err("Anonymous users cannot donate");
+        };
+
+        let event : T.DonationEvent = {
+            donor = caller;
+            amount_e8s = amount_e8s;
+            timestamp = Time.now();
+        };
+
+        donationBuffer.add(event);
+        #ok()
+    };
+
+    // Query all donations
+    public query func get_all_donations() : async [T.DonationEvent] {
+        Buffer.toArray(donationBuffer)
+    };
+
+    // Query donations by user
+    public query func get_user_donations(user: Principal) : async [T.DonationEvent] {
+        let userDonations = Buffer.Buffer<T.DonationEvent>(0);
+        for (event in donationBuffer.vals()) {
+            if (Principal.equal(event.donor, user)) {
+                userDonations.add(event);
+            };
+        };
+        Buffer.toArray(userDonations)
     };
 }

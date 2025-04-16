@@ -20,6 +20,7 @@ import { clearTokenMetadataCache } from './utils/format';
 import { AchievementProvider } from './contexts/AchievementContext';
 import { AchievementNotification } from './components/AchievementNotification';
 import { useAchievements } from './contexts/AchievementContext';
+import { DonateModal } from './components/DonateModal';
 
 // Initialize analytics with your measurement ID
 const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
@@ -48,6 +49,7 @@ const FixedHeader: React.FC = () => {
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showDonateModal, setShowDonateModal] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLDivElement>(null);
   const { isAuthenticated, principal, login, logout, isAdmin } = useAuth();
@@ -241,6 +243,13 @@ const FixedHeader: React.FC = () => {
       <div className="global-controls">
         <button
           className="control-button"
+          onClick={() => setShowDonateModal(true)}
+          title="Support SwapRunner"
+        >
+          <FiHeart />
+        </button>
+        <button
+          className="control-button"
           onClick={() => navigate('/help')}
           title="Help"
         >
@@ -288,6 +297,7 @@ const FixedHeader: React.FC = () => {
           )}
         </div>
       </div>
+      <DonateModal isOpen={showDonateModal} onClose={() => setShowDonateModal(false)} />
     </div>
   );
 };

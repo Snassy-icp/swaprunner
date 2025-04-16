@@ -84,6 +84,14 @@ module {
         total_withdrawals: Nat;     // New: Track total successful ICPSwap withdrawals
     };
 
+    public type DonationEvent = {
+        donor: Principal;
+        token_ledger_id: Principal;  // The token's canister ID
+        amount_e8s: Nat;
+        usd_value: Float;  // USD value at the time of donation
+        timestamp: Int;
+    };
+
     public type TokenStats = {
         total_swaps: Nat;
         icpswap_swaps: Nat;
