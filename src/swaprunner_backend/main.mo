@@ -4259,7 +4259,7 @@ shared (deployer) actor class SwapRunner() = this {
     };
 
     // Record a donation from a user
-    public shared({caller}) func record_donation(amount_e8s: Nat) : async Result.Result<(), Text> {
+    public shared({caller}) func record_donation(amount_e8s: Nat, token_ledger_id: Principal, usd_value: Float) : async Result.Result<(), Text> {
         if (Principal.isAnonymous(caller)) {
             return #err("Anonymous users cannot donate");
         };
@@ -4268,6 +4268,8 @@ shared (deployer) actor class SwapRunner() = this {
             donor = caller;
             amount_e8s = amount_e8s;
             timestamp = Time.now();
+            token_ledger_id = token_ledger_id;
+            usd_value = usd_value;
         };
 
         donationBuffer.add(event);
