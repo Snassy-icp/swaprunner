@@ -15,10 +15,27 @@ const ICP_LEDGER_ID = 'ryjl3-tyaaa-aaaaa-aaaba-cai';
 export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => {
   const { isAuthenticated, login } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [selectedAmount, setSelectedAmount] = useState<number>(0);
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleDonate = async (amount_e8s: number) => {
+  const handleAmountSelect = (amount: number) => {
+    setSelectedAmount(amount);
+    setError(null);
+  };
+
+  const handleDouble = () => {
+    setSelectedAmount(prev => prev * 2);
+    setError(null);
+  };
+
+  const handleDonate = async () => {
+    if (!selectedAmount) {
+      setError('Please select an amount first');
+      return;
+    }
+
     if (!isAuthenticated) {
       login();
       return;
@@ -26,6 +43,7 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
 
     try {
       setError(null);
+      setLoading(true);
       
       // Get current ICP price
       const icpPrice = await priceService.getICPUSDPrice();
@@ -34,20 +52,26 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
       }
 
       // Calculate USD value
-      const icpAmount = amount_e8s / 100_000_000; // Convert from e8s to ICP
+      const icpAmount = selectedAmount / 100_000_000; // Convert from e8s to ICP
       const usdValue = icpAmount * icpPrice;
 
       const actor = await backendService.getActor();
       await actor.record_donation({
         token_ledger_id: ICP_LEDGER_ID,
-        amount_e8s,
+        amount_e8s: selectedAmount,
         usd_value: usdValue,
       });
       onClose();
     } catch (error) {
       console.error('Failed to record donation:', error);
       setError('Failed to process donation. Please try again.');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const formatICP = (amount_e8s: number) => {
+    return `${amount_e8s / 100_000_000} ICP`;
   };
 
   return (
@@ -62,15 +86,46 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
         <div className="modal-body">
           <p>Help us keep SwapRunner running smoothly by making a donation. Your support helps maintain and improve the platform.</p>
           
-          <div className="donation-buttons">
-            <button onClick={() => handleDonate(10_000_000)} className="donate-button">
-              0.1 ICP
+          <div className="amount-selection">
+            <div className="amount-buttons">
+              <button 
+                onClick={() => handleAmountSelect(10_000_000)} 
+                className={`amount-button ${selectedAmount === 10_000_000 ? 'selected' : ''}`}
+              >
+                0.1 ICP
+              </button>
+              <button 
+                onClick={() => handleAmountSelect(100_000_000)} 
+                className={`amount-button ${selectedAmount === 100_000_000 ? 'selected' : ''}`}
+              >
+                1 ICP
+              </button>
+              <button 
+                onClick={handleDouble} 
+                className="amount-button"
+                disabled={!selectedAmount}
+              >
+                2×
+              </button>
+            </div>
+
+            {selectedAmount > 0 && (
+              <div className="selected-amount">
+                Selected amount: {formatICP(selectedAmount)}
+              </div>
+            )}
+          </div>
+
+          <div className="action-buttons">
+            <button className="cancel-button" onClick={onClose}>
+              Cancel
             </button>
-            <button onClick={() => handleDonate(100_000_000)} className="donate-button">
-              1 ICP
-            </button>
-            <button onClick={() => handleDonate(200_000_000)} className="donate-button">
-              2 ICP
+            <button 
+              className="donate-button" 
+              onClick={handleDonate}
+              disabled={loading || !selectedAmount}
+            >
+              {loading ? 'Processing...' : 'Donate'}
             </button>
           </div>
 

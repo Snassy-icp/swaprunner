@@ -61,14 +61,20 @@
   line-height: 1.6;
 }
 
-.donation-buttons {
+.amount-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.amount-buttons {
   display: flex;
   gap: 12px;
   justify-content: center;
-  margin-bottom: 16px;
 }
 
-.donate-button {
+.amount-button {
   background: var(--input-bg);
   border: 1px solid var(--border-color);
   border-radius: 12px;
@@ -82,10 +88,78 @@
   text-align: center;
 }
 
-.donate-button:hover {
+.amount-button:hover:not(:disabled) {
   background: var(--panel-bg);
   border-color: var(--accent-blue);
   transform: translateY(-1px);
+}
+
+.amount-button.selected {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+}
+
+.amount-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.selected-amount {
+  text-align: center;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 500;
+  padding: 12px;
+  background: var(--input-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cancel-button {
+  flex: 1;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 24px;
+  color: var(--text-secondary);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-button:hover {
+  background: var(--panel-bg);
+  color: var(--text-primary);
+}
+
+.donate-button {
+  flex: 1;
+  background: var(--accent-blue);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.donate-button:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.donate-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .error-message {
