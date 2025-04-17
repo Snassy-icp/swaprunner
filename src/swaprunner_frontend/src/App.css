@@ -2224,4 +2224,45 @@ body {
 .dex-button:hover .external-link-icon {
   color: var(--accent-blue);
   opacity: 1;
+}
+
+.handshake-icon {
+  color: var(--text-primary);
+}
+
+.donate-button:hover .handshake-icon {
+  animation: quick-shake 0.5s ease-in-out infinite;
+}
+
+@keyframes friendly-shake {
+  0%, 80%, 100% { 
+    transform: rotate(0deg);
+  }
+  82% { 
+    transform: rotate(-15deg);
+  }
+  84% { 
+    transform: rotate(15deg);
+  }
+  86% { 
+    transform: rotate(-8deg);
+  }
+  88% { 
+    transform: rotate(8deg);
+  }
+  90% { 
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes quick-shake {
+  0% { 
+    transform: rotate(-10deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
+  100% {
+    transform: rotate(-10deg);
+  }
 } 
