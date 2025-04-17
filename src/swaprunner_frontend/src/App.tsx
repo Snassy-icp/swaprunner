@@ -11,6 +11,7 @@ import { AppRoutes } from './routes';
 import { Header } from './components/Header';
 import { analyticsService } from './services/analytics';
 import { FiHelpCircle, FiRefreshCw, FiUser, FiLogIn, FiCheck, FiCopy, FiMenu, FiRepeat, FiCreditCard, FiList, FiDroplet, FiBarChart2, FiHeart } from 'react-icons/fi';
+import { FaHandshake } from 'react-icons/fa';
 import { isFeatureEnabled } from './config/featureFlags';
 import { useAuth } from './contexts/AuthContext';
 import './App.css';
@@ -20,6 +21,7 @@ import { clearTokenMetadataCache } from './utils/format';
 import { AchievementProvider } from './contexts/AchievementContext';
 import { AchievementNotification } from './components/AchievementNotification';
 import { useAchievements } from './contexts/AchievementContext';
+import { DonateModal } from './components/DonateModal';
 
 // Initialize analytics with your measurement ID
 const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
@@ -48,6 +50,7 @@ const FixedHeader: React.FC = () => {
   const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showDonateModal, setShowDonateModal] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const hamburgerRef = useRef<HTMLDivElement>(null);
   const { isAuthenticated, principal, login, logout, isAdmin } = useAuth();
@@ -224,6 +227,16 @@ const FixedHeader: React.FC = () => {
             <button 
               className="hamburger-item"
               onClick={() => {
+                setShowDonateModal(true);
+                setShowHamburgerMenu(false);
+              }}
+            >
+              <FaHandshake className="handshake-icon" />
+              Donate
+            </button>
+            <button 
+              className="hamburger-item"
+              onClick={() => {
                 handleClearCache();
                 setShowHamburgerMenu(false);
               }}
@@ -239,6 +252,13 @@ const FixedHeader: React.FC = () => {
         <span className="runner">Runner</span>
       </div>
       <div className="global-controls">
+        <button
+          className="control-button"
+          onClick={() => setShowDonateModal(true)}
+          title="Support SwapRunner"
+        >
+          <FaHandshake className="handshake-icon" />
+        </button>
         <button
           className="control-button"
           onClick={() => navigate('/help')}
@@ -288,6 +308,7 @@ const FixedHeader: React.FC = () => {
           )}
         </div>
       </div>
+      <DonateModal isOpen={showDonateModal} onClose={() => setShowDonateModal(false)} />
     </div>
   );
 };
