@@ -137,6 +137,16 @@ const FixedHeader: React.FC = () => {
               <FiCreditCard />
               Wallet
             </a>
+            <button 
+              className="hamburger-item"
+              onClick={() => {
+                setShowDonateModal(true);
+                setShowHamburgerMenu(false);
+              }}
+            >
+              <FiCoffee />
+              Support SwapRunner
+            </button>
             <a 
               href="/pools"
               className={`hamburger-item ${location.pathname === '/pools' ? 'active' : ''}`}
