@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiCoffee } from 'react-icons/fi';
+import { FiX, FiCoffee, FiHeart } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { backendService } from '../services/backend';
 import { priceService } from '../services/price';
@@ -108,6 +108,19 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
   const [selectedAmount, setSelectedAmount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [showHearts, setShowHearts] = useState(false);
+  const [showThankYou, setShowThankYou] = useState(false);
+  const [donatedAmount, setDonatedAmount] = useState<number>(0);
+
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset states when modal closes
+      setShowThankYou(false);
+      setShowHearts(false);
+      setSelectedAmount(0);
+      setError(null);
+      setDonatedAmount(0);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -167,14 +180,12 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
         "123" //transferResult.txId
       );
 
-      // Show heart confetti
-      setShowHearts(true);
+      // Store donated amount for thank you message
+      setDonatedAmount(selectedAmount);
       
-      // Close modal after a delay to show the hearts
-      setTimeout(() => {
-        setShowHearts(false);
-        onClose();
-      }, 2000);
+      // Show heart confetti and thank you message
+      setShowHearts(true);
+      setShowThankYou(true);
 
     } catch (error) {
       console.error('Failed to record donation:', error);
@@ -189,67 +200,90 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
   };
 
   return (
-    <div className="modal-overlay">
+    <div className="donate-modal-overlay">
       <HeartConfetti show={showHearts} />
-      <div className="modal-content">
-        <div className="modal-header">
-          <h3><FiCoffee /> Support SwapRunner</h3>
-          <button className="close-button" onClick={onClose}>
-            <FiX />
-          </button>
-        </div>
-        <div className="modal-body">
-          <p>Help us keep SwapRunner running smoothly by making a donation. Your support helps maintain and improve the platform.</p>
-          
-          <div className="amount-selection">
-            <div className="amount-buttons">
-              <button 
-                onClick={() => handleAmountSelect(10_000_000)} 
-                className={`amount-button ${selectedAmount === 10_000_000 ? 'selected' : ''}`}
-              >
-                0.1 ICP
-              </button>
-              <button 
-                onClick={() => handleAmountSelect(100_000_000)} 
-                className={`amount-button ${selectedAmount === 100_000_000 ? 'selected' : ''}`}
-              >
-                1 ICP
-              </button>
-              <button 
-                onClick={handleDouble} 
-                className="amount-button"
-                disabled={!selectedAmount}
-              >
-                2×
+      <div className="donate-modal-content">
+        {!showThankYou ? (
+          <>
+            <div className="donate-modal-header">
+              <h3><FiCoffee /> Support SwapRunner</h3>
+              <button className="close-button" onClick={onClose}>
+                <FiX />
               </button>
             </div>
+            <div className="donate-modal-body">
+              <p>Help us keep SwapRunner running smoothly by making a donation. Your support helps maintain and improve the platform.</p>
+              
+              <div className="amount-selection">
+                <div className="amount-buttons">
+                  <button 
+                    onClick={() => handleAmountSelect(10_000_000)} 
+                    className={`amount-button ${selectedAmount === 10_000_000 ? 'selected' : ''}`}
+                  >
+                    0.1 ICP
+                  </button>
+                  <button 
+                    onClick={() => handleAmountSelect(100_000_000)} 
+                    className={`amount-button ${selectedAmount === 100_000_000 ? 'selected' : ''}`}
+                  >
+                    1 ICP
+                  </button>
+                  <button 
+                    onClick={handleDouble} 
+                    className="amount-button"
+                    disabled={!selectedAmount}
+                  >
+                    2×
+                  </button>
+                </div>
 
-            {selectedAmount > 0 && (
-              <div className="selected-amount">
-                Selected amount: {formatICP(selectedAmount)}
+                {selectedAmount > 0 && (
+                  <div className="selected-amount">
+                    Selected amount: {formatICP(selectedAmount)}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          <div className="action-buttons">
-            <button className="cancel-button" onClick={onClose}>
-              Cancel
-            </button>
-            <button 
-              className="donate-button" 
-              onClick={handleDonate}
-              disabled={loading || !selectedAmount}
-            >
-              {loading ? 'Processing...' : 'Donate'}
-            </button>
-          </div>
+              <div className="action-buttons">
+                <button className="cancel-button" onClick={onClose}>
+                  Cancel
+                </button>
+                <button 
+                  className="donate-button" 
+                  onClick={handleDonate}
+                  disabled={loading || !selectedAmount}
+                >
+                  {loading ? 'Processing...' : 'Donate'}
+                </button>
+              </div>
 
-          {error && (
-            <div className="error-message">
-              {error}
+              {error && (
+                <div className="error-message">
+                  {error}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        ) : (
+          <>
+            <div className="modal-header thank-you">
+              <h3><FiHeart className="thank-you-heart" /> Thank You!</h3>
+            </div>
+            <div className="modal-body thank-you">
+              <p className="thank-you-message">
+                Thank you for your generous donation of {formatICP(donatedAmount)}! Your support means a lot to us and helps keep SwapRunner running smoothly.
+              </p>
+              <div className="action-buttons">
+                <button 
+                  className="welcome-button" 
+                  onClick={onClose}
+                >
+                  You're Welcome!
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

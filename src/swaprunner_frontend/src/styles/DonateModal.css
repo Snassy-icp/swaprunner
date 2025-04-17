@@ -1,4 +1,4 @@
-.modal-overlay {
+.donate-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -11,7 +11,7 @@
   z-index: 1000;
 }
 
-.modal-content {
+.donate-modal-content {
   background: var(--panel-bg);
   border: 1px solid var(--border-color);
   border-radius: 16px;
@@ -21,14 +21,14 @@
   position: relative;
 }
 
-.modal-header {
+.donate-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
 }
 
-.modal-header h3 {
+.donate-modal-header h3 {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
@@ -38,7 +38,7 @@
   gap: 8px;
 }
 
-.close-button {
+.donate-modal-close-button {
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -50,11 +50,11 @@
   transition: color 0.2s;
 }
 
-.close-button:hover {
+.donate-modal-close-button:hover {
   color: var(--text-primary);
 }
 
-.modal-body p {
+.donate-modal-body p {
   color: var(--text-secondary);
   margin-bottom: 24px;
   font-size: 14px;
@@ -216,5 +216,66 @@
   100% {
     opacity: 0;
     transform: translateY(105vh) translateX(0) scale(0.5) rotate(360deg);
+  }
+}
+
+.modal-header.thank-you {
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+.modal-header.thank-you h3 {
+  font-size: 28px;
+  color: var(--text-primary);
+}
+
+.thank-you-heart {
+  color: #ff4757;
+  animation: pulse 1.5s infinite;
+}
+
+.modal-body.thank-you {
+  text-align: center;
+}
+
+.thank-you-message {
+  font-size: 16px !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 30px !important;
+  line-height: 1.6;
+}
+
+.welcome-button {
+  background: linear-gradient(135deg, #ff6b6b, #ff4757);
+  border: none;
+  border-radius: 12px;
+  padding: 14px 32px;
+  color: white;
+  font-size: 18px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  width: 100%;
+  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+}
+
+.welcome-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4);
+}
+
+.welcome-button:active {
+  transform: translateY(1px);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
   }
 } 
