@@ -207,7 +207,7 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
           <>
             <div className="donate-modal-header">
               <h3><FiCoffee /> Support SwapRunner</h3>
-              <button className="close-button" onClick={onClose}>
+              <button className="donate-modal-close-button" onClick={onClose}>
                 <FiX />
               </button>
             </div>
