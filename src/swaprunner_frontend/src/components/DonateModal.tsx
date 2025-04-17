@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiX, FiCoffee, FiHeart } from 'react-icons/fi';
+import { FaHandshake } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 import { backendService } from '../services/backend';
 import { priceService } from '../services/price';
@@ -149,7 +150,6 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
       setError(null);
       setLoading(true);
 
-      /*
       // Transfer the donation to the SwapRunner developer wallet
       const transferResult = await icrc1Service.transfer({
         tokenId: ICP_LEDGER_ID,
@@ -160,7 +160,7 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
       if (!transferResult.success) {
         throw new Error(transferResult.error || 'Transfer failed');
       }
-      */
+
       // Record the donation
       // Get current ICP price
       const icpPrice = await priceService.getICPUSDPrice();
@@ -177,7 +177,7 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
         selectedAmount,
         Principal.fromText(ICP_LEDGER_ID),
         usdValue,
-        "123" //transferResult.txId
+        transferResult.txId
       );
 
       // Store donated amount for thank you message
@@ -206,7 +206,7 @@ export const DonateModal: React.FC<DonateModalProps> = ({ isOpen, onClose }) => 
         {!showThankYou ? (
           <>
             <div className="donate-modal-header">
-              <h3><FiCoffee /> Support SwapRunner</h3>
+              <h3><FaHandshake /> Support SwapRunner</h3>
               <button className="donate-modal-close-button" onClick={onClose}>
                 <FiX />
               </button>

@@ -10,7 +10,8 @@ import { TokenSecurityProvider } from './contexts/TokenSecurityContext';
 import { AppRoutes } from './routes';
 import { Header } from './components/Header';
 import { analyticsService } from './services/analytics';
-import { FiHelpCircle, FiRefreshCw, FiUser, FiLogIn, FiCheck, FiCopy, FiMenu, FiRepeat, FiCreditCard, FiList, FiDroplet, FiBarChart2, FiHeart, FiCoffee } from 'react-icons/fi';
+import { FiHelpCircle, FiRefreshCw, FiUser, FiLogIn, FiCheck, FiCopy, FiMenu, FiRepeat, FiCreditCard, FiList, FiDroplet, FiBarChart2, FiHeart } from 'react-icons/fi';
+import { FaHandshake } from 'react-icons/fa';
 import { isFeatureEnabled } from './config/featureFlags';
 import { useAuth } from './contexts/AuthContext';
 import './App.css';
@@ -137,16 +138,6 @@ const FixedHeader: React.FC = () => {
               <FiCreditCard />
               Wallet
             </a>
-            <button 
-              className="hamburger-item"
-              onClick={() => {
-                setShowDonateModal(true);
-                setShowHamburgerMenu(false);
-              }}
-            >
-              <FiCoffee />
-              Support SwapRunner
-            </button>
             <a 
               href="/pools"
               className={`hamburger-item ${location.pathname === '/pools' ? 'active' : ''}`}
@@ -236,6 +227,16 @@ const FixedHeader: React.FC = () => {
             <button 
               className="hamburger-item"
               onClick={() => {
+                setShowDonateModal(true);
+                setShowHamburgerMenu(false);
+              }}
+            >
+              <FaHandshake className="handshake-icon" />
+              Donate
+            </button>
+            <button 
+              className="hamburger-item"
+              onClick={() => {
                 handleClearCache();
                 setShowHamburgerMenu(false);
               }}
@@ -256,7 +257,7 @@ const FixedHeader: React.FC = () => {
           onClick={() => setShowDonateModal(true)}
           title="Support SwapRunner"
         >
-          <FiCoffee />
+          <FaHandshake className="handshake-icon" />
         </button>
         <button
           className="control-button"
