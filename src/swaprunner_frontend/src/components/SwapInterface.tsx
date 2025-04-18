@@ -4052,19 +4052,7 @@ const createSplitSwapDetails = async() => {
               })()}
             </div>
           </div>
-          <div className="input-details">
-            <div className="action-buttons">
-              <span className="usd-value">
-                {isLoadingUSDPrices ? (
-                  '$...'
-                ) : toUSDPrice !== null ? (
-                  `$${toUSDPrice.toFixed(2)}`
-                ) : (
-                  '$0.00'
-                )}
-              </span>
-            </div>
-          </div>
+
           <button 
             className="swap-button" 
             disabled={isInsufficientFunds || (!isAuthenticated ? (quote.loading || kongQuote.loading) : (!quote.amountOut && !kongQuote.amountOut) || quote.loading || kongQuote.loading)}
