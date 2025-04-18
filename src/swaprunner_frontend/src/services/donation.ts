@@ -1,5 +1,6 @@
 import { Principal } from '@dfinity/principal';
 import { backendService } from './backend';
+import { authService } from './auth';
 
 export interface DonationEvent {
   donor: string;
@@ -13,11 +14,11 @@ export interface DonationEvent {
 class DonationService {
   async getUserDonations(): Promise<DonationEvent[]> {
     try {
-      const actor = await backendService.getActor();
-      const principal = await actor.get_principal();
+      const principal = authService.getPrincipal();
       if (!principal) {
         throw new Error('Principal not found');
       }
+      const actor = await backendService.getActor();
       return actor.get_user_donations(principal);
     } catch (error) {
       console.error('Failed to get user donations:', error);
