@@ -9,6 +9,7 @@ import { formatTokenAmount } from '../utils/format';
 import { priceService } from '../services/price';
 import { AchievementsSection } from '../components/AchievementsSection';
 import { AllocationsSection } from '../components/AllocationsSection';
+import { DonationsSection } from '../components/DonationsSection';
 import '../styles/Me.css';
 
 type SortField = 'token' | 'swaps' | 'volume' | 'savings';
@@ -579,6 +580,7 @@ export const Me: React.FC = () => {
 
         <AchievementsSection />
         {(/*isAdmin ||*/ isVerified) && <AllocationsSection />}
+        <DonationsSection />
 
         <CollapsibleSection title="Statistics" icon={<FiBarChart2 />} defaultExpanded={false}>
           <div className="section-header">
