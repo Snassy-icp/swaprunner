@@ -11,6 +11,15 @@ export interface DonationEvent {
   timestamp: bigint;
 }
 
+interface BackendDonationEvent {
+  donor: Principal;
+  token_ledger_id: string;
+  amount_e8s: bigint;
+  tx_id: string;
+  usd_value: number;
+  timestamp: bigint;
+}
+
 class DonationService {
   async getUserDonations(): Promise<DonationEvent[]> {
     try {
@@ -19,7 +28,12 @@ class DonationService {
         throw new Error('Principal not found');
       }
       const actor = await backendService.getActor();
-      return actor.get_user_donations(principal);
+      const donations = await actor.get_user_donations(principal);
+      // Convert Principal to string in the donor field
+      return donations.map((donation: BackendDonationEvent) => ({
+        ...donation,
+        donor: donation.donor.toString()
+      }));
     } catch (error) {
       console.error('Failed to get user donations:', error);
       return [];

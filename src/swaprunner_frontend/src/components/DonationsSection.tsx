@@ -68,7 +68,7 @@ export const DonationsSection: React.FC = () => {
             return (
               <div key={`${donation.tx_id}-${index}`} className="donation-item">
                 <div className="donation-amount">
-                  {formatTokenAmount(donation.amount_e8s, donation.token_ledger_id)} {metadata?.symbol || 'tokens'}
+                  {formatTokenAmount(donation.amount_e8s, donation.token_ledger_id)} {metadata?.symbol || donation.token_ledger_id}
                 </div>
                 <div className="donation-details">
                   <div className="donation-date">{formatDate(donation.timestamp)}</div>
