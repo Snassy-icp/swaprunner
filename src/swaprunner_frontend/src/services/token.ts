@@ -1503,6 +1503,27 @@ export class TokenService {
       throw error;
     }
   }
+
+  async getAllCustomTokens(): Promise<[Principal, WhitelistTokenMetadata][]> {
+    try {
+      const actor = await this.getBackendActor();
+      const tokens = await actor.get_all_custom_tokens();
+      return tokens.map(([principal, metadata]: [Principal, any]) => [
+        principal,
+        {
+          name: metadata.name?.[0] ?? null,
+          symbol: metadata.symbol?.[0] ?? null,
+          decimals: metadata.decimals?.[0] ? Number(metadata.decimals[0]) : 8,
+          fee: metadata.fee?.[0] ?? null,
+          hasLogo: Boolean(metadata.hasLogo),
+          standard: metadata.standard || 'ICRC1'
+        }
+      ]);
+    } catch (error) {
+      console.error('Error getting all custom tokens:', error);
+      return [];
+    }
+  }
 }
 
 // Export singleton instance

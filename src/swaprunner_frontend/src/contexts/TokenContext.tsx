@@ -36,9 +36,9 @@ export const TokenProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const whitelistedTokens: [Principal, WhitelistTokenMetadata][] = await tokenService.getAllTokens();
         console.log('Whitelisted tokens:', whitelistedTokens);
         
-        // Get custom tokens (will be empty for anonymous users)
-        const customTokensWithMetadata: [Principal, WhitelistTokenMetadata][] = await tokenService.getCustomTokens();
-        console.log('Custom tokens with metadata:', customTokensWithMetadata);
+        // Get all custom tokens (including those from other users)
+        const customTokensWithMetadata: [Principal, WhitelistTokenMetadata][] = await tokenService.getAllCustomTokens();
+        console.log('All custom tokens with metadata:', customTokensWithMetadata);
         
         // Create a map of custom tokens for quick lookup and to avoid duplicates
         const customTokenMap = new Map(
