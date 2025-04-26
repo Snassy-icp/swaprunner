@@ -32,13 +32,13 @@ export const TokenProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         setIsLoadingMetadata(true);
         
-        // Get custom tokens first (now includes metadata)
-        const customTokensWithMetadata: [Principal, WhitelistTokenMetadata][] = await tokenService.getCustomTokens();
-        console.log('Custom tokens with metadata:', customTokensWithMetadata);
-        
-        // Get all whitelisted tokens
+        // Get all whitelisted tokens first
         const whitelistedTokens: [Principal, WhitelistTokenMetadata][] = await tokenService.getAllTokens();
         console.log('Whitelisted tokens:', whitelistedTokens);
+        
+        // Get all custom tokens (including those from other users)
+        const customTokensWithMetadata: [Principal, WhitelistTokenMetadata][] = await tokenService.getAllCustomTokens();
+        console.log('All custom tokens with metadata:', customTokensWithMetadata);
         
         // Create a map of custom tokens for quick lookup and to avoid duplicates
         const customTokenMap = new Map(
@@ -55,6 +55,7 @@ export const TokenProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         await Promise.all(allTokens.map(async ([principal, metadata]) => {
           if (!metadata) throw new Error(`No metadata found for token ${principal.toString()}`);
           const canisterId = principal.toString();
+          
           // Store in localStorage cache
           const cache = localStorage.getItem(METADATA_CACHE_KEY);
           const metadataCache = cache ? JSON.parse(cache) : { tokens: {}, timestamp: Date.now() };
@@ -97,7 +98,8 @@ export const TokenProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setIsLoadingMetadata(false);
       } catch (error) {
         console.error('Error syncing tokens:', error);
-        throw error; // Re-throw to prevent UI from showing with incomplete metadata
+        setIsLoadingMetadata(false);
+        // Don't rethrow - we want to show UI with whatever metadata we have
       }
     };
 
