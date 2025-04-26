@@ -4292,4 +4292,9 @@ shared (deployer) actor class SwapRunner() = this {
         };
         Buffer.toArray(userDonations)
     };
+
+    // Get all custom tokens metadata
+    public query func get_all_custom_tokens() : async [(Principal, T.TokenMetadata)] {
+        Iter.toArray(customTokenMetadata.entries())
+    };
 }
