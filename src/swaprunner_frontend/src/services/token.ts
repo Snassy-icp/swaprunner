@@ -604,6 +604,7 @@ export class TokenService {
 
   async getMetadataWithLogo(canisterId: string): Promise<TokenMetadata> {
     try {
+      // First try to get metadata from cache
       const metadata = await this.getMetadata(canisterId);
       const logo = await this.getTokenLogo(canisterId);
       return {
@@ -612,15 +613,39 @@ export class TokenService {
       };
     } catch (error) {
       console.error('Error getting metadata with logo:', error);
-      return {
-        name: 'Unknown Token',
-        symbol: 'UNKNOWN',
-        decimals: 8,
-        fee: BigInt(0),
-        hasLogo: false,
-        logo: '/generic_token.svg',
-        standard: 'UNKNOWN'
-      };
+      
+      // If metadata is not in cache, try to fetch it from backend
+      try {
+        const actor = await this.getBackendActor();
+        const tokenMetadata = await actor.get_token_metadata(Principal.fromText(canisterId));
+        
+        if (!tokenMetadata) {
+          throw new Error(`No metadata found for token ${canisterId}`);
+        }
+
+        // Process metadata
+        const processedMetadata = {
+          name: tokenMetadata.name?.[0] ?? 'Unknown Token',
+          symbol: tokenMetadata.symbol?.[0] ?? 'UNKNOWN',
+          decimals: tokenMetadata.decimals?.[0] ? Number(tokenMetadata.decimals[0]) : 8,
+          fee: tokenMetadata.fee?.[0] ?? BigInt(0),
+          hasLogo: Boolean(tokenMetadata.hasLogo),
+          standard: tokenMetadata.standard || 'ICRC1'
+        };
+
+        // Cache the metadata
+        await cacheTokenMetadata(canisterId);
+
+        // Get logo and return complete metadata
+        const logo = await this.getTokenLogo(canisterId);
+        return {
+          ...processedMetadata,
+          logo: processedMetadata.symbol === 'ICP' ? '/icp_symbol.svg' : (logo || '/generic_token.svg')
+        };
+      } catch (backendError: any) {
+        console.error('Error fetching metadata from backend:', backendError);
+        throw new Error(`Failed to get metadata for token ${canisterId}: ${backendError?.message || 'Unknown error'}`);
+      }
     }
   }
 
