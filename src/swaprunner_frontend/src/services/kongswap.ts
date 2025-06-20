@@ -221,9 +221,9 @@ export class KongSwapService {
 
       // Get a quote for 1e8 units (1 token) to determine the price
       const quoteResponse = await actor.swap_amounts(
-        symbolA,
+        "IC." + symbolA,
         BigInt('100000000'), // 1e8 units
-        symbolB
+        "IC." + symbolB
       );
 
       if ('Err' in quoteResponse) {
@@ -254,9 +254,9 @@ export class KongSwapService {
 
       // Get quote directly from Kong, letting it handle routing
       const quoteResponse = await actor.swap_amounts(
-        symbolIn,
+        "IC." + symbolIn,
         params.amountIn,
-        symbolOut
+        "IC." + symbolOut
       );
 
       console.log('Kong quote response:', quoteResponse);
@@ -427,10 +427,10 @@ export class KongSwapService {
 
       // Use the exact slippage tolerance from the UI
       const swapArgs: SwapArgs = {
-        pay_token: symbolIn,
+        pay_token: "IC." + symbolIn,
         pay_amount: BigInt(params.fromToken.amount_e8s),
         pay_tx_id: metadata.standard === 'ICRC1' ? [{ BlockIndex: BigInt(params.fromToken.txId!) }] : [],
-        receive_token: symbolOut,
+        receive_token: "IC." + symbolOut,
         receive_amount: [BigInt(params.toToken.minAmount_e8s)],
         receive_address: [],  // Empty array means use caller's address
         max_slippage: [params.slippageTolerance],  // Use exact slippage from UI
