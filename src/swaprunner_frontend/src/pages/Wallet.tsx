@@ -22,6 +22,10 @@ import { ConfirmationModal } from '../components/ConfirmationModal';
 
 const icpSwapExecutionService = new ICPSwapExecutionService();
 
+// Token constants for wrap/unwrap functionality
+const GLDT_CANISTER_ID = '6c7su-kiaaa-aaaar-qaira-cai';
+const SGLDT_CANISTER_ID = 'i2s4q-syaaa-aaaan-qz4sq-cai';
+
 interface NamedSubaccount {
   name: string;
   subaccount: number[];
@@ -507,6 +511,16 @@ export const WalletPage: React.FC = () => {
     }
   };
 
+  const handleWrapGLDT = (tokenId: string) => {
+    // TODO: Implement GLDT wrapping functionality
+    console.log('Wrap GLDT to sGLDT:', tokenId);
+  };
+
+  const handleUnwrapSGLDT = (tokenId: string) => {
+    // TODO: Implement sGLDT unwrapping functionality  
+    console.log('Unwrap sGLDT to GLDT:', tokenId);
+  };
+
   // Add helper function to calculate total USD value including subaccounts
   const calculateTotalUSDValue = (token: WalletToken): number => {
     const price = token.usdPrice ?? 0;
@@ -909,6 +923,32 @@ export const WalletPage: React.FC = () => {
                           <span className="action-symbol"><FiRefreshCw /></span>
                           <span className="action-text">Swap</span>
                         </button>
+                        {token.canisterId === GLDT_CANISTER_ID && (
+                          <button 
+                            className="expanded-action-button" 
+                            title="Wrap to sGLDT"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleWrapGLDT(token.canisterId);
+                            }}
+                          >
+                            <span className="action-symbol"><FiRepeat /></span>
+                            <span className="action-text">Wrap</span>
+                          </button>
+                        )}
+                        {token.canisterId === SGLDT_CANISTER_ID && (
+                          <button 
+                            className="expanded-action-button" 
+                            title="Unwrap to GLDT"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnwrapSGLDT(token.canisterId);
+                            }}
+                          >
+                            <span className="action-symbol"><FiRepeat /></span>
+                            <span className="action-text">Unwrap</span>
+                          </button>
+                        )}
                       </div>
                       <div className="token-metadata-row">
                         <span className="metadata-label">Main Balance:</span>
