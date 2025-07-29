@@ -4297,4 +4297,109 @@ shared (deployer) actor class SwapRunner() = this {
     public query func get_all_custom_tokens() : async [(Principal, T.TokenMetadata)] {
         Iter.toArray(customTokenMetadata.entries())
     };
+
+    // Add before system_started()
+    
+    // Refresh token logo by fetching from ICRC-1 metadata first, then ICPSwap fallback
+    public shared({caller}) func refresh_token_logo(canisterId: Principal) : async Result.Result<{hasLogo: Bool; logoUrl: ?Text}, Text> {
+        if (not isAdmin(caller)) {
+            return #err("Unauthorized: Caller is not an admin");
+        };
+
+        var hasLogo = false;
+        var logoUrl : ?Text = null;
+
+        try {
+            // Create ICRC1 actor for the token
+            let tokenActor : T.ICRC1Interface = actor(Principal.toText(canisterId));
+            
+            // Try to fetch ICRC-1 metadata first
+            try {
+                let metadata = await tokenActor.icrc1_metadata();
+                switch (extractText(extractFromMetadata(metadata, "icrc1:logo"))) {
+                    case (?logo) {
+                        if (isValidLogoUrl(logo)) {
+                            tokenLogos.put(canisterId, logo);
+                            hasLogo := true;
+                            logoUrl := ?logo;
+                        };
+                    };
+                    case null {
+                        // No logo in ICRC-1 metadata, try ICPSwap fallback
+                    };
+                };
+            } catch (_) {
+                // ICRC-1 metadata call failed, try ICPSwap fallback
+            };
+
+            // If no logo found in ICRC-1 metadata, try ICPSwap as fallback
+            if (not hasLogo) {
+                try {
+                    let icpswap : T.ICPSwapInterface = actor(ICPSWAP_TOKEN_CANISTER_ID);
+                    switch (await icpswap.getLogo(Principal.toText(canisterId))) {
+                        case (#ok(logoText)) { 
+                            if (logoText != "" and isValidLogoUrl(logoText)) {
+                                tokenLogos.put(canisterId, logoText);
+                                hasLogo := true;
+                                logoUrl := ?logoText;
+                            }
+                        };
+                        case (#err(_)) {};
+                    };
+                } catch (_e) {};
+            };
+
+            // Update hasLogo flag in relevant metadata stores if logo was found
+            if (hasLogo) {
+                // Update backend whitelist metadata if it exists
+                switch (tokenMetadata.get(canisterId)) {
+                    case (?metadata) {
+                        tokenMetadata.put(canisterId, {
+                            name = metadata.name;
+                            symbol = metadata.symbol;
+                            fee = metadata.fee;
+                            decimals = metadata.decimals;
+                            hasLogo = true;
+                            standard = metadata.standard;
+                        });
+                    };
+                    case null {};
+                };
+
+                // Update ICPSwap metadata if it exists
+                switch (tokenMetadataICPSwap.get(canisterId)) {
+                    case (?metadata) {
+                        tokenMetadataICPSwap.put(canisterId, {
+                            name = metadata.name;
+                            symbol = metadata.symbol;
+                            fee = metadata.fee;
+                            decimals = metadata.decimals;
+                            hasLogo = true;
+                            standard = metadata.standard;
+                        });
+                    };
+                    case null {};
+                };
+
+                // Update custom token metadata if it exists
+                switch (customTokenMetadata.get(canisterId)) {
+                    case (?metadata) {
+                        customTokenMetadata.put(canisterId, {
+                            name = metadata.name;
+                            symbol = metadata.symbol;
+                            fee = metadata.fee;
+                            decimals = metadata.decimals;
+                            hasLogo = true;
+                            standard = metadata.standard;
+                        });
+                    };
+                    case null {};
+                };
+            };
+
+            #ok({hasLogo = hasLogo; logoUrl = logoUrl})
+        } catch (e) {
+            #err("Failed to refresh token logo: " # Error.message(e))
+        }
+    };
 }
