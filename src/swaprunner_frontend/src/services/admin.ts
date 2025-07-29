@@ -108,6 +108,23 @@ class AdminService {
     }
   }
 
+  async refreshTokenLogo(canisterId: string): Promise<{hasLogo: boolean; logoUrl: string | null}> {
+    try {
+      const actor = await backendService.getActor();
+      const result = await actor.refresh_token_logo(Principal.fromText(canisterId));
+      if ('err' in result) {
+        throw new Error(result.err);
+      }
+      return {
+        hasLogo: result.ok.hasLogo,
+        logoUrl: result.ok.logoUrl[0] || null
+      };
+    } catch (error) {
+      console.error('Error refreshing token logo:', error);
+      throw error;
+    }
+  }
+
   async setPanicMode(enabled: boolean): Promise<void> {
     try {
       const actor = await backendService.getActor();

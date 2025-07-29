@@ -95,6 +95,7 @@ export const AdminTokensPage: React.FC = () => {
         logo: ''
     });
     const [isSettingLogo, setIsSettingLogo] = useState(false);
+    const [isRefreshingLogo, setIsRefreshingLogo] = useState(false);
     const tokensPerPage = 10;
     const navigate = useNavigate();
 
@@ -655,6 +656,29 @@ export const AdminTokensPage: React.FC = () => {
         }
     };
 
+    const handleRefreshLogo = async () => {
+        if (!logoFormData.canisterId) {
+            setError('Token canister ID is required');
+            return;
+        }
+
+        setIsRefreshingLogo(true);
+        setError(null);
+        try {
+            const result = await adminService.refreshTokenLogo(logoFormData.canisterId);
+            if (result.hasLogo) {
+                setSuccessMessage(`Logo refreshed successfully. Found logo: ${result.logoUrl}`);
+            } else {
+                setSuccessMessage('Logo refresh completed, but no logo was found for this token');
+            }
+            await loadTokens(); // Refresh the token list
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to refresh logo');
+        } finally {
+            setIsRefreshingLogo(false);
+        }
+    };
+
     const MetadataModal: React.FC<TokenMetadataModalProps> = ({ isOpen, onClose, metadata, canisterId }) => {
         if (!isOpen) return null;
 
@@ -1090,7 +1114,7 @@ export const AdminTokensPage: React.FC = () => {
                             value={logoFormData.canisterId}
                             onChange={(e) => setLogoFormData(prev => ({ ...prev, canisterId: e.target.value }))}
                             placeholder="Enter token canister ID"
-                            disabled={isSettingLogo}
+                            disabled={isSettingLogo || isRefreshingLogo}
                         />
                     </div>
                     <div className="form-group">
@@ -1101,16 +1125,26 @@ export const AdminTokensPage: React.FC = () => {
                             value={logoFormData.logo}
                             onChange={(e) => setLogoFormData(prev => ({ ...prev, logo: e.target.value }))}
                             placeholder="Enter logo URL"
-                            disabled={isSettingLogo}
+                            disabled={isSettingLogo || isRefreshingLogo}
                         />
                     </div>
-                    <button 
-                        type="submit" 
-                        disabled={isSettingLogo || !logoFormData.canisterId || !logoFormData.logo}
-                        className="primary-button"
-                    >
-                        {isSettingLogo ? 'Setting Logo...' : 'Set Logo'}
-                    </button>
+                    <div className="form-buttons">
+                        <button 
+                            type="submit" 
+                            disabled={isSettingLogo || isRefreshingLogo || !logoFormData.canisterId || !logoFormData.logo}
+                            className="submit-button"
+                        >
+                            {isSettingLogo ? 'Setting Logo...' : 'Set Logo'}
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={handleRefreshLogo}
+                            disabled={isRefreshingLogo || isSettingLogo || !logoFormData.canisterId}
+                            className="refresh-button"
+                        >
+                            {isRefreshingLogo ? 'Refreshing Logo...' : 'Refresh Logo'}
+                        </button>
+                    </div>
                 </form>
             </div>
 

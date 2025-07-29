@@ -168,6 +168,12 @@
     margin-top: 24px;
 }
 
+.form-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
 .submit-button {
     padding: 8px 24px;
     background: var(--primary-color);
