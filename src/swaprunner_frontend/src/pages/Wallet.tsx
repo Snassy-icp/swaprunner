@@ -19,6 +19,7 @@ import { dip20Service } from '../services/dip20_service';
 import { icrc1Service } from '../services/icrc1_service';
 import { AccountParser } from '../utils/account';
 import { ConfirmationModal } from '../components/ConfirmationModal';
+import { WrapUnwrapModal } from '../components/WrapUnwrapModal';
 
 const icpSwapExecutionService = new ICPSwapExecutionService();
 
@@ -78,6 +79,13 @@ export const WalletPage: React.FC = () => {
   const [isDepositMode, setIsDepositMode] = useState(false);
   const [showRemoveConfirmation, setShowRemoveConfirmation] = useState(false);
   const [subaccountToRemove, setSubaccountToRemove] = useState<{ tokenId: string; subaccount: number[] } | null>(null);
+  const [addSubaccountModalTokenId, setAddSubaccountModalTokenId] = useState<string | null>(null);
+  const [wrapUnwrapModal, setWrapUnwrapModal] = useState<{
+    isOpen: boolean;
+    mode: 'wrap' | 'unwrap';
+    tokenId: string;
+    tokenSymbol: string;
+  } | null>(null);
 
   useEffect(() => {
     // Check authentication status on mount
@@ -512,13 +520,27 @@ export const WalletPage: React.FC = () => {
   };
 
   const handleWrapGLDT = (tokenId: string) => {
-    // TODO: Implement GLDT wrapping functionality
-    console.log('Wrap GLDT to sGLDT:', tokenId);
+    const token = tokens[tokenId];
+    setWrapUnwrapModal({
+      isOpen: true,
+      mode: 'wrap',
+      tokenId,
+      tokenSymbol: token?.metadata?.symbol || 'GLDT'
+    });
   };
 
   const handleUnwrapSGLDT = (tokenId: string) => {
-    // TODO: Implement sGLDT unwrapping functionality  
-    console.log('Unwrap sGLDT to GLDT:', tokenId);
+    const token = tokens[tokenId];
+    setWrapUnwrapModal({
+      isOpen: true,
+      mode: 'unwrap',
+      tokenId,
+      tokenSymbol: token?.metadata?.symbol || 'sGLDT'
+    });
+  };
+
+  const handleCloseWrapUnwrapModal = () => {
+    setWrapUnwrapModal(null);
   };
 
   // Add helper function to calculate total USD value including subaccounts
@@ -1331,6 +1353,16 @@ export const WalletPage: React.FC = () => {
         confirmText="Remove"
         isDanger={true}
       />
+      {wrapUnwrapModal && (
+        <WrapUnwrapModal
+          isOpen={wrapUnwrapModal.isOpen}
+          onClose={handleCloseWrapUnwrapModal}
+          mode={wrapUnwrapModal.mode}
+          tokenId={wrapUnwrapModal.tokenId}
+          tokenSymbol={wrapUnwrapModal.tokenSymbol}
+          refreshBalances={loadWalletTokens}
+        />
+      )}
     </div>
   );
 };
