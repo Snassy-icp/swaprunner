@@ -150,6 +150,12 @@ export const WrapUnwrapModal: React.FC<WrapUnwrapModalProps> = ({
   }, [isOpen, loadBalanceAndFee]);
 
   const handleWrap = async (amount_e8s: bigint) => {
+    // Minimum amount validation - must be at least 0.7 GLDT
+    const minimumWrapAmount = BigInt(70000000); // 0.7 GLDT in e8s
+    if (amount_e8s < minimumWrapAmount) {
+      throw new Error('Minimum wrap amount is 0.7 GLDT');
+    }
+
     const gldtActorInstance = await gldtActor;
     const sgldtActorInstance = await sgldtActor;
     
@@ -223,6 +229,12 @@ export const WrapUnwrapModal: React.FC<WrapUnwrapModalProps> = ({
   };
 
   const handleUnwrap = async (amount_e8s: bigint) => {
+    // Minimum amount validation - must be at least 0.4 sGLDT
+    const minimumUnwrapAmount = BigInt(40000000); // 0.4 sGLDT in e8s
+    if (amount_e8s < minimumUnwrapAmount) {
+      throw new Error('Minimum unwrap amount is 0.4 sGLDT');
+    }
+
     const sgldtActorInstance = await sgldtActor;
     if (!sgldtActorInstance) {
       throw new Error('sGLDT actor not initialized');
