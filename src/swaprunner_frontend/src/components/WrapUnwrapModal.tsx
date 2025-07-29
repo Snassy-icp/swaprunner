@@ -3,7 +3,7 @@ import { TokenActionModal } from './TokenActionModal';
 import { authService } from '../services/auth';
 import { backendService } from '../services/backend';
 import { useTokens } from '../contexts/TokenContext';
-import { cacheTokenMetadata } from '../utils/format';
+import { cacheTokenMetadata, formatTokenAmount } from '../utils/format';
 import { Principal } from '@dfinity/principal';
 import { Actor, HttpAgent } from '@dfinity/agent';
 import { idlFactory as sgldtIdlFactory } from '../../../external/sgldt/sgldt.did.js';
@@ -103,10 +103,10 @@ export const WrapUnwrapModal: React.FC<WrapUnwrapModalProps> = ({
     }
 
     try {
-      // Cache token metadata first
+      // Always cache GLDT metadata first (needed for both wrap and unwrap fees)
       await cacheTokenMetadata(GLDT_CANISTER_ID);
       
-      // Get GLDT token metadata for fee
+      // Get GLDT token metadata for fee (needed for both modes)
       const gldtToken = tokens.find(t => t.canisterId === GLDT_CANISTER_ID);
       if (gldtToken?.metadata) {
         setGldtFee_e8s(gldtToken.metadata.fee);
@@ -119,14 +119,14 @@ export const WrapUnwrapModal: React.FC<WrapUnwrapModalProps> = ({
       const account = { owner: principal, subaccount: [] as [] | [number[]] };
 
       if (mode === 'wrap') {
-        // Get GLDT balance for wrapping
+        // Get GLDT balance for wrapping (full balance, no fee deduction)
         const actor = await gldtActor;
         if (actor) {
           const balance = await actor.icrc1_balance_of(account);
           setMaxAmount_e8s(balance);
         }
       } else {
-        // Get sGLDT balance for unwrapping
+        // Get sGLDT balance for unwrapping (full balance, no fee deduction)
         const actor = await sgldtActor;
         if (actor) {
           const balance = await actor.icrc1_balance_of(account);
@@ -162,8 +162,12 @@ export const WrapUnwrapModal: React.FC<WrapUnwrapModalProps> = ({
       throw new Error('Not authenticated');
     }
 
-    // Amount to approve and deposit (amount - 1 GLDT fee)
-    const approveAmount = amount_e8s - gldtFee_e8s;
+    // Calculate approval amount (selected amount - 1 GLDT fee)
+    const approvalAmount = amount_e8s - gldtFee_e8s;
+    if (approvalAmount <= 0n) {
+      throw new Error('Amount too small to cover transaction fee');
+    }
+
     const sgldtPrincipal = Principal.fromText(SGLDT_CANISTER_ID);
 
     // Check current allowance
@@ -175,9 +179,9 @@ export const WrapUnwrapModal: React.FC<WrapUnwrapModalProps> = ({
     const currentAllowance = await gldtActorInstance.icrc2_allowance(allowanceArgs);
     
     // Approve if needed
-    if (currentAllowance.allowance < approveAmount) {
+    if (currentAllowance.allowance < approvalAmount) {
       const approveArgs = {
-        amount: approveAmount,
+        amount: approvalAmount,
         spender: { owner: sgldtPrincipal, subaccount: [] as [] | [number[]] },
         fee: [] as [] | [bigint],
         memo: [] as [] | [number[]],
@@ -193,8 +197,8 @@ export const WrapUnwrapModal: React.FC<WrapUnwrapModalProps> = ({
       }
     }
 
-    // Call deposit on sGLDT canister
-    const depositResult = await sgldtActorInstance.deposit([], approveAmount);
+    // Call deposit on sGLDT canister with approval amount
+    const depositResult = await sgldtActorInstance.deposit([], approvalAmount);
     if ('err' in depositResult) {
       throw new Error(`Deposit failed: ${depositResult.err}`);
     }
@@ -218,7 +222,7 @@ export const WrapUnwrapModal: React.FC<WrapUnwrapModalProps> = ({
       throw new Error('sGLDT actor not initialized');
     }
 
-    // Call withdraw on sGLDT canister
+    // Call withdraw on sGLDT canister with selected amount
     const withdrawResult = await sgldtActorInstance.withdraw([], amount_e8s);
     if ('err' in withdrawResult) {
       throw new Error(`Withdraw failed: ${withdrawResult.err}`);
@@ -245,18 +249,6 @@ export const WrapUnwrapModal: React.FC<WrapUnwrapModalProps> = ({
     }
   };
 
-  const getResultingAmount = (inputAmount_e8s: bigint): string => {
-    if (mode === 'wrap') {
-      // Wrap: input amount - 2 GLDT fees = resulting sGLDT
-      const resultAmount = inputAmount_e8s - (gldtFee_e8s * 2n);
-      return resultAmount > 0n ? (Number(resultAmount) / 100000000).toFixed(8) : '0.00000000';
-    } else {
-      // Unwrap: input amount results in (input - 3 GLDT fees) GLDT
-      const resultAmount = inputAmount_e8s - (gldtFee_e8s * 3n);
-      return resultAmount > 0n ? (Number(resultAmount) / 100000000).toFixed(8) : '0.00000000';
-    }
-  };
-
   const getTitle = () => {
     return mode === 'wrap' ? 'Wrap GLDT to sGLDT' : 'Unwrap sGLDT to GLDT';
   };
@@ -267,6 +259,20 @@ export const WrapUnwrapModal: React.FC<WrapUnwrapModalProps> = ({
 
   const getActionText = () => {
     return mode === 'wrap' ? 'Wrap' : 'Unwrap';
+  };
+
+  const getFeeLabel = () => {
+    return mode === 'wrap' ? 'Wrap Fee' : 'Unwrap Fee';
+  };
+
+  const getDisplayFee = () => {
+    if (mode === 'wrap') {
+      // Wrap fee is 2 × GLDT fee
+      return gldtFee_e8s * 2n;
+    } else {
+      // Unwrap fee is 3 × GLDT fee
+      return gldtFee_e8s * 3n;
+    }
   };
 
   if (!isMetadataLoaded) {
@@ -281,12 +287,13 @@ export const WrapUnwrapModal: React.FC<WrapUnwrapModalProps> = ({
       tokenId={tokenId}
       tokenSymbol={tokenSymbol}
       maxAmount_e8s={maxAmount_e8s}
-      fee_e8s={mode === 'wrap' ? gldtFee_e8s : BigInt(0)}
+      fee_e8s={getDisplayFee()}
       title={getTitle()}
       action={getActionText()}
       balanceLabel={getBalanceLabel()}
-      subtractFees={mode === 'wrap' ? gldtFee_e8s : BigInt(0)}
+      subtractFees={BigInt(0)} // No fee subtraction from max amount
       error={error}
+      feeLabel={getFeeLabel()}
     />
   );
 };

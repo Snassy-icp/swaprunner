@@ -17,6 +17,7 @@ export interface TokenActionModalProps {
   balanceLabel: string;
   subtractFees: bigint;
   error?: string | null;
+  feeLabel?: string;
 }
 
 export const TokenActionModal: React.FC<TokenActionModalProps> = ({
@@ -32,6 +33,7 @@ export const TokenActionModal: React.FC<TokenActionModalProps> = ({
   balanceLabel,
   subtractFees = 0n,
   error: externalError = null,
+  feeLabel = "Transaction Fee",
 }) => {
   const [amount, setAmount] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -158,7 +160,7 @@ export const TokenActionModal: React.FC<TokenActionModalProps> = ({
             </div>
 
             <div className="modal-fee-info">
-              <span>Transaction Fee</span>
+              <span>{feeLabel}</span>
               <span>{formatTokenAmount(fee_e8s, tokenId)} {tokenSymbol}</span>
             </div>
           </div>
