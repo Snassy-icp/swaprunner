@@ -125,6 +125,23 @@ class AdminService {
     }
   }
 
+  async getTokenLogo(canisterId: string): Promise<string | null> {
+    try {
+      const actor = await backendService.getActor();
+      const result = await actor.get_token_logo(Principal.fromText(canisterId));
+      
+      // Handle Candid optional type (comes as array)
+      if (!result || !Array.isArray(result) || result.length === 0) {
+        return null;
+      }
+      
+      return result[0] || null;
+    } catch (error) {
+      console.error('Error getting token logo:', error);
+      throw error;
+    }
+  }
+
   async setPanicMode(enabled: boolean): Promise<void> {
     try {
       const actor = await backendService.getActor();

@@ -96,8 +96,15 @@ export const AdminTokensPage: React.FC = () => {
     });
     const [isSettingLogo, setIsSettingLogo] = useState(false);
     const [isRefreshingLogo, setIsRefreshingLogo] = useState(false);
+    const [isGettingLogo, setIsGettingLogo] = useState(false);
+    const [retrievedLogoUrl, setRetrievedLogoUrl] = useState<string | null>(null);
     const tokensPerPage = 10;
     const navigate = useNavigate();
+
+    // Clear retrieved logo when canister ID changes
+    useEffect(() => {
+        setRetrievedLogoUrl(null);
+    }, [logoFormData.canisterId]);
 
     // Calculate pagination
     const totalPages = Math.ceil(tokens.length / tokensPerPage);
@@ -679,6 +686,32 @@ export const AdminTokensPage: React.FC = () => {
         }
     };
 
+    const handleGetLogo = async () => {
+        if (!logoFormData.canisterId) {
+            setError('Token canister ID is required');
+            return;
+        }
+
+        setIsGettingLogo(true);
+        setError(null);
+        setRetrievedLogoUrl(null);
+        try {
+            const logoUrl = await adminService.getTokenLogo(logoFormData.canisterId);
+            if (logoUrl) {
+                setRetrievedLogoUrl(logoUrl);
+                setSuccessMessage(`Logo retrieved successfully: ${logoUrl}`);
+            } else {
+                setSuccessMessage('No logo found for this token');
+                setRetrievedLogoUrl(null);
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to get logo');
+            setRetrievedLogoUrl(null);
+        } finally {
+            setIsGettingLogo(false);
+        }
+    };
+
     const MetadataModal: React.FC<TokenMetadataModalProps> = ({ isOpen, onClose, metadata, canisterId }) => {
         if (!isOpen) return null;
 
@@ -1114,7 +1147,7 @@ export const AdminTokensPage: React.FC = () => {
                             value={logoFormData.canisterId}
                             onChange={(e) => setLogoFormData(prev => ({ ...prev, canisterId: e.target.value }))}
                             placeholder="Enter token canister ID"
-                            disabled={isSettingLogo || isRefreshingLogo}
+                            disabled={isSettingLogo || isRefreshingLogo || isGettingLogo}
                         />
                     </div>
                     <div className="form-group">
@@ -1125,13 +1158,13 @@ export const AdminTokensPage: React.FC = () => {
                             value={logoFormData.logo}
                             onChange={(e) => setLogoFormData(prev => ({ ...prev, logo: e.target.value }))}
                             placeholder="Enter logo URL"
-                            disabled={isSettingLogo || isRefreshingLogo}
+                            disabled={isSettingLogo || isRefreshingLogo || isGettingLogo}
                         />
                     </div>
                     <div className="form-buttons">
                         <button 
                             type="submit" 
-                            disabled={isSettingLogo || isRefreshingLogo || !logoFormData.canisterId || !logoFormData.logo}
+                            disabled={isSettingLogo || isRefreshingLogo || isGettingLogo || !logoFormData.canisterId || !logoFormData.logo}
                             className="submit-button"
                         >
                             {isSettingLogo ? 'Setting Logo...' : 'Set Logo'}
@@ -1139,13 +1172,43 @@ export const AdminTokensPage: React.FC = () => {
                         <button 
                             type="button"
                             onClick={handleRefreshLogo}
-                            disabled={isRefreshingLogo || isSettingLogo || !logoFormData.canisterId}
+                            disabled={isRefreshingLogo || isSettingLogo || isGettingLogo || !logoFormData.canisterId}
                             className="refresh-button"
                         >
                             {isRefreshingLogo ? 'Refreshing Logo...' : 'Refresh Logo'}
                         </button>
+                        <button 
+                            type="button"
+                            onClick={handleGetLogo}
+                            disabled={isGettingLogo || isSettingLogo || isRefreshingLogo || !logoFormData.canisterId}
+                            className="refresh-button"
+                        >
+                            {isGettingLogo ? 'Getting Logo...' : 'Get Logo'}
+                        </button>
                     </div>
                 </form>
+                
+                {retrievedLogoUrl && (
+                    <div className="logo-display-section">
+                        <h4>Retrieved Logo</h4>
+                        <div className="logo-url-display">
+                            <label>Logo URL:</label>
+                            <div className="logo-url-text">{retrievedLogoUrl}</div>
+                        </div>
+                        <div className="logo-image-display">
+                            <label>Logo Preview:</label>
+                            <img 
+                                src={retrievedLogoUrl}
+                                alt="Token Logo"
+                                className="logo-preview-image"
+                                onError={(e) => {
+                                    const img = e.target as HTMLImageElement;
+                                    img.src = '/generic_token.svg';
+                                }}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="token-list-section">
