@@ -168,6 +168,12 @@ export const WrapUnwrapModal: React.FC<WrapUnwrapModalProps> = ({
       throw new Error('Amount too small to cover transaction fee');
     }
 
+    // Calculate deposit amount (approval amount - 1 more GLDT fee)
+    const depositAmount = approvalAmount - gldtFee_e8s;
+    if (depositAmount <= 0n) {
+      throw new Error('Amount too small to cover wrap fees');
+    }
+
     const sgldtPrincipal = Principal.fromText(SGLDT_CANISTER_ID);
 
     // Check current allowance
@@ -197,8 +203,8 @@ export const WrapUnwrapModal: React.FC<WrapUnwrapModalProps> = ({
       }
     }
 
-    // Call deposit on sGLDT canister with approval amount
-    const depositResult = await sgldtActorInstance.deposit([], approvalAmount);
+    // Call deposit on sGLDT canister with deposit amount
+    const depositResult = await sgldtActorInstance.deposit([], depositAmount);
     if ('err' in depositResult) {
       throw new Error(`Deposit failed: ${depositResult.err}`);
     }
