@@ -63,6 +63,14 @@ export class ICPSwapExecutionService {
   private poolActors: Map<string, any> = new Map();
   private tokenActors: Map<string, any> = new Map();
 
+  // ICPSwap's own view of token standards.
+  // Maps token canister ID → { standard: 'icrc1'|'icrc2', cachedAt: number }.
+  // ICPSwap ignores the caller's standard choice and uses its internal cache,
+  // so we must match their expectation to avoid "unsupported transferFrom" errors.
+  // Entries expire after STANDARD_CACHE_TTL_MS so we pick up fixes.
+  private icpswapTokenStandards: Map<string, { standard: string; cachedAt: number }> = new Map();
+  private static readonly STANDARD_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
   private async getAgent(): Promise<HttpAgent> {
     if (this.agent) return this.agent;
 
@@ -127,6 +135,65 @@ export class ICPSwapExecutionService {
     this.agent = null;
     this.poolActors.clear();
     this.tokenActors.clear();
+  }
+
+  /**
+   * Normalize an ICPSwap standard label to our canonical form.
+   * ICPSwap uses "ICRC1", "ICRC2", "ICP", "EXT", etc.
+   */
+  private normalizeICPSwapStandard(raw: string): string {
+    if (!raw) return 'icrc1';
+    const s = raw.toLowerCase().replace(/-/g, '');
+    if (s === 'icrc2') return 'icrc2';
+    return 'icrc1';
+  }
+
+  /**
+   * Extract and cache token standards from ICPSwap pool metadata.
+   */
+  private cachePoolTokenStandards(poolMetadata: any): void {
+    const addr = (t: any) => typeof t.address === 'string'
+      ? t.address
+      : (t.address?.toText ? t.address.toText() : String(t.address));
+    const now = Date.now();
+
+    if (poolMetadata.token0) {
+      this.icpswapTokenStandards.set(addr(poolMetadata.token0), {
+        standard: this.normalizeICPSwapStandard(poolMetadata.token0.standard),
+        cachedAt: now,
+      });
+    }
+    if (poolMetadata.token1) {
+      this.icpswapTokenStandards.set(addr(poolMetadata.token1), {
+        standard: this.normalizeICPSwapStandard(poolMetadata.token1.standard),
+        cachedAt: now,
+      });
+    }
+  }
+
+  /**
+   * Get ICPSwap's view of what standard a token uses.
+   * Checks in-memory cache first (with TTL); falls back to querying pool metadata.
+   * Returns 'icrc1', 'icrc2', or null if unable to determine.
+   */
+  async getICPSwapTokenStandard(tokenId: string, poolId: string): Promise<string | null> {
+    const cached = this.icpswapTokenStandards.get(tokenId);
+    if (cached && (Date.now() - cached.cachedAt) < ICPSwapExecutionService.STANDARD_CACHE_TTL_MS) {
+      return cached.standard;
+    }
+
+    try {
+      const pool = await this.getPoolActor(poolId);
+      const metaResult = await pool.metadata();
+      if ('ok' in metaResult && metaResult.ok) {
+        this.cachePoolTokenStandards(metaResult.ok);
+        const fresh = this.icpswapTokenStandards.get(tokenId);
+        return fresh ? fresh.standard : null;
+      }
+    } catch (e) {
+      console.warn('Failed to fetch ICPSwap pool metadata for standard detection:', e);
+    }
+    return null;
   }
 
   // Make checkAllowance public
@@ -419,9 +486,18 @@ export class ICPSwapExecutionService {
       
       // Get token metadata to determine standard and fee
       const metadata = await tokenService.getMetadata(params.tokenId);
-      const standard = (metadata.standard || '').toLowerCase();
-      const isICRC2orDIP20 = standard.includes('icrc2') || standard.includes('dip20');
-      
+      let standard = (metadata.standard || '').toLowerCase();
+      const isDIP20 = standard.includes('dip20');
+
+      // Check ICPSwap's view of the standard (ICRC1 vs ICRC2)
+      if (!isDIP20) {
+        const icpswapStandard = await this.getICPSwapTokenStandard(params.tokenId, params.poolId);
+        if (icpswapStandard) {
+          standard = icpswapStandard;
+        }
+      }
+      const isICRC2orDIP20 = standard.includes('icrc2') || isDIP20;
+
       // Amount is already in e8s format, just convert to BigInt
       const amountE8 = BigInt(params.amount_e8s);
 
@@ -604,10 +680,26 @@ export class ICPSwapExecutionService {
       results.push(prepareStepResult);
       if (stepCallback) await stepCallback(prepareStepResult);
 
-      // Get token metadata to check if it supports ICRC2 or is DIP20
+      // Get token metadata and ICPSwap's view of the standard
       const metadata = await tokenService.getMetadata(params.fromToken.canisterId);
-      const supportsICRC2 = metadata.standard.toLowerCase().includes('icrc2');
       const isDIP20 = metadata.standard.toLowerCase().includes('dip20');
+
+      // ICPSwap uses its own internal metadata cache to decide whether to call
+      // icrc1_transfer or icrc2_transferFrom — regardless of what the caller says.
+      // We must match their expectation or the swap will fail.
+      let supportsICRC2 = metadata.standard.toLowerCase().includes('icrc2');
+      if (!isDIP20) {
+        const icpswapStandard = await this.getICPSwapTokenStandard(params.fromToken.canisterId, params.poolId);
+        if (icpswapStandard) {
+          if ((icpswapStandard === 'icrc2') !== supportsICRC2) {
+            console.warn(
+              `ICPSwap reports ${params.fromToken.canisterId} as ${icpswapStandard.toUpperCase()}, ` +
+              `overriding token-reported standard ${metadata.standard}`
+            );
+          }
+          supportsICRC2 = icpswapStandard === 'icrc2';
+        }
+      }
       const useApprovalFlow = supportsICRC2 || isDIP20;
 
       let amount_e8s = BigInt(params.fromToken.amount_e8s);

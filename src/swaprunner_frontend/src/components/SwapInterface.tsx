@@ -516,12 +516,21 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
 
           // Get token metadata for fee calculations
           const fromTokenMetadata = await tokenService.getMetadata(fromToken);
-    
+
+          // Get ICPSwap's view of the standard (may differ from token ledger)
+          let effectiveStandard = fromTokenMetadata.standard;
+          if (poolId && !fromTokenMetadata.standard.toLowerCase().includes('dip20')) {
+            const icpswapStd = await icpSwapExecutionService.getICPSwapTokenStandard(fromToken, poolId);
+            if (icpswapStd) {
+              effectiveStandard = icpswapStd;
+            }
+          }
+
           let icpswapAllowance = BigInt(0);
           let kongAllowance = BigInt(0);
           // If ICRC2 or DIP20 token, fetch existing allowance on ICPSwap and Kong.
-          if (fromTokenMetadata.standard.toLowerCase().includes('dip20') || 
-              fromTokenMetadata.standard.toLowerCase().includes('icrc2')) {
+          if (effectiveStandard.toLowerCase().includes('dip20') ||
+              effectiveStandard.toLowerCase().includes('icrc2')) {
             // Check ICPSwap allowance
             if (poolId) {
               icpswapAllowance = await icpSwapExecutionService.checkAllowance({
@@ -531,7 +540,7 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
               console.log('ICPSwap allowance:', icpswapAllowance.toString());
             }
 
-            // Check Kong allowance 
+            // Check Kong allowance
             kongAllowance = await icpSwapExecutionService.checkAllowance({
               tokenId: fromToken,
               spender: typeof kongCanisterId === 'string' ? Principal.fromText(kongCanisterId) : kongCanisterId
@@ -543,7 +552,7 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
           const walletBalance = await icpSwapExecutionService.getBalance(fromToken);
           let depositedBalance = BigInt(0);
           let undepositedBalance = BigInt(0);
-          
+
           // Only fetch ICPSwap quote if we have a valid pool
           if (poolId) {
             // Get pool balances for ICPSwap
@@ -556,7 +565,7 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
             undepositedBalance = !undeposited.error ? undeposited.balance_e8s : BigInt(0);
 
             // Calculate ICPSwap's deposit needs
-            const icpswapNeeds = await calculateICPSwapDepositNeeds(amountInE8s, walletBalance.balance_e8s, depositedBalance, undepositedBalance, icpswapAllowance, fromTokenMetadata.standard);
+            const icpswapNeeds = await calculateICPSwapDepositNeeds(amountInE8s, walletBalance.balance_e8s, depositedBalance, undepositedBalance, icpswapAllowance, effectiveStandard);
             
             let icpswapQuoteAmount = icpswapNeeds?.adjustedAmount || amountInE8s;
 
@@ -631,7 +640,7 @@ export function SwapInterface({ slippageTolerance, fromTokenParam, toTokenParam 
 
           // Kong quote logic - independent of ICPSwap pool
           // Calculate withdrawal needs for Kong quote
-          const withdrawalNeeds = await calculatePoolWithdrawalNeeds(amountInE8s, walletBalance.balance_e8s, depositedBalance, undepositedBalance, kongAllowance, fromTokenMetadata.standard);
+          const withdrawalNeeds = await calculatePoolWithdrawalNeeds(amountInE8s, walletBalance.balance_e8s, depositedBalance, undepositedBalance, kongAllowance, effectiveStandard);
 
           // For Kong quote, use the adjusted amount if available
           let kongQuoteAmount = withdrawalNeeds?.adjustedInput || amountInE8s;
@@ -1987,19 +1996,29 @@ const createSplitSwapDetails = async() => {
 
       // Calculate ICPSwap's needs - it prefers pool funds first
       const fromTokenMetadata = await tokenService.getMetadata(useFromToken);
+
+      // Get ICPSwap's view of the standard (may differ from token ledger)
+      let effectiveStandard2 = fromTokenMetadata.standard;
+      if (!fromTokenMetadata.standard.toLowerCase().includes('dip20')) {
+        const icpswapStd = await icpSwapExecutionService.getICPSwapTokenStandard(useFromToken, poolId.toString());
+        if (icpswapStd) {
+          effectiveStandard2 = icpswapStd;
+        }
+      }
+
       let icpswapAllowance = BigInt(0);
       let kongAllowance = BigInt(0);
       // If ICRC2 or DIP20 token, fetch existing allowance on ICPSwap and Kong.
-      if (fromTokenMetadata.standard.toLowerCase().includes('dip20') || 
-          fromTokenMetadata.standard.toLowerCase().includes('icrc2')) {
+      if (effectiveStandard2.toLowerCase().includes('dip20') ||
+          effectiveStandard2.toLowerCase().includes('icrc2')) {
         // Check ICPSwap allowance
         icpswapAllowance = await icpSwapExecutionService.checkAllowance({
           tokenId: useFromToken,
           spender: typeof poolId === 'string' ? Principal.fromText(poolId) : poolId,
         });
-        console.log('ICPSwap allowance:', icpswapAllowance.toString());  
+        console.log('ICPSwap allowance:', icpswapAllowance.toString());
 
-        // Check Kong allowance 
+        // Check Kong allowance
         kongAllowance = await icpSwapExecutionService.checkAllowance({
           tokenId: useFromToken,
           spender: typeof kongCanisterId === 'string' ? Principal.fromText(kongCanisterId) : kongCanisterId
@@ -2018,15 +2037,15 @@ const createSplitSwapDetails = async() => {
 
       const depositedBalance = isToken0(useFromToken) ? deposited.balance0_e8s : deposited.balance1_e8s;
       const undepositedBalance = !undeposited.error ? undeposited.balance_e8s : BigInt(0);
-      
-      const icpswapNeeds = await calculateICPSwapDepositNeeds(icpswapAmount, walletBalance.balance_e8s, depositedBalance, undepositedBalance, icpswapAllowance, fromTokenMetadata.standard);
+
+      const icpswapNeeds = await calculateICPSwapDepositNeeds(icpswapAmount, walletBalance.balance_e8s, depositedBalance, undepositedBalance, icpswapAllowance, effectiveStandard2);
       if (!icpswapNeeds) return { success: false, error: 'Failed to calculate ICPSwap needs' };
-      
+
       icpswapAmount = icpswapNeeds?.adjustedAmount || icpswapAmount;
 
       // Calculate Kong's withdrawal needs, accounting for ICPSwap's reserved amounts
       const kongWithdrawalNeeds = await calculatePoolWithdrawalNeeds(
-        kongAmount, walletBalance.balance_e8s, depositedBalance, undepositedBalance, kongAllowance, fromTokenMetadata.standard,
+        kongAmount, walletBalance.balance_e8s, depositedBalance, undepositedBalance, kongAllowance, effectiveStandard2,
         {
           reservedDeposited: icpswapNeeds.fromDeposited,
           reservedUndeposited: icpswapNeeds.fromUndeposited,
@@ -2365,7 +2384,16 @@ const createSplitSwapDetails = async() => {
         // Get all the necessary data once
         const fromTokenMetadata = await tokenService.getMetadata(fromToken);
         const walletBalance = await icpSwapExecutionService.getBalance(fromToken);
-        
+
+        // Get ICPSwap's view of the standard (may differ from token ledger)
+        let effectiveStandard3 = fromTokenMetadata.standard;
+        if (!fromTokenMetadata.standard.toLowerCase().includes('dip20')) {
+          const icpswapStd = await icpSwapExecutionService.getICPSwapTokenStandard(fromToken, poolId);
+          if (icpswapStd) {
+            effectiveStandard3 = icpswapStd;
+          }
+        }
+
         // Get pool balances
         const [deposited, undeposited] = await Promise.all([
           icpSwapExecutionService.getDepositedPoolBalance({ poolId }),
@@ -2378,8 +2406,8 @@ const createSplitSwapDetails = async() => {
         // Get allowances if needed
         let icpswapAllowance = BigInt(0);
         let kongAllowance = BigInt(0);
-        if (fromTokenMetadata.standard.toLowerCase().includes('dip20') || 
-            fromTokenMetadata.standard.toLowerCase().includes('icrc2')) {
+        if (effectiveStandard3.toLowerCase().includes('dip20') ||
+            effectiveStandard3.toLowerCase().includes('icrc2')) {
           const poolPrincipal = typeof poolId === 'string' ? Principal.fromText(poolId) : poolId;
           const kongPrincipal = typeof kongCanisterId === 'string' ? Principal.fromText(kongCanisterId) : kongCanisterId;
           [icpswapAllowance, kongAllowance] = await Promise.all([
@@ -2400,7 +2428,7 @@ const createSplitSwapDetails = async() => {
           undepositedBalance,
           icpswapAllowance,
           kongAllowance,
-          fromTokenMetadata: fromTokenMetadata
+          fromTokenMetadata: { ...fromTokenMetadata, standard: effectiveStandard3 }
         };
 
         // Test endpoints first
